@@ -2,7 +2,7 @@
 // CharlestonDialog — Tile-passing dialog
 // ============================================================
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Tile, GamePhase } from '../engine/types';
 import { getCharlestonDirection, getCharlestonRound } from '../engine/charleston';
 import { TileComponent } from './TileComponent';
@@ -17,6 +17,14 @@ interface CharlestonDialogProps {
 
 export function CharlestonDialog({ phase, hand, onConfirm, onSkip }: CharlestonDialogProps) {
   const [selectedTiles, setSelectedTiles] = useState<Tile[]>([]);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const direction = getCharlestonDirection(phase);
   const round = getCharlestonRound(phase);
 
@@ -67,6 +75,7 @@ export function CharlestonDialog({ phase, hand, onConfirm, onSkip }: CharlestonD
                 clickable
                 onClick={() => handleTileClick(tile)}
                 highlighted
+                size={isMobile ? 'mini' : 'normal'}
               />
             ))}
           </div>
@@ -83,6 +92,7 @@ export function CharlestonDialog({ phase, hand, onConfirm, onSkip }: CharlestonD
                 clickable
                 selected={selectedTiles.some(t => t.id === tile.id)}
                 onClick={handleTileClick}
+                size={isMobile ? 'mini' : 'normal'}
               />
             ))}
           </div>

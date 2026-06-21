@@ -561,3 +561,206 @@
     display: none !important; /* Hide live game log on mobile to clear screen space */
   }
 }
+
+/* ============================================================
+   React-Driven Mobile Specific Classes
+   ============================================================ */
+.game-board.mobile {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  justify-content: space-between;
+  background: linear-gradient(135deg, var(--color-felt-light) 0%, var(--color-felt) 50%, var(--color-felt-dark) 100%);
+  padding: 0;
+}
+
+.game-board.mobile::after {
+  display: none; /* Hide wooden border on mobile to save space */
+}
+
+.mobile-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.25);
+  border-bottom: 1px solid var(--color-panel-border);
+  z-index: 10;
+}
+
+.mobile-info-row {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.mobile-info-row .info-item strong {
+  color: var(--color-text-bright);
+}
+
+.mobile-opponents-row {
+  display: flex;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  justify-content: space-between;
+  z-index: 10;
+}
+
+.mobile-opponent-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-panel);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-panel-border);
+  padding: 6px 4px;
+  text-align: center;
+  gap: 4px;
+  max-width: 32%;
+}
+
+.mobile-opponent-card.active {
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-glow);
+}
+
+.opp-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-bright);
+}
+
+.opp-wind {
+  font-size: 9px;
+  font-weight: 800;
+  background: rgba(244, 197, 66, 0.2);
+  border-radius: var(--radius-round);
+  padding: 1px 4px;
+  color: var(--color-accent);
+}
+
+.opp-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 60px;
+}
+
+.opp-count {
+  color: var(--color-text-muted);
+  font-size: 10px;
+}
+
+.opp-exposed-mini {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+.opp-set-mini {
+  display: flex;
+  gap: 0.5px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  padding: 1px;
+  border-radius: 1px;
+}
+
+.mobile-discard-pool {
+  flex: 1;
+  padding: 12px;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.15);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 120px;
+}
+
+.discard-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  justify-content: center;
+  align-content: flex-start;
+  max-width: 100%;
+}
+
+.mobile-bottom-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.35);
+  border-top: 1px solid var(--color-panel-border);
+  gap: 6px;
+  width: 100%;
+  z-index: 10;
+}
+
+.mobile-player-status {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0 4px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.mobile-player-status .player-name {
+  font-weight: 700;
+  color: var(--color-text-bright);
+}
+
+.mobile-player-exposed {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  width: 100%;
+  flex-wrap: wrap;
+  margin-bottom: 2px;
+}
+
+.mobile-player-hand {
+  display: flex;
+  gap: 2px;
+  justify-content: center;
+  width: 100%;
+  padding: 4px 0;
+  overflow-x: auto;
+}
+
+.mobile-action-bar {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin-top: 2px;
+}
+
+.mobile-turn-indicator {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  width: 100%;
+  text-align: center;
+  margin-top: 4px;
+  font-weight: 600;
+}
+
+.mobile-action-bar .btn-action {
+  padding: 6px 12px;
+  font-size: 11px;
+  border-radius: 4px;
+}

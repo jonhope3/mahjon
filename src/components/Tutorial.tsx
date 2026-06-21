@@ -2,7 +2,7 @@
 // Tutorial — Interactive learning mode for American Mahjong
 // ============================================================
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TileComponent } from './TileComponent';
 import { createTileSet } from '../engine/tiles';
 import { Tile, TileKind } from '../engine/types';
@@ -50,6 +50,13 @@ interface TutorialStep {
 export function Tutorial({ onBack }: TutorialProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [showHandCard, setShowHandCard] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const steps: TutorialStep[] = [
     {
@@ -60,7 +67,7 @@ export function Tutorial({ onBack }: TutorialProps) {
           <p>This tutorial will teach you everything you need to start playing. Let's begin with the tiles!</p>
           <div className="tutorial-tiles-demo">
             {[SAMPLE_TILES.crak1, SAMPLE_TILES.bam5, SAMPLE_TILES.dot7, SAMPLE_TILES.east, SAMPLE_TILES.dragonRed, SAMPLE_TILES.flower, SAMPLE_TILES.joker].map(t => (
-              <TileComponent key={t.id} tile={t} />
+              <TileComponent key={t.id} tile={t} size={isMobile ? 'mini' : 'normal'} />
             ))}
           </div>
         </div>
@@ -112,10 +119,10 @@ export function Tutorial({ onBack }: TutorialProps) {
             <h4>Winds (4 copies each = 16 tiles)</h4>
             <p>North, East, South, West — represented by compass directions (E, S, W, N) and used in wind/dragon hands and some mixed patterns.</p>
             <div className="tutorial-tiles-row">
-              <TileComponent tile={SAMPLE_TILES.north} />
-              <TileComponent tile={SAMPLE_TILES.east} />
-              <TileComponent tile={SAMPLE_TILES.south} />
-              <TileComponent tile={SAMPLE_TILES.west} />
+              <TileComponent tile={SAMPLE_TILES.north} size={isMobile ? 'mini' : 'normal'} />
+              <TileComponent tile={SAMPLE_TILES.east} size={isMobile ? 'mini' : 'normal'} />
+              <TileComponent tile={SAMPLE_TILES.south} size={isMobile ? 'mini' : 'normal'} />
+              <TileComponent tile={SAMPLE_TILES.west} size={isMobile ? 'mini' : 'normal'} />
             </div>
           </div>
 
@@ -123,9 +130,9 @@ export function Tutorial({ onBack }: TutorialProps) {
             <h4>Dragons (4 copies each = 12 tiles)</h4>
             <p>Coral (🪸), Sea Wave (🌊), and Pearl Oyster (🦪). The "0" in year hands (2026) uses the Pearl Dragon Oyster.</p>
             <div className="tutorial-tiles-row">
-              <TileComponent tile={SAMPLE_TILES.dragonRed} />
-              <TileComponent tile={SAMPLE_TILES.dragonGreen} />
-              <TileComponent tile={SAMPLE_TILES.dragonWhite} />
+              <TileComponent tile={SAMPLE_TILES.dragonRed} size={isMobile ? 'mini' : 'normal'} />
+              <TileComponent tile={SAMPLE_TILES.dragonGreen} size={isMobile ? 'mini' : 'normal'} />
+              <TileComponent tile={SAMPLE_TILES.dragonWhite} size={isMobile ? 'mini' : 'normal'} />
             </div>
           </div>
 
@@ -133,8 +140,8 @@ export function Tutorial({ onBack }: TutorialProps) {
             <h4>Sea Anemones (8 tiles) & Jokers (8 tiles)</h4>
             <p><strong>Sea Anemones</strong> (Flowers) are used in many hand patterns. <strong>Jokers</strong> are wild — they can substitute for any tile in a group of 3 or more, but NOT in pairs or singles.</p>
             <div className="tutorial-tiles-row">
-              <TileComponent tile={SAMPLE_TILES.flower} />
-              <TileComponent tile={SAMPLE_TILES.joker} />
+              <TileComponent tile={SAMPLE_TILES.flower} size={isMobile ? 'mini' : 'normal'} />
+              <TileComponent tile={SAMPLE_TILES.joker} size={isMobile ? 'mini' : 'normal'} />
             </div>
           </div>
 
