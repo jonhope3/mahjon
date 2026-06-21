@@ -267,3 +267,98 @@
   width: 2px;
   height: 5px;
 }
+
+/* ============================================================
+   Tile Responsiveness Media Queries
+   ============================================================ */
+
+/* Small tablets / iPads (max-width: 768px) */
+@media (max-width: 768px) {
+  .tile {
+    width: 32px;
+    height: 44px;
+    border-radius: 3px;
+  }
+  .tile-rank {
+    font-size: 13px;
+  }
+  .tile-suit-label {
+    font-size: 7px;
+  }
+  .tile-cjk, .tile-emoji {
+    font-size: 15px;
+  }
+  .tile.selected {
+    transform: translateY(-8px);
+  }
+  .tile.clickable:hover {
+    transform: translateY(-4px);
+  }
+  .tile.mini {
+    width: 22px;
+    height: 30px;
+  }
+  .tile.mini .tile-rank {
+    font-size: 9px;
+  }
+  .tile.mini .tile-emoji, .tile.mini .tile-cjk {
+    font-size: 11px;
+  }
+  .tile.mini .tile-suit-label {
+    font-size: 5px;
+  }
+}
+
+/* Mobile phones (max-width: 480px) */
+@media (max-width: 480px) {
+  .tile {
+    width: 24px;
+    height: 33px;
+    border-radius: 2px;
+    padding: 1px;
+  }
+  .tile-rank {
+    font-size: 10px;
+  }
+  .tile-suit-label {
+    font-size: 5px;
+  }
+  .tile-cjk, .tile-emoji {
+    font-size: 12px;
+  }
+  .tile-suit-label.anemone {
+    font-size: 5px;
+    padding: 0;
+  }
+  .tile-rank.joker {
+    font-size: 9px;
+    padding: 0;
+  }
+  .tile.selected {
+    transform: translateY(-6px);
+  }
+  .tile.clickable:hover {
+    transform: translateY(-2px);
+  }
+  .exposed-set {
+    padding: 2px;
+  }
+  .tile.mini {
+    width: 18px;
+    height: 25px;
+    padding: 1px;
+  }
+  .tile.mini .tile-rank {
+    font-size: 7px;
+  }
+  .tile.mini .tile-emoji, .tile.mini .tile-cjk {
+    font-size: 9px;
+  }
+  .tile.mini .tile-suit-label {
+    display: none;
+  }
+  .tile.tiny {
+    width: 10px;
+    height: 14px;
+  }
+}

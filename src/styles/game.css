@@ -365,3 +365,199 @@
 .log-entry:first-child {
   color: var(--color-text);
 }
+
+/* ============================================================
+   Game Board Responsiveness Media Queries
+   ============================================================ */
+
+@media (max-width: 1024px) {
+  .top-bar {
+    padding: var(--space-sm) var(--space-md);
+  }
+  .center-area {
+    padding: 0 var(--space-md);
+  }
+  .bottom-bar {
+    padding: var(--space-sm) var(--space-md);
+  }
+}
+
+@media (max-width: 768px) {
+  /* Wood border frame shrink to save screen space */
+  .game-board::after {
+    border-width: 4px;
+  }
+
+  /* Game Info item spacing */
+  .game-info {
+    gap: var(--space-md);
+  }
+
+  .game-info-value {
+    font-size: var(--font-size-md);
+  }
+
+  /* Reconfigure Opponents / Discard Pool Grid in Center Area */
+  .center-area {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto 1fr;
+    padding: 0 var(--space-sm);
+    gap: var(--space-sm);
+    margin-top: 4px;
+  }
+
+  .opponent-area.left {
+    grid-column: 1;
+    grid-row: 1;
+    justify-content: flex-start;
+  }
+
+  .opponent-area.right {
+    grid-column: 2;
+    grid-row: 1;
+    justify-content: flex-end;
+  }
+
+  .discard-pool {
+    grid-column: 1 / span 2;
+    grid-row: 2;
+    padding: var(--space-xs);
+    max-height: 100%;
+    min-height: 120px;
+  }
+
+  .opponent-info {
+    padding: 4px 8px;
+    gap: 2px;
+  }
+
+  .opponent-tiles {
+    display: none !important; /* Hide visual tiny tiles to save vertical layout space */
+  }
+
+  .opponent-name {
+    font-size: 11px;
+  }
+
+  .opponent-wind {
+    font-size: 10px;
+  }
+
+  .opponent-tile-count {
+    font-size: 10px;
+  }
+
+  /* Bottom Bar and Hand Layout */
+  .bottom-bar {
+    padding: var(--space-xs) var(--space-sm) var(--space-sm);
+    gap: 4px;
+  }
+
+  .player-hand-container {
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+    align-items: center;
+  }
+
+  .player-hand {
+    gap: 2px;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .exposed-sets {
+    margin-left: 0;
+    gap: 6px;
+    justify-content: center;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .exposed-set {
+    padding: 2px;
+  }
+
+  /* Player Info Bar */
+  .player-info-bar {
+    padding: 0;
+    gap: var(--space-sm);
+  }
+
+  .player-info-bar .player-name {
+    font-size: 13px;
+  }
+
+  .player-info-bar .player-wind {
+    font-size: 10px;
+    padding: 1px 6px;
+  }
+
+  .player-info-bar .player-score {
+    font-size: 11px;
+  }
+
+  /* Action Bar scaling */
+  .action-bar {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: var(--radius-md);
+    width: 100%;
+    max-width: 380px;
+  }
+
+  .action-bar .turn-indicator {
+    font-size: 11px;
+    width: 100%;
+    text-align: center;
+    margin-bottom: 2px;
+    padding: 0;
+  }
+
+  .btn-action {
+    padding: 5px 8px;
+    font-size: 10px;
+    border-radius: 3px;
+  }
+
+  /* Top Bar compact */
+  .top-bar {
+    flex-direction: column;
+    padding: var(--space-xs) var(--space-sm);
+    gap: 4px;
+  }
+
+  .top-bar .game-info:nth-child(3) {
+    display: none !important; /* Hide duplicate scores board to save space */
+  }
+
+  .top-bar .game-info:first-child {
+    width: 100%;
+    justify-content: space-around;
+  }
+
+  /* Wall Counter discrete */
+  .wall-counter {
+    top: auto;
+    bottom: var(--space-xs);
+    left: auto;
+    right: var(--space-sm);
+    transform: none;
+    text-align: right;
+  }
+
+  .wall-counter .count {
+    font-size: var(--font-size-xl);
+  }
+
+  .wall-counter .label {
+    font-size: 8px;
+  }
+
+  /* Game Log Overlay */
+  .game-log {
+    display: none !important; /* Hide live game log on mobile to clear screen space */
+  }
+}

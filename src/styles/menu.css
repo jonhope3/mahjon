@@ -355,3 +355,105 @@
   transform: translateY(-50%) rotate(15deg);
   font-size: 120px;
 }
+
+/* ============================================================
+   Menu & Dialog Responsiveness Media Queries
+   ============================================================ */
+
+@media (max-width: 500px) {
+  .main-menu {
+    padding: var(--space-md) var(--space-sm);
+  }
+
+  .menu-logo {
+    margin-bottom: var(--space-md);
+  }
+
+  .menu-logo h1 {
+    font-size: var(--font-size-2xl);
+  }
+
+  .menu-logo .subtitle {
+    font-size: var(--font-size-sm);
+    letter-spacing: 0.1em;
+  }
+
+  .menu-card {
+    padding: var(--space-lg) var(--space-md);
+    border-radius: var(--radius-lg);
+  }
+
+  .menu-card h2 {
+    font-size: var(--font-size-lg);
+    margin-bottom: var(--space-md);
+  }
+
+  .btn {
+    padding: var(--space-sm) var(--space-md);
+    font-size: var(--font-size-sm);
+  }
+
+  .game-setup {
+    gap: var(--space-sm);
+  }
+
+  .setup-player {
+    padding: var(--space-sm);
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-xs);
+  }
+
+  .setup-player .seat-label {
+    min-width: auto;
+    text-align: center;
+  }
+
+  .setup-player input,
+  .setup-player select {
+    padding: 6px 10px;
+    font-size: var(--font-size-sm);
+    width: 100%;
+  }
+
+  /* Modals */
+  .modal-content {
+    padding: var(--space-lg) var(--space-md);
+    max-height: 90vh;
+  }
+
+  .modal-content h2 {
+    font-size: var(--font-size-lg);
+    margin-bottom: var(--space-md);
+  }
+
+  /* Scoreboard overlay */
+  .scoreboard {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-sm);
+  }
+
+  .score-card {
+    padding: var(--space-sm);
+  }
+
+  .score-card .score-value {
+    font-size: var(--font-size-lg);
+  }
+
+  /* Charleston dialog layout */
+  .charleston-direction {
+    font-size: var(--font-size-xl);
+  }
+
+  .charleston-selected {
+    padding: var(--space-sm);
+    min-height: 60px;
+    margin-bottom: var(--space-md);
+  }
+
+  /* Hide decorative background tiles to reduce clutter */
+  .deco-tiles {
+    display: none !important;
+  }
+}
