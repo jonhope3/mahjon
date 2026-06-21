@@ -1,0 +1,357 @@
+/* ============================================================
+   Menu & Overlay Styles
+   ============================================================ */
+
+/* ---- Main Menu ---- */
+.main-menu {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(42, 122, 78, 0.4) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 80%, rgba(244, 197, 66, 0.1) 0%, transparent 50%),
+    linear-gradient(135deg, var(--color-bg) 0%, var(--color-felt-dark) 50%, var(--color-bg) 100%);
+  padding: var(--space-xl);
+  position: relative;
+  overflow: hidden;
+}
+
+.main-menu::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.02'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+.menu-logo {
+  margin-bottom: var(--space-xl);
+  text-align: center;
+}
+
+.menu-logo h1 {
+  font-size: var(--font-size-hero);
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--color-accent), #fff, var(--color-accent));
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 3s ease infinite;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.menu-logo .subtitle {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-muted);
+  font-weight: 300;
+  margin-top: var(--space-xs);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+@keyframes shimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.menu-card {
+  background: var(--color-surface);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--color-panel-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-2xl);
+  width: 100%;
+  max-width: 420px;
+  box-shadow: var(--shadow-lg);
+}
+
+.menu-card h2 {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: var(--color-text-bright);
+  margin-bottom: var(--space-lg);
+  text-align: center;
+}
+
+.menu-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+/* ---- Buttons ---- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: var(--font-size-md);
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.btn:hover::after {
+  opacity: 1;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--color-accent), #e6a800);
+  color: #1a1a0a;
+  box-shadow: 0 4px 16px rgba(244, 197, 66, 0.3);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 6px 24px rgba(244, 197, 66, 0.5);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: var(--color-panel);
+  color: var(--color-text);
+  border: 1px solid var(--color-panel-border);
+}
+
+.btn-secondary:hover {
+  background: var(--color-surface-hover);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, var(--color-danger), #c62828);
+  color: white;
+}
+
+.btn-action {
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.btn-action.draw { background: var(--color-action-draw); color: white; }
+.btn-action.pung { background: var(--color-action-pung); color: white; }
+.btn-action.kong { background: var(--color-action-kong); color: white; }
+.btn-action.quint { background: var(--color-action-quint); color: white; }
+.btn-action.mahjong {
+  background: linear-gradient(135deg, var(--color-action-mahjong), #e6a800);
+  color: #1a1a0a;
+  box-shadow: var(--shadow-glow);
+}
+.btn-action.pass { background: var(--color-action-pass); color: white; }
+
+.btn-icon {
+  font-size: 1.2em;
+}
+
+/* ---- Game Setup ---- */
+.game-setup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.setup-player {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: var(--color-panel);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-panel-border);
+}
+
+.setup-player .seat-label {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-accent);
+  min-width: 50px;
+}
+
+.setup-player input {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--color-panel-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  font-size: var(--font-size-md);
+}
+
+.setup-player input:focus {
+  border-color: var(--color-accent);
+  outline: none;
+}
+
+.setup-player select {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--color-panel-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  font-size: var(--font-size-sm);
+}
+
+/* ---- Modals & Overlays ---- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  animation: fadeIn var(--transition-normal) ease;
+}
+
+.modal-content {
+  background: var(--color-surface);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--color-panel-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-2xl);
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp var(--transition-normal) ease;
+}
+
+.modal-content h2 {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-accent);
+  margin-bottom: var(--space-lg);
+  text-align: center;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ---- Score Board ---- */
+.scoreboard {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
+}
+
+.score-card {
+  text-align: center;
+  padding: var(--space-md);
+  background: var(--color-panel);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-panel-border);
+}
+
+.score-card.winner {
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-glow);
+}
+
+.score-card .player-name {
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-xs);
+}
+
+.score-card .score-value {
+  font-size: var(--font-size-2xl);
+  font-weight: 800;
+  color: var(--color-accent);
+}
+
+/* ---- Charleston ---- */
+.charleston-panel {
+  text-align: center;
+}
+
+.charleston-direction {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--color-accent);
+  margin-bottom: var(--space-sm);
+}
+
+.charleston-instruction {
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-lg);
+}
+
+.charleston-selected {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: center;
+  min-height: 80px;
+  padding: var(--space-md);
+  background: var(--color-panel);
+  border-radius: var(--radius-md);
+  border: 2px dashed var(--color-panel-border);
+  margin-bottom: var(--space-lg);
+  align-items: center;
+}
+
+.charleston-selected.ready {
+  border-color: var(--color-success);
+  border-style: solid;
+}
+
+/* ---- Decorative Tiles (Menu) ---- */
+.deco-tiles {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0.08;
+}
+
+.deco-tiles.left {
+  left: -40px;
+  top: 50%;
+  transform: translateY(-50%) rotate(-15deg);
+  font-size: 120px;
+}
+
+.deco-tiles.right {
+  right: -40px;
+  top: 50%;
+  transform: translateY(-50%) rotate(15deg);
+  font-size: 120px;
+}
