@@ -67,7 +67,7 @@ export function Tutorial({ onBack }: TutorialProps) {
           <p>This tutorial will teach you everything you need to start playing. Let's begin with the tiles!</p>
           <div className="tutorial-tiles-demo">
             {[SAMPLE_TILES.crak1, SAMPLE_TILES.bam5, SAMPLE_TILES.dot7, SAMPLE_TILES.east, SAMPLE_TILES.dragonRed, SAMPLE_TILES.flower, SAMPLE_TILES.joker].map(t => (
-              <TileComponent key={t.id} tile={t} size={isMobile ? 'mini' : 'normal'} />
+              <TileComponent key={t.id} tile={t} size="normal" />
             ))}
           </div>
         </div>
@@ -84,7 +84,7 @@ export function Tutorial({ onBack }: TutorialProps) {
             <p>Marked with a unique ocean life or shell emoji.</p>
             <div className="tutorial-tiles-row">
               {[1,2,3,4,5,6,7,8,9].map(r =>
-                <TileComponent key={r} tile={makeTile(800+r, {type:'suited',suit:'crak',rank:r})} size="mini" />
+                <TileComponent key={r} tile={makeTile(800+r, {type:'suited',suit:'crak',rank:r})} size="normal" />
               )}
             </div>
           </div>
@@ -94,7 +94,7 @@ export function Tutorial({ onBack }: TutorialProps) {
             <p>Green numbered tiles with Kelp seaweed stalks.</p>
             <div className="tutorial-tiles-row">
               {[1,2,3,4,5,6,7,8,9].map(r =>
-                <TileComponent key={r} tile={makeTile(810+r, {type:'suited',suit:'bam',rank:r})} size="mini" />
+                <TileComponent key={r} tile={makeTile(810+r, {type:'suited',suit:'bam',rank:r})} size="normal" />
               )}
             </div>
           </div>
@@ -104,7 +104,7 @@ export function Tutorial({ onBack }: TutorialProps) {
             <p>Blue numbered tiles with circular pearl bubbles.</p>
             <div className="tutorial-tiles-row">
               {[1,2,3,4,5,6,7,8,9].map(r =>
-                <TileComponent key={r} tile={makeTile(820+r, {type:'suited',suit:'dot',rank:r})} size="mini" />
+                <TileComponent key={r} tile={makeTile(820+r, {type:'suited',suit:'dot',rank:r})} size="normal" />
               )}
             </div>
           </div>
@@ -119,10 +119,10 @@ export function Tutorial({ onBack }: TutorialProps) {
             <h4>Winds (4 copies each = 16 tiles)</h4>
             <p>North, East, South, West — represented by compass directions (E, S, W, N) and used in wind/dragon hands and some mixed patterns.</p>
             <div className="tutorial-tiles-row">
-              <TileComponent tile={SAMPLE_TILES.north} size={isMobile ? 'mini' : 'normal'} />
-              <TileComponent tile={SAMPLE_TILES.east} size={isMobile ? 'mini' : 'normal'} />
-              <TileComponent tile={SAMPLE_TILES.south} size={isMobile ? 'mini' : 'normal'} />
-              <TileComponent tile={SAMPLE_TILES.west} size={isMobile ? 'mini' : 'normal'} />
+              <TileComponent tile={SAMPLE_TILES.north} size="normal" />
+              <TileComponent tile={SAMPLE_TILES.east} size="normal" />
+              <TileComponent tile={SAMPLE_TILES.south} size="normal" />
+              <TileComponent tile={SAMPLE_TILES.west} size="normal" />
             </div>
           </div>
 
@@ -130,9 +130,9 @@ export function Tutorial({ onBack }: TutorialProps) {
             <h4>Dragons (4 copies each = 12 tiles)</h4>
             <p>Coral (🪸), Sea Wave (🌊), and Pearl Oyster (🦪). The "0" in year hands (2026) uses the Pearl Dragon Oyster.</p>
             <div className="tutorial-tiles-row">
-              <TileComponent tile={SAMPLE_TILES.dragonRed} size={isMobile ? 'mini' : 'normal'} />
-              <TileComponent tile={SAMPLE_TILES.dragonGreen} size={isMobile ? 'mini' : 'normal'} />
-              <TileComponent tile={SAMPLE_TILES.dragonWhite} size={isMobile ? 'mini' : 'normal'} />
+              <TileComponent tile={SAMPLE_TILES.dragonRed} size="normal" />
+              <TileComponent tile={SAMPLE_TILES.dragonGreen} size="normal" />
+              <TileComponent tile={SAMPLE_TILES.dragonWhite} size="normal" />
             </div>
           </div>
 
@@ -140,8 +140,8 @@ export function Tutorial({ onBack }: TutorialProps) {
             <h4>Sea Anemones (8 tiles) & Jokers (8 tiles)</h4>
             <p><strong>Sea Anemones</strong> (Flowers) are used in many hand patterns. <strong>Jokers</strong> are wild — they can substitute for any tile in a group of 3 or more, but NOT in pairs or singles.</p>
             <div className="tutorial-tiles-row">
-              <TileComponent tile={SAMPLE_TILES.flower} size={isMobile ? 'mini' : 'normal'} />
-              <TileComponent tile={SAMPLE_TILES.joker} size={isMobile ? 'mini' : 'normal'} />
+              <TileComponent tile={SAMPLE_TILES.flower} size="normal" />
+              <TileComponent tile={SAMPLE_TILES.joker} size="normal" />
             </div>
           </div>
 

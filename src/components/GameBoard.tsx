@@ -72,14 +72,18 @@ export function GameBoard({
       <div className="game-board mobile">
         {/* Mobile Top Bar */}
         <div className="mobile-top-bar">
-          <div className="mobile-info-row">
-            <span className="info-item">R: <strong>{state.roundNumber}</strong></span>
-            <span className="info-item">T: <strong>{state.turnNumber}</strong></span>
-            <span className="info-item">Wall: <strong>{wallRemaining(state.wall)}</strong></span>
+          <div className="status-pill round">
+            <span className="label">R:</span>
+            <span className="val">{state.roundNumber}</span>
           </div>
-          <button className="btn btn-secondary btn-mini" onClick={() => setShowHandCard(true)}>
-            📋 Card
-          </button>
+          <div className="status-pill turn">
+            <span className="label">T:</span>
+            <span className="val">{state.turnNumber}</span>
+          </div>
+          <div className="status-pill wall">
+            <span className="label">Wall:</span>
+            <span className="val">{wallRemaining(state.wall)}</span>
+          </div>
         </div>
 
         {/* Mobile Opponents Row */}
@@ -89,10 +93,12 @@ export function GameBoard({
             const isActive = state.currentPlayerIndex === idx;
             return (
               <div key={idx} className={`mobile-opponent-card ${isActive ? 'active' : ''}`}>
-                <div className="opp-header">
-                  <span className="opp-wind">{opp.seatWind[0]?.toUpperCase()}</span>
-                  <span className="opp-name">{opp.name}</span>
-                  <span className="opp-count">[{opp.hand.length}]</span>
+                <div className="opp-avatar-row">
+                  <div className="opp-avatar">{opp.seatWind[0]?.toUpperCase()}</div>
+                  <div className="opp-meta">
+                    <span className="opp-name">{opp.name}</span>
+                    <span className="opp-count">🀄 {opp.hand.length}</span>
+                  </div>
                 </div>
                 {opp.exposedSets.length > 0 && (
                   <div className="opp-exposed-mini">
@@ -140,8 +146,16 @@ export function GameBoard({
         {/* Mobile Bottom Bar */}
         <div className="mobile-bottom-bar">
           <div className="mobile-player-status">
-            <span className="player-name">{humanPlayer.name} ({humanPlayer.seatWind[0]?.toUpperCase()})</span>
-            <span className="player-score">Score: {humanPlayer.score}</span>
+            <div className="player-avatar-col">
+              <div className="player-avatar">{humanPlayer.seatWind[0]?.toUpperCase()}</div>
+              <span className="player-name">{humanPlayer.name}</span>
+            </div>
+            <div className="player-score-col">
+              <span className="player-score">Score: <strong>{humanPlayer.score}</strong></span>
+            </div>
+            <button className="btn-view-card" onClick={() => setShowHandCard(true)}>
+              📋 View Card
+            </button>
           </div>
 
           {/* Exposed Sets */}
@@ -175,7 +189,7 @@ export function GameBoard({
                 clickable={isMyTurn && state.hasDrawn}
                 selected={selectedTile?.id === tile.id}
                 onClick={handleTileClick}
-                size="mini"
+                size="normal"
               />
             ))}
           </div>
@@ -183,28 +197,28 @@ export function GameBoard({
           {/* Action Bar */}
           <div className="mobile-action-bar">
             {validActions.includes('draw') && (
-              <button className="btn btn-action draw" onClick={() => onAction('draw')}>Draw</button>
+              <button className="btn btn-action draw" onClick={() => onAction('draw')}>➕ Draw</button>
             )}
             {validActions.includes('discard') && selectedTile && (
-              <button className="btn btn-action discard" onClick={handleDiscard} style={{ background: '#607d8b', color: 'white' }}>Discard</button>
+              <button className="btn btn-action discard" onClick={handleDiscard}>🗑️ Discard</button>
             )}
             {validActions.includes('pung') && (
-              <button className="btn btn-action pung" onClick={() => onAction('pung')}>Pung</button>
+              <button className="btn btn-action pung" onClick={() => onAction('pung')}>🔥 Pung</button>
             )}
             {validActions.includes('kong') && (
-              <button className="btn btn-action kong" onClick={() => onAction('kong')}>Kong</button>
+              <button className="btn btn-action kong" onClick={() => onAction('kong')}>✨ Kong</button>
             )}
             {validActions.includes('quint') && (
-              <button className="btn btn-action quint" onClick={() => onAction('quint')}>Quint</button>
+              <button className="btn btn-action quint" onClick={() => onAction('quint')}>👑 Quint</button>
             )}
             {validActions.includes('mahjong') && (
-              <button className="btn btn-action mahjong" onClick={() => onAction('mahjong')}>Mahjong!</button>
+              <button className="btn btn-action mahjong" onClick={() => onAction('mahjong')}>🏆 Mahjong!</button>
             )}
             {validActions.includes('pass') && (
-              <button className="btn btn-action pass" onClick={() => onAction('pass')}>Pass</button>
+              <button className="btn btn-action pass" onClick={() => onAction('pass')}>🤝 Pass</button>
             )}
             <span className="mobile-turn-indicator">
-              {isMyTurn ? 'Your Turn' : `${state.players[state.currentPlayerIndex]?.name}'s turn`}
+              {isMyTurn ? '● Your Turn' : `● ${state.players[state.currentPlayerIndex]?.name}'s turn`}
             </span>
           </div>
         </div>

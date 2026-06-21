@@ -62,7 +62,7 @@ export function CharlestonDialog({ phase, hand, onConfirm, onSkip }: CharlestonD
           </p>
 
           {/* Selected tiles area */}
-          <div className={`charleston-selected ${isReady ? 'ready' : ''}`}>
+          <div className={`charleston-selected ${isReady ? 'ready' : ''} charleston-selected-row`}>
             {selectedTiles.length === 0 && (
               <span style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)' }}>
                 Click tiles below to select them
@@ -75,16 +75,13 @@ export function CharlestonDialog({ phase, hand, onConfirm, onSkip }: CharlestonD
                 clickable
                 onClick={() => handleTileClick(tile)}
                 highlighted
-                size={isMobile ? 'mini' : 'normal'}
+                size="normal"
               />
             ))}
           </div>
 
           {/* Hand */}
-          <div style={{
-            display: 'flex', gap: '3px', flexWrap: 'wrap',
-            justifyContent: 'center', marginBottom: 'var(--space-lg)',
-          }}>
+          <div className="charleston-hand-row">
             {sortTiles(hand).map(tile => (
               <TileComponent
                 key={tile.id}
@@ -92,7 +89,7 @@ export function CharlestonDialog({ phase, hand, onConfirm, onSkip }: CharlestonD
                 clickable
                 selected={selectedTiles.some(t => t.id === tile.id)}
                 onClick={handleTileClick}
-                size={isMobile ? 'mini' : 'normal'}
+                size="normal"
               />
             ))}
           </div>

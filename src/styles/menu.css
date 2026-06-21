@@ -363,14 +363,17 @@
 @media (max-width: 500px) {
   .main-menu {
     padding: var(--space-md) var(--space-sm);
+    justify-content: flex-start;
+    padding-top: var(--space-2xl);
   }
 
   .menu-logo {
-    margin-bottom: var(--space-md);
+    margin-bottom: var(--space-xl);
   }
 
   .menu-logo h1 {
     font-size: var(--font-size-2xl);
+    letter-spacing: -0.01em;
   }
 
   .menu-logo .subtitle {
@@ -378,23 +381,41 @@
     letter-spacing: 0.1em;
   }
 
+  /* Glassmorphic mobile menu card */
   .menu-card {
-    padding: var(--space-lg) var(--space-md);
-    border-radius: var(--radius-lg);
+    padding: var(--space-xl) var(--space-md);
+    border-radius: var(--radius-xl);
+    background: rgba(12, 87, 110, 0.25);
+    border: 1px solid rgba(223, 194, 148, 0.2);
+    box-shadow: var(--shadow-lg);
   }
 
   .menu-card h2 {
     font-size: var(--font-size-lg);
-    margin-bottom: var(--space-md);
+    margin-bottom: var(--space-lg);
+    font-weight: 700;
+    color: var(--color-accent);
+  }
+
+  /* Stack button items vertically, make them large and tactile */
+  .menu-actions {
+    gap: var(--space-sm);
   }
 
   .btn {
-    padding: var(--space-sm) var(--space-md);
+    padding: var(--space-md) var(--space-lg);
     font-size: var(--font-size-sm);
+    border-radius: var(--radius-md);
+    min-height: 48px; /* touch target standard */
   }
 
+  .btn:active {
+    transform: scale(0.96);
+  }
+
+  /* Setup player boxes on mobile */
   .game-setup {
-    gap: var(--space-sm);
+    gap: var(--space-xs);
   }
 
   .setup-player {
@@ -402,24 +423,40 @@
     flex-direction: column;
     align-items: stretch;
     gap: var(--space-xs);
+    border-radius: var(--radius-md);
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(223, 194, 148, 0.1);
   }
 
   .setup-player .seat-label {
     min-width: auto;
     text-align: center;
+    font-size: 11px;
+    margin-bottom: 2px;
   }
 
   .setup-player input,
   .setup-player select {
-    padding: 6px 10px;
+    padding: 8px 12px;
     font-size: var(--font-size-sm);
     width: 100%;
+    border-radius: var(--radius-sm);
+    background: rgba(4, 22, 32, 0.6);
   }
 
-  /* Modals */
+  /* Modals as native overlay cards */
+  .modal-overlay {
+    background: rgba(0, 0, 0, 0.75);
+  }
+
   .modal-content {
-    padding: var(--space-lg) var(--space-md);
-    max-height: 90vh;
+    padding: var(--space-xl) var(--space-md);
+    max-height: 85vh;
+    border-radius: var(--radius-xl);
+    background: linear-gradient(180deg, rgba(5, 52, 67, 0.98) 0%, rgba(4, 22, 32, 0.99) 100%);
+    border: 1px solid rgba(223, 194, 148, 0.25);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6);
+    width: 92%;
   }
 
   .modal-content h2 {
@@ -427,7 +464,7 @@
     margin-bottom: var(--space-md);
   }
 
-  /* Scoreboard overlay */
+  /* Scoreboard grid */
   .scoreboard {
     grid-template-columns: repeat(2, 1fr);
     gap: var(--space-sm);
@@ -435,21 +472,24 @@
 
   .score-card {
     padding: var(--space-sm);
+    border-radius: var(--radius-md);
   }
 
   .score-card .score-value {
-    font-size: var(--font-size-lg);
+    font-size: var(--font-size-xl);
   }
 
   /* Charleston dialog layout */
   .charleston-direction {
-    font-size: var(--font-size-xl);
+    font-size: var(--font-size-lg);
   }
 
   .charleston-selected {
     padding: var(--space-sm);
     min-height: 60px;
     margin-bottom: var(--space-md);
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: var(--radius-md);
   }
 
   /* Hide decorative background tiles to reduce clutter */

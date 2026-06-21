@@ -82,12 +82,19 @@
 }
 
 .tile-suit-label {
+  position: absolute;
+  bottom: 2px;
+  left: 0;
+  width: 100%;
+  text-align: center;
   font-size: 8px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   line-height: 1;
-  opacity: 0.7;
+  opacity: 0.85;
+  color: var(--color-bg); /* Default visible color on white tile face */
+  pointer-events: none;
 }
 
 /* Suit colors */
@@ -96,14 +103,25 @@
 .tile-rank.dot, .tile-suit-label.dot { color: var(--color-dot); }
 
 /* Special tiles */
-.tile-rank.wind { color: var(--color-wind); }
+.tile-rank.wind {
+  color: var(--color-wind);
+  margin-top: -6px; /* Shift wind letter up to avoid bottom label */
+}
+.tile-suit-label.wind { color: var(--color-wind); }
+
 .tile-rank.dragon-red { color: var(--color-dragon-red); }
+.tile-suit-label.dragon-red { color: var(--color-dragon-red); }
+
 .tile-rank.dragon-green { color: var(--color-dragon-green); }
+.tile-suit-label.dragon-green { color: var(--color-dragon-green); }
+
 .tile-rank.dragon-white { color: var(--color-dragon-white); }
+.tile-suit-label.dragon-white { color: var(--color-dragon-white); }
 
 .tile-rank.flower {
   color: #d81b60;
   font-size: 18px;
+  margin-top: -5px;
 }
 
 .tile-suit-label.anemone {
@@ -153,6 +171,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-top: -5px; /* Offset emoji up slightly to avoid bottom absolute label */
 }
 
 .tile.mini .tile-cjk,
@@ -269,8 +288,91 @@
 }
 
 /* ============================================================
-   Tile Responsiveness Media Queries
+   Tile Responsiveness Media Queries & Custom Layouts
    ============================================================ */
+
+/* ---- Overlapping Hand Layout for Mobile Game Board ---- */
+.mobile-player-hand {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: 8px 0 16px;
+  margin: 0 auto;
+}
+
+.mobile-player-hand .tile {
+  width: 38px !important;
+  height: 52px !important;
+  margin-right: -11px; /* Overlap right-to-left */
+  position: relative;
+  z-index: 2;
+  border-radius: 4px;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), z-index var(--transition-fast);
+}
+
+.mobile-player-hand .tile:last-child {
+  margin-right: 0;
+}
+
+/* Hover and selection lifts tiles visually and raises their stack order */
+.mobile-player-hand .tile.clickable:hover {
+  transform: translateY(-8px);
+  z-index: 10;
+}
+
+.mobile-player-hand .tile.selected {
+  transform: translateY(-16px);
+  z-index: 15;
+  box-shadow:
+    0 12px 24px rgba(0, 0, 0, 0.5),
+    0 0 16px var(--color-accent-glow);
+  border-color: var(--color-accent);
+}
+
+/* ---- Overlapping Layout for Charleston Dialog ---- */
+.charleston-hand-row {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: 8px 0;
+  margin-bottom: var(--space-md);
+}
+
+.charleston-hand-row .tile {
+  width: 34px !important;
+  height: 46px !important;
+  margin-right: -10px;
+  position: relative;
+  z-index: 2;
+  border-radius: 3px;
+  transition: transform var(--transition-fast), z-index var(--transition-fast);
+}
+
+.charleston-hand-row .tile:last-child {
+  margin-right: 0;
+}
+
+.charleston-hand-row .tile.selected {
+  transform: translateY(-12px);
+  z-index: 10;
+  border-color: var(--color-accent);
+}
+
+.charleston-selected-row {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 0;
+  margin-bottom: var(--space-md);
+  min-height: 58px;
+  align-items: center;
+}
+
+.charleston-selected-row .tile {
+  width: 36px !important;
+  height: 50px !important;
+  border-radius: 4px;
+}
 
 /* Small tablets / iPads (max-width: 768px) */
 @media (max-width: 768px) {
@@ -311,20 +413,21 @@
 
 /* Mobile phones (max-width: 480px) */
 @media (max-width: 480px) {
+  /* Default tile (not in hand) sizing on mobile - for menu/tutorial */
   .tile {
-    width: 24px;
-    height: 33px;
+    width: 28px;
+    height: 38px;
     border-radius: 2px;
     padding: 1px;
   }
   .tile-rank {
-    font-size: 10px;
+    font-size: 11px;
   }
   .tile-suit-label {
-    font-size: 5px;
+    font-size: 6px;
   }
   .tile-cjk, .tile-emoji {
-    font-size: 12px;
+    font-size: 13px;
   }
   .tile-suit-label.anemone {
     font-size: 5px;
@@ -343,22 +446,74 @@
   .exposed-set {
     padding: 2px;
   }
+  
+  /* Mini tiles used in discard grids and exposed opponent sets */
   .tile.mini {
-    width: 18px;
-    height: 25px;
+    width: 24px;
+    height: 32px;
     padding: 1px;
   }
   .tile.mini .tile-rank {
-    font-size: 7px;
+    font-size: 9px;
   }
   .tile.mini .tile-emoji, .tile.mini .tile-cjk {
-    font-size: 9px;
+    font-size: 11px;
   }
   .tile.mini .tile-suit-label {
     display: none;
   }
+  
+  /* Tiny tiles used for opponent hand indicator and top bar exposed sets */
   .tile.tiny {
-    width: 10px;
-    height: 14px;
+    width: 12px;
+    height: 16px;
+    border-radius: 2px;
+  }
+  .tile.tiny .tile-emoji, .tile.tiny .tile-cjk {
+    font-size: 9px;
+  }
+  .tile.tiny .tile-rank {
+    font-size: 7px;
+  }
+
+  /* Specific interior scaling override for hand & dialog tiles to ensure readability */
+  .mobile-player-hand .tile .tile-emoji,
+  .charleston-selected-row .tile .tile-emoji {
+    font-size: 18px;
+  }
+  .mobile-player-hand .tile .tile-rank,
+  .charleston-selected-row .tile .tile-rank {
+    font-size: 14px;
+    font-weight: 800;
+  }
+  .mobile-player-hand .tile .tile-suit-label,
+  .charleston-selected-row .tile .tile-suit-label {
+    font-size: 5.5px;
+    letter-spacing: -0.02em;
+  }
+  .mobile-player-hand .tile .tile-rank.joker,
+  .charleston-selected-row .tile .tile-rank.joker {
+    font-size: 9px;
+  }
+  .mobile-player-hand .tile .tile-rank.wind,
+  .charleston-selected-row .tile .tile-rank.wind {
+    font-size: 14px;
+  }
+  .mobile-player-hand .tile .tile-suit-label.wind,
+  .charleston-selected-row .tile .tile-suit-label.wind {
+    font-size: 5px;
+    letter-spacing: -0.02em;
+  }
+
+  .charleston-hand-row .tile .tile-emoji {
+    font-size: 16px;
+  }
+  .charleston-hand-row .tile .tile-rank {
+    font-size: 12px;
+    font-weight: 800;
+  }
+  .charleston-hand-row .tile .tile-suit-label {
+    font-size: 5px;
+    letter-spacing: -0.02em;
   }
 }
