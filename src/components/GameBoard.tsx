@@ -238,7 +238,9 @@ export function GameBoard({
               <button className="btn btn-action pass" onClick={() => onAction('pass')}>Pass</button>
             )}
             <span className="mobile-turn-indicator">
-              {isMyTurn ? '● Your Turn' : `● ${state.players[state.currentPlayerIndex]?.name}'s turn`}
+              {isMyTurn ? '● Your Turn' : 
+                validActions.includes('pass') ? `● Claim discard from ${state.players.find(p => p.id === state.lastDiscardBy)?.name}?` :
+                `● ${state.players[state.currentPlayerIndex]?.name}'s turn`}
             </span>
           </div>
         </div>
@@ -479,7 +481,9 @@ export function GameBoard({
         {/* Action Bar */}
         <div className="action-bar">
           <span className={`turn-indicator ${isMyTurn ? 'your-turn' : ''}`}>
-            {isMyTurn ? 'Your Turn' : `${state.players[state.currentPlayerIndex]?.name}'s turn`}
+            {isMyTurn ? 'Your Turn' : 
+              validActions.includes('pass') ? `Claim discard from ${state.players.find(p => p.id === state.lastDiscardBy)?.name}?` :
+              `${state.players[state.currentPlayerIndex]?.name}'s turn`}
           </span>
 
           {validActions.includes('draw') && (

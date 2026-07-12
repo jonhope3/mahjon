@@ -4,6 +4,7 @@
 
 import { Tile, Player, GameState, ActionType } from './types';
 import { isJoker, tilesMatch } from './tiles';
+import { checkWin } from './scoring';
 
 /**
  * Count how many tiles in a player's hand match a given tile kind.
@@ -70,9 +71,20 @@ export function getValidActions(state: GameState, playerIndex: number): ActionTy
     if (canPung(player, state.lastDiscard)) actions.push('pung');
     if (canKong(player, state.lastDiscard)) actions.push('kong');
     if (canQuint(player, state.lastDiscard)) actions.push('quint');
-    // Anyone can declare mahjong on a discard (checked by win detection)
-    actions.push('mahjong');
-    actions.push('pass');
+    
+    // Check if adding the discard to hand makes it a winning hand
+    const tempPlayer = {
+      ...player,
+      hand: [...player.hand, state.lastDiscard]
+    };
+    if (checkWin(tempPlayer)) {
+      actions.push('mahjong');
+    }
+    
+    // Only show pass if the player has at least one active claim action
+    if (actions.length > 0) {
+      actions.push('pass');
+    }
   }
 
   // Current player's turn actions
@@ -81,8 +93,10 @@ export function getValidActions(state: GameState, playerIndex: number): ActionTy
       actions.push('draw');
     } else {
       actions.push('discard');
-      // Can declare mahjong after drawing
-      actions.push('mahjong');
+      // Can declare mahjong after drawing if hand is winning
+      if (checkWin(player)) {
+        actions.push('mahjong');
+      }
     }
   }
 
