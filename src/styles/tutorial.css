@@ -1,0 +1,108 @@
+/* ============================================================
+   Tutorial Content Styles
+   ============================================================ */
+
+.tutorial-text {
+  line-height: 1.6;
+  font-size: var(--font-size-md);
+  color: var(--color-text);
+  text-align: left;
+}
+
+.tutorial-text p {
+  margin-bottom: var(--space-md);
+}
+
+.tutorial-text strong {
+  color: var(--color-accent);
+}
+
+.tutorial-text ul,
+.tutorial-text ol {
+  margin-bottom: var(--space-md);
+  padding-left: var(--space-xl);
+}
+
+.tutorial-text li {
+  margin-bottom: var(--space-sm);
+}
+
+.tutorial-tiles-demo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  justify-content: center;
+  padding: var(--space-md) 0;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: var(--radius-md);
+  margin: var(--space-md) 0;
+}
+
+.tutorial-section {
+  margin-top: var(--space-xl);
+  margin-bottom: var(--space-xl);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-panel-border);
+}
+
+.tutorial-section h4 {
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  margin-bottom: var(--space-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tutorial-tiles-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  padding: var(--space-sm) 0;
+  margin-top: var(--space-xs);
+}
+
+.tutorial-highlight {
+  background: rgba(255, 183, 77, 0.08);
+  border: 1px solid rgba(255, 183, 77, 0.2);
+  border-left: 4px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  padding: var(--space-md) var(--space-lg);
+  margin: var(--space-lg) 0;
+}
+
+.tutorial-highlight h4 {
+  color: var(--color-accent);
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  margin-bottom: var(--space-xs);
+}
+
+.tutorial-highlight ul {
+  margin-bottom: 0;
+}
+
+@media (max-width: 500px) {
+  .tutorial-text {
+    font-size: var(--font-size-sm);
+  }
+
+  .tutorial-tiles-demo {
+    gap: 4px;
+    padding: var(--space-sm);
+  }
+
+  .tutorial-tiles-row {
+    gap: 4px;
+  }
+
+  .tutorial-section {
+    margin-top: var(--space-lg);
+    margin-bottom: var(--space-lg);
+  }
+
+  .tutorial-highlight {
+    padding: var(--space-sm) var(--space-md);
+    margin: var(--space-md) 0;
+  }
+}
