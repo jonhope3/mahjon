@@ -165,17 +165,32 @@ export async function clearCacheAndReload(
   forceFreshNavigate(extraParams);
 }
 
-/** Navigate to a cache-busted URL so the browser fetches a fresh document. */
+/** Reload in place after cache wipe. Optional params (e.g. mp=1) only when needed. */
 function forceFreshNavigate(extraParams?: Record<string, string>): void {
   const url = new URL(window.location.href);
-  url.searchParams.set('_fresh', String(Date.now()));
+  url.searchParams.delete('_fresh');
+  url.hash = '';
+
+  let needsParamNav = false;
   if (extraParams) {
     for (const [k, v] of Object.entries(extraParams)) {
-      url.searchParams.set(k, v);
+      if (url.searchParams.get(k) !== v) {
+        url.searchParams.set(k, v);
+        needsParamNav = true;
+      }
     }
   }
-  url.hash = '';
-  window.location.replace(url.toString());
+
+  if (needsParamNav) {
+    const next =
+      url.pathname +
+      (url.searchParams.toString() ? `?${url.searchParams}` : '');
+    window.location.replace(next);
+    return;
+  }
+
+  // Same URL — true reload, no query-string "new page" hop
+  window.location.reload();
 }
 
 /**

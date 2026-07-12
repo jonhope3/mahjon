@@ -85,8 +85,11 @@ export function Modal({
   const stop = (e: MouseEvent) => e.stopPropagation();
 
   const onPanelKeyDown = (e: ReactKeyboardEvent) => {
-    // Prevent bubbling to overlays that might treat keys specially
-    if (e.key === 'Escape' && closeOnEscape) e.stopPropagation();
+    if (e.key === 'Escape' && closeOnEscape) {
+      e.stopPropagation();
+      e.preventDefault();
+      onClose();
+    }
   };
 
   return (

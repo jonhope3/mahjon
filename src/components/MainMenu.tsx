@@ -7,7 +7,6 @@ import { PlayerType, Difficulty } from '../engine/types';
 import { GameConfig } from '../engine/game';
 import { AppPrefs, prefsToGamePlayers } from '../game-settings';
 import { useFreshReload } from '../hooks/useFreshReload';
-import { BrandTitle } from './BrandTitle';
 import { InstallNudge } from './InstallNudge';
 
 interface MainMenuProps {
@@ -140,7 +139,7 @@ export function MainMenu({
       </div>
 
       <div className="menu-logo">
-        <BrandTitle />
+        <h1>Mahjon</h1>
         <p className="subtitle">American Mahjong • 2026</p>
       </div>
 
@@ -177,9 +176,7 @@ export function MainMenu({
             Learn as you play · Long-press any tile · Teaching mode in Settings
           </p>
           <InstallNudge />
-          <p className="menu-refresh-hint">
-            Long-press or right-click the title to hard refresh · or pull down
-          </p>
+          <p className="menu-refresh-hint">Pull down to hard refresh</p>
         </div>
       ) : (
         <div className="menu-card menu-card--setup">

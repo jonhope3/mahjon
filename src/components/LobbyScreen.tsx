@@ -6,12 +6,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { PeerManager, ConnectionStatus } from '../network/peer-manager';
 import { LobbyState, LobbySlot } from '../network/protocol';
 import { GameConfig } from '../engine/game';
-import { BrandTitle } from './BrandTitle';
 
 interface LobbyScreenProps {
   peerManager: PeerManager;
   onStartGame: (config: GameConfig) => void;
   onBack: () => void;
+  onOpenSettings: () => void;
   defaultName?: string;
 }
 
@@ -21,6 +21,7 @@ export function LobbyScreen({
   peerManager,
   onStartGame,
   onBack,
+  onOpenSettings,
   defaultName = 'Player',
 }: LobbyScreenProps) {
   const [mode, setMode] = useState<'choose' | 'host' | 'join'>('choose');
@@ -101,8 +102,17 @@ export function LobbyScreen({
 
   return (
     <div className="main-menu">
+      <button
+        type="button"
+        className="menu-settings-btn"
+        onClick={onOpenSettings}
+        aria-label="Settings"
+      >
+        ⚙
+      </button>
+
       <div className="menu-logo">
-        <BrandTitle />
+        <h1>Mahjon</h1>
         <p className="subtitle">Online Multiplayer</p>
       </div>
 

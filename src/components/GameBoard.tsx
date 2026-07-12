@@ -12,7 +12,6 @@ import { HelpPanel, PLAY_HELP } from './HelpPanel';
 import { ClaimCoach } from './ClaimCoach';
 import { RoundEndOverlay } from './RoundEndOverlay';
 import { ActionButtons } from './ActionButtons';
-import { BrandTitle } from './BrandTitle';
 import type { TeachMode } from '../game-settings';
 import {
   handProgressHint,
@@ -161,7 +160,6 @@ export function GameBoard({
       <div className={`game-board mobile${isClaimWindow ? ' claim-active' : ''}`}>
         {rotatePrompt}
         <div className="mobile-top-bar">
-          <BrandTitle variant="compact" as="span" className="board-brand" />
           <div className="status-pill round">
             <span className="label">R:</span>
             <span className="val">{state.roundNumber}</span>
@@ -396,7 +394,6 @@ export function GameBoard({
       {rotatePrompt}
       <div className="top-bar">
         <div className="game-info">
-          <BrandTitle variant="compact" as="span" className="board-brand" />
           <div className="game-info-item">
             <span className="game-info-label">Round</span>
             <span className="game-info-value">{state.roundNumber}</span>

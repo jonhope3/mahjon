@@ -18,7 +18,6 @@ import { LobbyScreen } from './components/LobbyScreen';
 import { Tutorial } from './components/Tutorial';
 import { SettingsPanel } from './components/SettingsPanel';
 import { UpdateBanner } from './components/UpdateBanner';
-import { BrandTitle } from './components/BrandTitle';
 import { PeerManager } from './network/peer-manager';
 import { serializeAction } from './network/protocol';
 import { AppPrefs, loadPrefs, prefsToGamePlayers, savePrefs } from './game-settings';
@@ -343,7 +342,7 @@ export default function App() {
       {screen === 'connecting' && (
         <div className="connecting-screen" role="status" aria-live="polite">
           <div className="connecting-card">
-            <BrandTitle />
+            <h1>Mahjon</h1>
             <p className="connecting-title">Connecting…</p>
             <p className="connecting-hint">Getting the latest version so everyone plays the same build</p>
           </div>
@@ -354,6 +353,7 @@ export default function App() {
           peerManager={peerManager}
           onStartGame={handleStartGame}
           defaultName={prefs.humanName}
+          onOpenSettings={() => setShowSettings(true)}
           onBack={() => {
             clearMultiplayerLobbyIntent();
             peerManager.disconnect();

@@ -42,18 +42,6 @@
   z-index: 2;
 }
 
-.tutorial-brand {
-  display: block;
-  margin: 0 0 var(--space-sm);
-  text-align: center;
-}
-
-.tutorial-brand .brand-title__btn {
-  font-size: 0.85rem;
-  color: var(--color-accent);
-  opacity: 0.9;
-}
-
 .tutorial-progress {
   display: flex;
   gap: 4px;

@@ -39,50 +39,52 @@ export function HandCardModal({ onClose }: HandCardModalProps) {
         </button>
       }
     >
-      <label className="hand-card-search">
-        <span className="visually-hidden">Search hands</span>
-        <input
-          type="search"
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          placeholder="Search hands (e.g. 2026, NEWS, flowers)"
-          autoComplete="off"
-          enterKeyHint="search"
-        />
-      </label>
+      <div className="hand-card-body">
+        <label className="hand-card-search">
+          <span className="visually-hidden">Search hands</span>
+          <input
+            type="search"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="Search hands (e.g. 2026, NEWS, flowers)"
+            autoComplete="off"
+            enterKeyHint="search"
+          />
+        </label>
 
-      <div className="hand-card-legend">
-        <div>
-          <strong>F</strong> = Anemone (Flower) 🪸
-        </div>
-        <div>
-          <strong>D</strong> = Dragon (🪸 / 🌊 / 🦪)
-        </div>
-        <div>
-          <strong>E/S/W/N</strong> = Winds 🧭
-        </div>
-        <div>
-          <strong>Suits</strong> = Shell 🐚 / Kelp 🌿 / Pearl
-        </div>
-      </div>
-      {categories.length === 0 ? (
-        <p className="hand-card-empty">No hands match “{query.trim()}”.</p>
-      ) : (
-        categories.map(cat => (
-          <div key={cat.name} className="hand-card-category">
-            <h3>{cat.name}</h3>
-            {cat.hands.map(hand => (
-              <div key={hand.id} className="hand-card-row">
-                <span className="hand-card-desc">{hand.description}</span>
-                <span className={`hand-card-value${hand.concealed ? ' concealed' : ' exposed'}`}>
-                  {hand.concealed ? 'C' : 'X'}
-                  {hand.value}
-                </span>
-              </div>
-            ))}
+        <div className="hand-card-legend">
+          <div>
+            <strong>F</strong> = Anemone (Flower) 🪸
           </div>
-        ))
-      )}
+          <div>
+            <strong>D</strong> = Dragon (🪸 / 🌊 / 🦪)
+          </div>
+          <div>
+            <strong>E/S/W/N</strong> = Winds 🧭
+          </div>
+          <div>
+            <strong>Suits</strong> = Shell 🐚 / Kelp 🌿 / Pearl
+          </div>
+        </div>
+        {categories.length === 0 ? (
+          <p className="hand-card-empty">No hands match “{query.trim()}”.</p>
+        ) : (
+          categories.map(cat => (
+            <div key={cat.name} className="hand-card-category">
+              <h3>{cat.name}</h3>
+              {cat.hands.map(hand => (
+                <div key={hand.id} className="hand-card-row">
+                  <span className="hand-card-desc">{hand.description}</span>
+                  <span className={`hand-card-value${hand.concealed ? ' concealed' : ' exposed'}`}>
+                    {hand.concealed ? 'C' : 'X'}
+                    {hand.value}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ))
+        )}
+      </div>
     </Modal>
   );
 }
