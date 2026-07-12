@@ -119,6 +119,20 @@ body {
   min-height: 100dvh;
   overflow-x: hidden;
   line-height: 1.5;
+  /* App chrome — don't select UI text like a webpage */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Keep typing / copying in real fields */
+input,
+textarea,
+select,
+[contenteditable='true'] {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
 }
 
 /* Home/menu: allow browser pull-to-refresh. Game/tutorial: lock it. */

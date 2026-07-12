@@ -302,6 +302,31 @@
   text-align: center;
 }
 
+.charleston-intro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  align-items: stretch;
+  text-align: center;
+  padding: var(--space-sm) 0 var(--space-md);
+}
+
+.charleston-intro p {
+  margin: 0;
+  font-size: var(--font-size-md);
+  line-height: 1.45;
+  color: var(--color-text);
+}
+
+.charleston-intro .charleston-hint {
+  margin: 0;
+}
+
+.charleston-intro .btn {
+  min-height: 52px;
+  width: 100%;
+}
+
 .charleston-placeholder {
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
@@ -685,22 +710,22 @@
 .deco-tiles {
   position: absolute;
   pointer-events: none;
-  opacity: 0.08;
-  overflow: hidden;
+  opacity: 0.07;
+  line-height: 1;
 }
 
 .deco-tiles.left {
-  left: 0;
+  left: 12px;
   top: 50%;
-  transform: translate(-20%, -50%) rotate(-15deg);
-  font-size: 120px;
+  transform: translateY(-50%) rotate(-12deg);
+  font-size: clamp(64px, 9vw, 100px);
 }
 
 .deco-tiles.right {
-  right: 0;
+  right: 12px;
   top: 50%;
-  transform: translate(20%, -50%) rotate(15deg);
-  font-size: 120px;
+  transform: translateY(-50%) rotate(12deg);
+  font-size: clamp(64px, 9vw, 100px);
 }
 
 /* ============================================================
@@ -712,9 +737,9 @@
   .main-menu {
     padding:
       calc(var(--space-md) + env(safe-area-inset-top, 0px))
-      calc(var(--space-sm) + env(safe-area-inset-right, 0px))
+      calc(var(--space-md) + env(safe-area-inset-right, 0px))
       calc(var(--space-md) + env(safe-area-inset-bottom, 0px))
-      calc(var(--space-sm) + env(safe-area-inset-left, 0px));
+      calc(var(--space-md) + env(safe-area-inset-left, 0px));
     justify-content: flex-start;
     align-items: stretch;
   }
@@ -920,11 +945,162 @@
 
 @media (max-width: 380px) {
   .menu-logo h1 {
-    font-size: 1.6rem;
+    font-size: 2.25rem;
+  }
+}
+
+/* ---- Phone home: full-bleed, no floating card ---- */
+@media (max-width: 699px) {
+  .main-menu {
+    min-height: 100dvh;
+    height: 100dvh;
+    padding:
+      calc(12px + env(safe-area-inset-top, 0px))
+      20px
+      calc(16px + env(safe-area-inset-bottom, 0px));
+    justify-content: flex-start;
+    align-items: stretch;
+  }
+
+  .menu-settings-btn {
+    top: calc(10px + env(safe-area-inset-top, 0px));
+    right: calc(12px + env(safe-area-inset-right, 0px));
+    width: 48px;
+    height: 48px;
+    font-size: 1.35rem;
+    background: rgba(4, 22, 32, 0.6);
+    border-color: rgba(238, 218, 179, 0.4);
+  }
+
+  .menu-logo {
+    flex-shrink: 0;
+    margin: 36px 0 8px;
+    padding: 0 48px;
+  }
+
+  .menu-logo h1 {
+    font-size: clamp(2.85rem, 15vw, 3.6rem);
+    line-height: 1.02;
+    letter-spacing: -0.025em;
+  }
+
+  .menu-logo .subtitle {
+    margin-top: 8px;
+    font-size: 0.75rem;
+    letter-spacing: 0.16em;
+    opacity: 0.9;
   }
 
   .menu-card {
-    padding: var(--space-md) var(--space-sm);
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-radius: 0;
+    padding: 0;
+    width: 100%;
+    max-width: none;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .menu-card-heading {
+    display: none;
+  }
+
+  /* Actions sit in the optical middle of remaining space */
+  .menu-actions {
+    margin-top: auto;
+    margin-bottom: auto;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .menu-actions > .btn {
+    min-height: 54px;
+    padding: 15px 18px;
+    font-size: 1.0625rem;
+    font-weight: 800;
+    border-radius: 16px;
+    width: 100%;
+  }
+
+  .menu-actions > .btn-primary {
+    min-height: 58px;
+    font-size: 1.125rem;
+    box-shadow: 0 10px 32px rgba(244, 197, 66, 0.32);
+  }
+
+  .menu-actions > .btn-secondary {
+    background: rgba(8, 70, 88, 0.78);
+    border: 1.5px solid rgba(238, 218, 179, 0.38);
+  }
+
+  .menu-footnote,
+  .install-nudge,
+  .menu-refresh-hint {
+    flex-shrink: 0;
+  }
+
+  .menu-footnote {
+    margin: 20px auto 0;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    max-width: 20rem;
+    color: rgba(155, 180, 190, 0.95);
+  }
+
+  .menu-refresh-hint {
+    margin-top: 8px;
+    margin-bottom: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    opacity: 0.55;
+  }
+
+  .install-nudge {
+    margin-top: 14px;
+  }
+
+  /* Setup / lobby cards still need a panel shell on phone */
+  .menu-card--setup,
+  .lobby-card {
+    background: rgba(8, 70, 88, 0.55);
+    border: 1px solid rgba(238, 218, 179, 0.22);
+    border-radius: 20px;
+    padding: 18px 16px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+    margin-top: 8px;
+  }
+
+  .lobby-card .menu-card-heading,
+  .menu-card--setup h2 {
+    display: block;
+    text-align: center;
+    color: var(--color-accent);
+    font-size: 1.25rem;
+    margin-bottom: 14px;
+  }
+
+  /* Settings chips: 3-across, not awkward 2+1 */
+  .settings-speed-row,
+  .settings-speed-row--3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .settings-panel.modal-content,
+  .modal-content.settings-panel {
+    width: 100%;
+    max-width: none;
+  }
+
+  .settings-footer .btn {
+    min-height: 52px;
   }
 }
 
@@ -1197,9 +1373,12 @@
     text-align: center;
   }
 
-  .settings-speed-row,
-  .settings-speed-row--3 {
+  .settings-speed-row {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .settings-speed-row--3 {
+    grid-template-columns: repeat(3, 1fr);
   }
 
   .settings-bot-row {
@@ -1213,14 +1392,6 @@
 
   .round-end-content .scoreboard {
     grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 699px) {
-  .settings-panel.modal-content,
-  .modal-content.settings-panel {
-    width: 100%;
-    max-width: none;
   }
 }
 

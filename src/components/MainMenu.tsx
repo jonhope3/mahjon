@@ -145,7 +145,7 @@ export function MainMenu({
 
       {!showSetup ? (
         <div className="menu-card">
-          <h2>Play Mahjong</h2>
+          <h2 className="menu-card-heading">Play Mahjong</h2>
           <div className="menu-actions">
             <button
               className="btn btn-primary"

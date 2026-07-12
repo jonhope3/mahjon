@@ -350,6 +350,18 @@
   max-width: var(--tile-hand-w);
 }
 
+/* Charleston: prefer tappable tiles + scroll over tiny fit-all */
+.charleston-hand-row .tile {
+  width: max(
+    48px,
+    min(
+      var(--tile-hand-w),
+      calc((100vw - 48px - (var(--hand-size, 14) - 1) * 4px) / max(var(--hand-size, 14), 1))
+    )
+  ) !important;
+  min-height: 64px;
+}
+
 .mobile-player-hand .tile .tile-emoji,
 .charleston-hand-row .tile .tile-emoji,
 .player-hand .tile .tile-emoji {

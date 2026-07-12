@@ -89,19 +89,25 @@ export function CharlestonDialog({
               <h2 className="charleston-title">Pass {direction}</h2>
             </header>
 
-            {showIntro && showTurnCoaching(teachMode) && (
-              <div className="coach-banner">
+            {showIntro && showTurnCoaching(teachMode) ? (
+              <div className="charleston-intro">
                 <p>
                   Pass <strong>3 tiles</strong> you don’t need — right, across, then left. Keep
                   jokers.
                 </p>
-                <button type="button" className="btn btn-primary btn-compact" onClick={dismissIntro}>
-                  Got it
+                <p className="charleston-hint">
+                  Tap tiles to select them. Long-press any tile to see what it is.
+                </p>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={dismissIntro}
+                  id="charleston-intro-got-it"
+                >
+                  Got it — pick tiles
                 </button>
               </div>
-            )}
-
-            {waitingForOthers ? (
+            ) : waitingForOthers ? (
               <p className="charleston-waiting" role="status">
                 Tiles sent — waiting for the other players…
               </p>
