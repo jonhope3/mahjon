@@ -1,2 +1,2 @@
-/* TileComponent imports tile styles */
+/* TileComponent pulls shared tile styles (also imported from App for Charleston). */
 @import '../styles/tiles.css';

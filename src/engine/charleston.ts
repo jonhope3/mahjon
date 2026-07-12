@@ -4,23 +4,6 @@
 
 import { Tile, Player, GamePhase } from './types';
 
-export interface CharlestonState {
-  phase: GamePhase;
-  /** Tiles selected by each player for passing (indexed by player index) */
-  selectedTiles: Map<number, Tile[]>;
-  /** Whether each player has confirmed their pass */
-  confirmed: Map<number, boolean>;
-}
-
-/** Create initial Charleston state */
-export function createCharlestonState(): CharlestonState {
-  return {
-    phase: 'charleston_first_right',
-    selectedTiles: new Map(),
-    confirmed: new Map(),
-  };
-}
-
 /** Get the direction label for the current Charleston phase */
 export function getCharlestonDirection(phase: GamePhase): string {
   switch (phase) {
@@ -120,14 +103,4 @@ export function executeCharlestonPass(
   }
 
   return updatedPlayers;
-}
-
-/** Check if all players have selected and confirmed 3 tiles for Charleston */
-export function isCharlestonReady(state: CharlestonState): boolean {
-  for (let i = 0; i < 4; i++) {
-    const tiles = state.selectedTiles.get(i);
-    if (!tiles || tiles.length !== 3) return false;
-    if (!state.confirmed.get(i)) return false;
-  }
-  return true;
 }

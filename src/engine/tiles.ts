@@ -25,23 +25,53 @@ export function tileLabel(kind: TileKind): string {
   }
 }
 
-/** Get a display name for a tile */
-export function tileName(kind: TileKind): string {
+const SHELL_CREATURES: Record<number, string> = {
+  1: 'Conch',
+  2: 'Oyster',
+  3: 'Coral',
+  4: 'Crab',
+  5: 'Pufferfish',
+  6: 'Octopus',
+  7: 'Dolphin',
+  8: 'Whale',
+  9: 'Shark',
+};
+
+const SEA_SUIT = { bam: 'Kelp', crak: 'Shell', dot: 'Pearl' } as const;
+const TRAD_SUIT = { bam: 'Bam', crak: 'Crak', dot: 'Dot' } as const;
+
+/**
+ * Full identity string for hover / long-press tooltips.
+ * Includes sea theme + traditional mahjong name so learners can map both.
+ */
+export function tileTooltip(kind: TileKind): string {
   switch (kind.type) {
     case 'suited': {
-      const suitNames = { bam: 'Kelp', crak: 'Shell', dot: 'Pearl' };
-      return `${kind.rank} ${suitNames[kind.suit]}`;
+      const sea = SEA_SUIT[kind.suit];
+      const trad = TRAD_SUIT[kind.suit];
+      if (kind.suit === 'crak') {
+        const creature = SHELL_CREATURES[kind.rank] ?? 'Shell';
+        return `${kind.rank} ${sea} — ${creature} (traditionally ${trad})`;
+      }
+      if (kind.suit === 'bam') {
+        return `${kind.rank} ${sea} — seaweed suit (traditionally ${trad})`;
+      }
+      return `${kind.rank} ${sea} — pearl bubbles (traditionally ${trad})`;
     }
     case 'wind':
       return `${kind.wind.charAt(0).toUpperCase() + kind.wind.slice(1)} Wind`;
     case 'dragon': {
-      const dragonNames = { red: 'Coral Dragon', green: 'Sea Dragon', white: 'Pearl Dragon' };
-      return dragonNames[kind.dragon];
+      const names = {
+        red: 'Coral Dragon (Red Dragon)',
+        green: 'Wave Dragon (Green Dragon)',
+        white: 'Pearl Dragon (White Dragon / Soap)',
+      };
+      return names[kind.dragon];
     }
     case 'flower':
-      return 'Flower';
+      return 'Sea Anemone — Flower tile (F on the card)';
     case 'joker':
-      return 'Joker';
+      return 'Joker — wild in groups of 3+, never in pairs or singles';
   }
 }
 

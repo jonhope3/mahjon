@@ -2,36 +2,26 @@
 // Tutorial — Interactive learning mode for American Mahjong
 // ============================================================
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { TileComponent } from './TileComponent';
-import { createTileSet } from '../engine/tiles';
 import { Tile, TileKind } from '../engine/types';
-import { ALL_HAND_CATEGORIES } from '../engine/hands';
+import { tileLabel } from '../engine/tiles';
+import { HandCardModal } from './HandCardModal';
 import '../styles/tutorial.css';
 
 interface TutorialProps {
   onBack: () => void;
+  onStartPlaying?: () => void;
 }
 
-// Create sample tiles for display
 function makeTile(id: number, kind: TileKind): Tile {
-  const labels: Record<string, string> = {
-    suited: '', wind: '', dragon: '', flower: 'F', joker: 'J',
-  };
-  return { id, kind, label: labels[kind.type] || '' };
+  return { id, kind, label: tileLabel(kind) };
 }
 
 const SAMPLE_TILES = {
   crak1: makeTile(900, { type: 'suited', suit: 'crak', rank: 1 }),
-  crak2: makeTile(901, { type: 'suited', suit: 'crak', rank: 2 }),
-  crak3: makeTile(902, { type: 'suited', suit: 'crak', rank: 3 }),
   bam5: makeTile(903, { type: 'suited', suit: 'bam', rank: 5 }),
-  bam5b: makeTile(904, { type: 'suited', suit: 'bam', rank: 5 }),
-  bam5c: makeTile(905, { type: 'suited', suit: 'bam', rank: 5 }),
   dot7: makeTile(906, { type: 'suited', suit: 'dot', rank: 7 }),
-  dot7b: makeTile(907, { type: 'suited', suit: 'dot', rank: 7 }),
-  dot7c: makeTile(908, { type: 'suited', suit: 'dot', rank: 7 }),
-  dot7d: makeTile(909, { type: 'suited', suit: 'dot', rank: 7 }),
   east: makeTile(910, { type: 'wind', wind: 'east' }),
   south: makeTile(911, { type: 'wind', wind: 'south' }),
   west: makeTile(912, { type: 'wind', wind: 'west' }),
@@ -43,35 +33,56 @@ const SAMPLE_TILES = {
   joker: makeTile(918, { type: 'joker' }),
 };
 
+function SuitRow({ suit, fromId }: { suit: 'crak' | 'bam' | 'dot'; fromId: number }) {
+  return (
+    <div className="tutorial-tiles-scroll" role="list">
+      {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(r => (
+        <div key={r} role="listitem">
+          <TileComponent
+            tile={makeTile(fromId + r, { type: 'suited', suit, rank: r })}
+            size="mini"
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 interface TutorialStep {
   title: string;
   content: React.ReactNode;
 }
 
-export function Tutorial({ onBack }: TutorialProps) {
+export function Tutorial({ onBack, onStartPlaying }: TutorialProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [showHandCard, setShowHandCard] = useState(false);
-  const [isMobile, setIsMobile] = useState(() =>
-    window.matchMedia('(max-width: 767px)').matches
-  );
-
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 767px)');
-    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, []);
 
   const steps: TutorialStep[] = [
     {
       title: 'Welcome to American Mahjong!',
       content: (
         <div className="tutorial-text">
-          <p>Mahjong is a tile-based game for <strong>4 players</strong>. The goal is to collect a winning hand of <strong>14 tiles</strong> that matches one of the patterns on the official card.</p>
-          <p>This tutorial will teach you everything you need to start playing. Let's begin with the tiles!</p>
+          <p>
+            Mahjong is a tile-based game for <strong>4 players</strong>. The goal is to collect a
+            winning hand of <strong>14 tiles</strong> that matches one of the patterns on the
+            official card.
+          </p>
+          <p>This tutorial covers the tiles, Charleston, gameplay, and how to win.</p>
+          <p className="tutorial-tip-callout">
+            <strong>Tip:</strong> Hover a tile (or long-press on phones) anytime to see what it is —
+            Shell/Crak, Kelp/Bam, Pearl/Dot, Wind, Dragon, and so on.
+          </p>
           <div className="tutorial-tiles-demo">
-            {[SAMPLE_TILES.crak1, SAMPLE_TILES.bam5, SAMPLE_TILES.dot7, SAMPLE_TILES.east, SAMPLE_TILES.dragonRed, SAMPLE_TILES.flower, SAMPLE_TILES.joker].map(t => (
-              <TileComponent key={t.id} tile={t} size="normal" />
+            {[
+              SAMPLE_TILES.crak1,
+              SAMPLE_TILES.bam5,
+              SAMPLE_TILES.dot7,
+              SAMPLE_TILES.east,
+              SAMPLE_TILES.dragonRed,
+              SAMPLE_TILES.flower,
+              SAMPLE_TILES.joker,
+            ].map(t => (
+              <TileComponent key={t.id} tile={t} size="mini" />
             ))}
           </div>
         </div>
@@ -81,36 +92,34 @@ export function Tutorial({ onBack }: TutorialProps) {
       title: 'The Tiles — Suits',
       content: (
         <div className="tutorial-text">
-          <p>There are <strong>3 suits</strong>, each numbered 1-9 (4 copies of each = 108 suited tiles):</p>
+          <p>
+            There are <strong>3 suits</strong>, each numbered 1–9 (4 copies of each = 108 suited
+            tiles). Swipe a row to see every rank.
+          </p>
 
           <div className="tutorial-section">
-            <h4 style={{ color: 'var(--color-crak)' }}>Shells</h4>
-            <p>Marked with a unique ocean life or shell type label.</p>
-            <div className="tutorial-tiles-row">
-              {[1,2,3,4,5,6,7,8,9].map(r =>
-                <TileComponent key={r} tile={makeTile(800+r, {type:'suited',suit:'crak',rank:r})} size="normal" />
-              )}
-            </div>
+            <h4 className="suit-shell">Shells</h4>
+            <p>
+              Red suited tiles (traditionally <strong>Crak</strong>). Each rank has its own ocean
+              creature — hover or long-press to read the name.
+            </p>
+            <SuitRow suit="crak" fromId={800} />
           </div>
 
           <div className="tutorial-section">
-            <h4 style={{ color: 'var(--color-bam)' }}>Kelp</h4>
-            <p>Green numbered tiles with Kelp seaweed stalks.</p>
-            <div className="tutorial-tiles-row">
-              {[1,2,3,4,5,6,7,8,9].map(r =>
-                <TileComponent key={r} tile={makeTile(810+r, {type:'suited',suit:'bam',rank:r})} size="normal" />
-              )}
-            </div>
+            <h4 className="suit-kelp">Kelp</h4>
+            <p>
+              Green numbered tiles (traditionally <strong>Bam</strong>) with kelp / seaweed markings.
+            </p>
+            <SuitRow suit="bam" fromId={810} />
           </div>
 
           <div className="tutorial-section">
-            <h4 style={{ color: 'var(--color-dot)' }}>Pearls</h4>
-            <p>Blue numbered tiles with circular pearl bubbles.</p>
-            <div className="tutorial-tiles-row">
-              {[1,2,3,4,5,6,7,8,9].map(r =>
-                <TileComponent key={r} tile={makeTile(820+r, {type:'suited',suit:'dot',rank:r})} size="normal" />
-              )}
-            </div>
+            <h4 className="suit-pearl">Pearls</h4>
+            <p>
+              Blue numbered tiles (traditionally <strong>Dot</strong>) with circular pearl bubbles.
+            </p>
+            <SuitRow suit="dot" fromId={820} />
           </div>
         </div>
       ),
@@ -119,38 +128,45 @@ export function Tutorial({ onBack }: TutorialProps) {
       title: 'The Tiles — Honors & Specials',
       content: (
         <div className="tutorial-text">
-          <div className="tutorial-section">
-            <h4>Winds (4 copies each = 16 tiles)</h4>
-            <p>North, East, South, West — represented by compass directions (E, S, W, N) and used in wind/dragon hands and some mixed patterns.</p>
-            <div className="tutorial-tiles-row">
-              <TileComponent tile={SAMPLE_TILES.north} size="normal" />
-              <TileComponent tile={SAMPLE_TILES.east} size="normal" />
-              <TileComponent tile={SAMPLE_TILES.south} size="normal" />
-              <TileComponent tile={SAMPLE_TILES.west} size="normal" />
+          <div className="tutorial-section tutorial-section--first">
+            <h4>Winds (16 tiles)</h4>
+            <p>North, East, South, West — used in wind/dragon hands and mixed patterns.</p>
+            <div className="tutorial-tiles-demo">
+              <TileComponent tile={SAMPLE_TILES.north} size="mini" />
+              <TileComponent tile={SAMPLE_TILES.east} size="mini" />
+              <TileComponent tile={SAMPLE_TILES.south} size="mini" />
+              <TileComponent tile={SAMPLE_TILES.west} size="mini" />
             </div>
           </div>
 
           <div className="tutorial-section">
-            <h4>Dragons (4 copies each = 12 tiles)</h4>
-            <p>Coral (Coral Dragon), Sea Wave (Wave Dragon), and Pearl (Pearl Dragon). The "0" in year hands (2026) uses the Pearl Dragon.</p>
-            <div className="tutorial-tiles-row">
-              <TileComponent tile={SAMPLE_TILES.dragonRed} size="normal" />
-              <TileComponent tile={SAMPLE_TILES.dragonGreen} size="normal" />
-              <TileComponent tile={SAMPLE_TILES.dragonWhite} size="normal" />
+            <h4>Dragons (12 tiles)</h4>
+            <p>
+              Coral, Wave, and Pearl dragons. Year hands (2026) use the Pearl Dragon as the
+              &quot;0&quot;.
+            </p>
+            <div className="tutorial-tiles-demo">
+              <TileComponent tile={SAMPLE_TILES.dragonRed} size="mini" />
+              <TileComponent tile={SAMPLE_TILES.dragonGreen} size="mini" />
+              <TileComponent tile={SAMPLE_TILES.dragonWhite} size="mini" />
             </div>
           </div>
 
           <div className="tutorial-section">
-            <h4>Sea Anemones (8 tiles) & Jokers (8 tiles)</h4>
-            <p><strong>Sea Anemones</strong> (Flowers) are used in many hand patterns. <strong>Jokers</strong> are wild — they can substitute for any tile in a group of 3 or more, but NOT in pairs or singles.</p>
-            <div className="tutorial-tiles-row">
-              <TileComponent tile={SAMPLE_TILES.flower} size="normal" />
-              <TileComponent tile={SAMPLE_TILES.joker} size="normal" />
+            <h4>Anemones &amp; Jokers (8 each)</h4>
+            <p>
+              <strong>Sea Anemones</strong> (Flowers) appear in many patterns.{' '}
+              <strong>Jokers</strong> are wild in groups of 3+, but never in pairs or singles.
+            </p>
+            <div className="tutorial-tiles-demo">
+              <TileComponent tile={SAMPLE_TILES.flower} size="mini" />
+              <TileComponent tile={SAMPLE_TILES.joker} size="mini" />
             </div>
           </div>
 
-          <p style={{ marginTop: 'var(--space-md)', fontWeight: 600 }}>
-            Total: <strong>152 tiles</strong> (108 suited + 16 winds + 12 dragons + 8 anemones + 8 jokers)
+          <p className="tutorial-total">
+            Total: <strong>152 tiles</strong> (108 suited + 16 winds + 12 dragons + 8 anemones + 8
+            jokers)
           </p>
         </div>
       ),
@@ -161,17 +177,28 @@ export function Tutorial({ onBack }: TutorialProps) {
         <div className="tutorial-text">
           <p>At the start of each round:</p>
           <ol>
-            <li><strong>Build the wall</strong> — tiles are shuffled and stacked</li>
-            <li><strong>Deal</strong> — each player gets 13 tiles (East/dealer gets 14)</li>
-            <li><strong>The Charleston</strong> — a mandatory tile-passing ritual:
+            <li>
+              <strong>Build the wall</strong> — tiles are shuffled and stacked
+            </li>
+            <li>
+              <strong>Deal</strong> — each player gets 13 tiles (East/dealer gets 14)
+            </li>
+            <li>
+              <strong>The Charleston</strong> — a tile-passing ritual:
               <ul>
-                <li>🔄 <strong>First Charleston</strong> (mandatory): Pass 3 tiles Right → Across → Left</li>
-                <li>🔄 <strong>Second Charleston</strong> (optional): Pass 3 tiles Left → Across → Right</li>
-                <li>🤝 <strong>Courtesy Pass</strong> (optional): Exchange 0-3 tiles with the player across</li>
+                <li>
+                  <strong>First Charleston</strong> (mandatory): Pass 3 tiles Right → Across → Left
+                </li>
+                <li>
+                  <strong>Second Charleston</strong> (optional): Pass 3 tiles Left → Across → Right
+                </li>
+                <li>
+                  <strong>Courtesy Pass</strong> (optional): Pass 3 tiles across, or skip.
+                </li>
               </ul>
             </li>
           </ol>
-          <p>The Charleston helps you shape your hand toward a winning pattern. Pass tiles you don't need!</p>
+          <p>Pass tiles you do not need to shape your hand toward a winning pattern.</p>
         </div>
       ),
     },
@@ -181,21 +208,35 @@ export function Tutorial({ onBack }: TutorialProps) {
         <div className="tutorial-text">
           <p>On each turn, the active player:</p>
           <ol>
-            <li><strong>Draws</strong> one tile from the wall</li>
-            <li><strong>Discards</strong> one tile face-up</li>
+            <li>
+              <strong>Draws</strong> one tile from the wall
+            </li>
+            <li>
+              <strong>Discards</strong> one tile face-up
+            </li>
           </ol>
-          <p>Play goes <strong>counterclockwise</strong> (East → South → West → North).</p>
+          <p>
+            Play goes <strong>counterclockwise</strong> (East → South → West → North).
+          </p>
 
           <div className="tutorial-highlight">
-            <h4>🎯 Claiming a Discard</h4>
-            <p>When someone discards, ANY player (not just the next player) can claim it for:</p>
+            <h4>Claiming a Discard</h4>
+            <p>When someone discards, any player can claim it for:</p>
             <ul>
-              <li><strong style={{color:'var(--color-action-pung)'}}>Pung</strong> — 3 of a kind (need 2 matching in hand)</li>
-              <li><strong style={{color:'var(--color-action-kong)'}}>Kong</strong> — 4 of a kind (need 3 matching)</li>
-              <li><strong style={{color:'var(--color-action-quint)'}}>Quint</strong> — 5 of a kind (need 4, using jokers)</li>
-              <li><strong style={{color:'var(--color-action-mahjong)'}}>Mahjong!</strong> — win the game (highest priority)</li>
-             </ul>
-            <p>Claimed sets are placed face-up ("exposed") in front of you. Priority: Mahjong &gt; Quint &gt; Kong &gt; Pung.</p>
+              <li>
+                <strong className="claim-pung">Pung</strong> — 3 of a kind (need 2 matching)
+              </li>
+              <li>
+                <strong className="claim-kong">Kong</strong> — 4 of a kind (need 3 matching)
+              </li>
+              <li>
+                <strong className="claim-quint">Quint</strong> — 5 of a kind (need 4, using jokers)
+              </li>
+              <li>
+                <strong className="claim-mahjong">Mahjong!</strong> — win the game (highest priority)
+              </li>
+            </ul>
+            <p>Priority: Mahjong &gt; Quint &gt; Kong &gt; Pung. Claimed sets are exposed face-up.</p>
           </div>
         </div>
       ),
@@ -204,22 +245,43 @@ export function Tutorial({ onBack }: TutorialProps) {
       title: 'Winning — The Hand Card',
       content: (
         <div className="tutorial-text">
-          <p>To win, your 14 tiles (hand + exposed sets) must match <strong>exactly one pattern</strong> on the card.</p>
+          <p>
+            To win, your 14 tiles (hand + exposed sets) must match{' '}
+            <strong>exactly one pattern</strong> on the card.
+          </p>
 
           <div className="tutorial-highlight">
             <h4>Reading the Card</h4>
             <ul>
-              <li>Numbers represent tile <strong>ranks</strong> (1-9)</li>
-              <li><strong>Colors matter</strong>: Same color = same suit, different colors = different suits</li>
-              <li><strong>F</strong> = Flower, <strong>D</strong> = Dragon, <strong>N/E/S/W</strong> = Winds</li>
-              <li><strong>X25</strong> = Exposed hand worth 25 points</li>
-              <li><strong>C30</strong> = Concealed hand worth 30 points (cannot have exposed sets)</li>
+              <li>
+                Numbers are tile <strong>ranks</strong> (1–9)
+              </li>
+              <li>
+                <strong>Colors matter</strong>: same color = same suit
+              </li>
+              <li>
+                <strong>F</strong> = Flower, <strong>D</strong> = Dragon, <strong>N/E/S/W</strong> =
+                Winds
+              </li>
+              <li>
+                <strong>X25</strong> = Exposed hand worth 25 points
+              </li>
+              <li>
+                <strong>C30</strong> = Concealed hand worth 30 points
+              </li>
             </ul>
           </div>
 
-          <p>Declare <strong>"Mahjong"</strong> when your hand matches a pattern — either after drawing or by claiming a discard.</p>
+          <p>
+            Declare <strong>Mahjong</strong> when your hand matches — after drawing or by claiming
+            a discard.
+          </p>
 
-          <button className="btn btn-secondary" onClick={() => setShowHandCard(true)} style={{ marginTop: 'var(--space-md)' }}>
+          <button
+            type="button"
+            className="btn btn-secondary tutorial-hand-btn"
+            onClick={() => setShowHandCard(true)}
+          >
             View 2026 Hand Patterns
           </button>
         </div>
@@ -229,30 +291,46 @@ export function Tutorial({ onBack }: TutorialProps) {
       title: 'Strategy Tips',
       content: (
         <div className="tutorial-text">
-          <div className="tutorial-section">
-            <h4>🧠 Beginner Tips</h4>
+          <div className="tutorial-section tutorial-section--first">
+            <h4>Beginner Tips</h4>
             <ul>
-              <li><strong>Keep jokers!</strong> They're the most valuable tiles in the game</li>
-              <li><strong>Stay flexible</strong> — don't commit to one hand too early</li>
-              <li><strong>Watch discards</strong> — if many of your needed tiles are gone, switch patterns</li>
-              <li><strong>Concealed hands</strong> score more but are harder — you can't claim discards for them</li>
-              <li><strong>Use the Charleston wisely</strong> — pass tiles from suits you don't need</li>
+              <li>
+                <strong>Keep jokers</strong> — they are the most valuable tiles
+              </li>
+              <li>
+                <strong>Stay flexible</strong> — do not lock into one hand too early
+              </li>
+              <li>
+                <strong>Watch discards</strong> — switch patterns if your tiles are gone
+              </li>
+              <li>
+                <strong>Concealed hands</strong> score more but you cannot claim for them
+              </li>
+              <li>
+                <strong>Use the Charleston</strong> — pass suits you do not need
+              </li>
             </ul>
           </div>
 
           <div className="tutorial-section">
-            <h4>🎯 Intermediate Tips</h4>
+            <h4>Intermediate Tips</h4>
             <ul>
-              <li><strong>Defensive play</strong> — avoid discarding tiles others might need</li>
-              <li><strong>Count tiles</strong> — track what's been discarded to know what's available</li>
-              <li><strong>2026 is 6-heavy</strong> — many patterns on this year's card feature 6s and Flowers</li>
-              <li><strong>Quints are powerful</strong> — with 8 jokers, they're more achievable than you'd think</li>
+              <li>
+                <strong>Defensive play</strong> — avoid feeding other players
+              </li>
+              <li>
+                <strong>Count tiles</strong> — track what has been discarded
+              </li>
+              <li>
+                <strong>2026 is 6-heavy</strong> — many patterns feature 6s and Flowers
+              </li>
+              <li>
+                <strong>Quints</strong> — with 8 jokers, they are more reachable than they look
+              </li>
             </ul>
           </div>
 
-          <p style={{ textAlign: 'center', marginTop: 'var(--space-lg)', fontSize: 'var(--font-size-lg)', fontWeight: 600 }}>
-            You're ready to play!
-          </p>
+          <p className="tutorial-ready">You&apos;re ready to play!</p>
         </div>
       ),
     },
@@ -263,107 +341,56 @@ export function Tutorial({ onBack }: TutorialProps) {
   const isLast = currentStep === steps.length - 1;
 
   return (
-    <div className="main-menu">
-      <div className="menu-card" style={{ maxWidth: 640 }}>
-        {/* Progress bar */}
-        <div style={{
-          display: 'flex', gap: 4, marginBottom: 'var(--space-lg)',
-        }}>
-          {steps.map((_, i) => (
-            <div key={i} style={{
-              flex: 1, height: 4, borderRadius: 2,
-              background: i <= currentStep ? 'var(--color-accent)' : 'var(--color-panel)',
-              transition: 'background 0.3s ease',
-            }} />
-          ))}
-        </div>
+    <div className="tutorial-screen">
+      <div className="tutorial-shell">
+        <header className="tutorial-header">
+          <div className="tutorial-progress" aria-hidden="true">
+            {steps.map((_, i) => (
+              <div
+                key={i}
+                className={`tutorial-progress-seg${i <= currentStep ? ' active' : ''}`}
+              />
+            ))}
+          </div>
+          <p className="tutorial-step-label">
+            Step {currentStep + 1} of {steps.length}
+          </p>
+          <h1 className="tutorial-title">{step.title}</h1>
+        </header>
 
-        <h2 style={{ fontSize: 'var(--font-size-xl)', marginBottom: 'var(--space-lg)' }}>
-          {step.title}
-        </h2>
-
-        <div style={{ marginBottom: 'var(--space-xl)', minHeight: 300 }}>
+        <div className="tutorial-body" key={currentStep}>
           {step.content}
         </div>
 
-        {/* Navigation */}
-        <div style={{ display: 'flex', gap: 'var(--space-md)', justifyContent: 'space-between' }}>
+        <footer className="tutorial-footer">
           <button
+            type="button"
             className="btn btn-secondary"
-            onClick={() => isFirst ? onBack() : setCurrentStep(c => c - 1)}
+            onClick={() => (isFirst ? onBack() : setCurrentStep(c => c - 1))}
           >
-            {isFirst ? '← Exit' : '← Previous'}
+            {isFirst ? 'Exit' : 'Previous'}
           </button>
-          <span style={{ color: 'var(--color-text-muted)', alignSelf: 'center', fontSize: 'var(--font-size-sm)' }}>
-            {currentStep + 1} / {steps.length}
-          </span>
           {isLast ? (
-            <button className="btn btn-primary" onClick={onBack}>
-              Start Playing →
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => (onStartPlaying ? onStartPlaying() : onBack())}
+            >
+              Start Playing
             </button>
           ) : (
-            <button className="btn btn-primary" onClick={() => setCurrentStep(c => c + 1)}>
-              Next →
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => setCurrentStep(c => c + 1)}
+            >
+              Next
             </button>
           )}
-        </div>
+        </footer>
       </div>
 
-      {/* Hand card modal */}
-      {showHandCard && (
-        <div className="modal-overlay" onClick={() => setShowHandCard(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 700, maxHeight: '85vh', overflowY: 'auto' }}>
-            <h2>2026 Hand Patterns</h2>
-            <div style={{
-              background: 'rgba(255,255,255,0.05)',
-              borderRadius: 'var(--radius-md)',
-              padding: 'var(--space-sm) var(--space-md)',
-              marginBottom: 'var(--space-md)',
-              fontSize: 'var(--font-size-xs)',
-              lineHeight: '1.4',
-              border: '1px solid var(--color-panel-border)',
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))',
-              gap: 'var(--space-sm)',
-              textAlign: 'left',
-            }}>
-              <div><strong>F</strong> = Anemone (Flower)</div>
-              <div><strong>D</strong> = Dragon (Coral / Wave / Pearl)</div>
-              <div><strong>E/S/W/N</strong> = Winds</div>
-              <div><strong>Suits</strong> = Shell / Kelp / Pearl</div>
-            </div>
-            {ALL_HAND_CATEGORIES.map(cat => (
-              <div key={cat.name} style={{ marginBottom: 'var(--space-lg)' }}>
-                <h3 style={{
-                  color: 'var(--color-accent)', fontSize: 'var(--font-size-md)',
-                  borderBottom: '1px solid var(--color-panel-border)',
-                  paddingBottom: 'var(--space-xs)', marginBottom: 'var(--space-sm)',
-                }}>
-                  {cat.name}
-                </h3>
-                {cat.hands.map(hand => (
-                  <div key={hand.id} style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    padding: '4px 0', fontSize: 'var(--font-size-sm)',
-                    borderBottom: '1px solid rgba(255,255,255,0.03)',
-                  }}>
-                    <span style={{ flex: 1 }}>{hand.description}</span>
-                    <span style={{
-                      color: hand.concealed ? 'var(--color-info)' : 'var(--color-success)',
-                      fontWeight: 700, minWidth: 50, textAlign: 'right',
-                    }}>
-                      {hand.concealed ? 'C' : 'X'}{hand.value}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ))}
-            <button className="btn btn-secondary" onClick={() => setShowHandCard(false)} style={{ width: '100%' }}>
-              Close
-            </button>
-          </div>
-        </div>
-      )}
+      {showHandCard && <HandCardModal onClose={() => setShowHandCard(false)} />}
     </div>
   );
 }

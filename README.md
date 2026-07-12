@@ -1,18 +1,30 @@
 # Mahjon 🌊 — American Mahjong PWA
 
-A premium, statically-hosted American Mahjong (NMJL 2026 rules) web app. Play against smart AI opponents locally or connect with friends in real-time via serverless WebRTC. Designed with a clean, relaxing ocean/beach theme and fully optimized as a Progressive Web App (PWA) for complete offline play (ideal for airplanes and travel).
+A premium, statically-hosted American Mahjong (2026 rules) web app. Play against smart AI opponents locally or connect with friends in real-time via serverless WebRTC. Designed with a clean, relaxing ocean/beach theme and fully optimized as a Progressive Web App (PWA) for complete offline play (ideal for airplanes and travel).
+
+**Product goal:** Mahjon should feel calm and readable on a phone first — large tiles, clear actions, nothing clipped off-screen — while teaching the game *as you play*. Learning is not a one-time tutorial; help is available at every step.
 
 ---
 
 ## Key Features
 
 - 🌊 **Aesthetics**: Premium beach-themed layout featuring sunlit lagoon wave animations, sand driftwood borders, and beautiful sea glass panels.
+- 🧠 **Learn at every step**: Hover or long-press any tile to identify it (Shell/Crak, Kelp/Bam, Pearl/Dot, Winds, Dragons, Anemones, Jokers). Open **Help** and the **Hand Card** from the menu, tutorial, Charleston, and live game. Contextual “What’s this?” explainers cover the Charleston and turn rules without leaving the flow.
 - 🌐 **WebRTC Multiplayer**: Real-time peer-to-peer multiplayer with zero servers. Host a room, share a 5-letter room code, and play directly.
-- 🤖 **AI Opponents**: Play against AI players with Easy, Medium, or Hard difficulty levels powered by custom heuristic-based hand evaluators.
+- 🤖 **AI Opponents**: Play against AI players with Easy, Medium, or Hard difficulty levels powered by custom heuristic-based hand evaluators. Adjustable play speed (Slow → Max).
 - ✈️ **Offline Mode (PWA)**: Completely installable as an app on desktop or mobile. Play fully offline against AI while traveling.
 - 📖 **Interactive Tutorial**: Step-by-step learning mode that walks through suits, honors, the Charleston passing phase, claims, and winning combinations.
-- 📋 **In-game NMJL card**: View all 72 winning hands in the 2026 card configuration with one click from the top bar.
+- 📋 **In-game hand card**: View all 72 winning hands in the 2026 card configuration anytime from the board or Charleston.
 - 🔄 **Joker Swapping**: Full interactive swap support to exchange natural tiles from hand for exposed jokers.
+
+---
+
+## Design principles
+
+1. **Phone-first readability** — Primary targets: iPhone 14+ and Pixel-class Android. Tiles and controls stay large enough to tap; content must not fall under browser chrome or safe-area insets.
+2. **Teach in context** — If a player wonders “what is this?”, the answer is one hover, long-press, Help, or Card tap away — including during Charleston and mid-hand.
+3. **Ocean theme, calm UI** — Lagoon colors, sand accents, sea-glass panels. Prefer clarity over chrome clutter.
+4. **Offline-capable** — Single-player vs AI works after first load with no network.
 
 ---
 

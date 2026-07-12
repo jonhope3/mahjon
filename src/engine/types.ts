@@ -1,6 +1,6 @@
 // ============================================================
 // Mahjong Game Engine — Type Definitions
-// American Mahjong (NMJL 2026) style
+// American Mahjong (2026) style
 // ============================================================
 
 /** The three suited tile families */
@@ -134,12 +134,12 @@ export interface GameLogEntry {
 }
 
 // ============================================================
-// Hand Pattern Definitions (NMJL Card)
+// Hand Pattern Definitions
 // ============================================================
 
 /**
  * Color constraints for groups within a hand pattern.
- * In NMJL notation, tiles of the same color must be in the same suit,
+ * Tiles of the same color must be in the same suit,
  * and different colors must be in different suits.
  * We represent this with color labels: 'a', 'b', 'c' (mapped to actual suits at eval time).
  */
@@ -159,7 +159,7 @@ export interface PatternGroup {
   dragon?: Dragon | 'any';
 }
 
-/** A complete winning hand pattern from the NMJL card */
+/** A complete winning hand pattern from the card */
 export interface HandPattern {
   id: string;
   category: string;
@@ -172,7 +172,7 @@ export interface HandPattern {
   description: string;
 }
 
-/** Category on the NMJL card */
+/** Category on the hand card */
 export interface HandCategory {
   name: string;
   hands: HandPattern[];

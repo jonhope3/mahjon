@@ -1,4 +1,5 @@
-const CACHE_NAME = 'mahjon-cache-v8';
+const CACHE_NAME = 'mahjon-cache-v23';
+
 
 const PRECACHE_ASSETS = [
   './',
@@ -13,6 +14,12 @@ self.addEventListener('install', event => {
       .then(cache => cache.addAll(PRECACHE_ASSETS))
       .then(() => self.skipWaiting())
   );
+});
+
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('activate', event => {

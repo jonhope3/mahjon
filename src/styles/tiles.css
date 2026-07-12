@@ -1,12 +1,11 @@
 /* ============================================================
-   Tile Styles
+   Tile Styles — large, readable, ocean theme
    ============================================================ */
 
-/* ---- Tile Base ---- */
 .tile {
-  width: 42px;
-  height: 56px;
-  border-radius: 4px;
+  width: var(--tile-w);
+  height: var(--tile-h);
+  border-radius: 8px;
   position: relative;
   cursor: default;
   user-select: none;
@@ -14,68 +13,65 @@
   flex-shrink: 0;
 }
 
-/* ---- Face-up Tile ---- */
 .tile.face-up {
-  background: linear-gradient(180deg, #fdfaf0 0%, var(--color-tile-face) 40%, #e8dfc0 100%);
-  border: 1px solid var(--color-tile-border);
+  background: linear-gradient(180deg, #fffef8 0%, var(--color-tile-face) 42%, #ebe2c8 100%);
+  border: 1.5px solid var(--color-tile-border);
   box-shadow:
-    0 2px 4px var(--color-tile-shadow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.6),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+    0 3px 8px var(--color-tile-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.06);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1px;
-  padding: 2px;
+  gap: 2px;
+  padding: 4px;
 }
 
-/* ---- Face-down Tile ---- */
 .tile.face-down {
   background: linear-gradient(135deg, var(--color-tile-back) 0%, var(--color-tile-back-pattern) 100%);
-  border: 1px solid rgba(0, 0, 0, 0.3);
-  box-shadow: 0 2px 4px var(--color-tile-shadow);
+  border: 1px solid rgba(0, 0, 0, 0.28);
+  box-shadow: 0 3px 8px var(--color-tile-shadow);
 }
 
 .tile.face-down::after {
   content: '';
   position: absolute;
-  inset: 3px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 2px;
+  inset: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
   background: repeating-linear-gradient(
     45deg,
     transparent,
     transparent 3px,
-    rgba(255, 255, 255, 0.03) 3px,
-    rgba(255, 255, 255, 0.03) 6px
+    rgba(255, 255, 255, 0.04) 3px,
+    rgba(255, 255, 255, 0.04) 6px
   );
 }
 
-/* ---- Mini tiles (for opponents, discard pool) ---- */
 .tile.mini {
-  width: 28px;
-  height: 36px;
+  width: var(--tile-mini-w);
+  height: var(--tile-mini-h);
+  border-radius: 6px;
+  padding: 2px;
 }
 
 .tile.mini .tile-rank {
-  font-size: 11px;
+  font-size: 14px;
 }
 
 .tile.mini .tile-suit-label {
   font-size: 7px;
 }
 
-/* ---- Tiny tiles (opponent hand indicators) ---- */
 .tile.tiny {
-  width: 14px;
-  height: 20px;
-  border-radius: 2px;
+  width: 18px;
+  height: 24px;
+  border-radius: 3px;
 }
 
-/* ---- Tile Content ---- */
 .tile-rank {
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 800;
   line-height: 1;
   font-family: var(--font-tile);
@@ -83,129 +79,203 @@
 
 .tile-suit-label {
   position: absolute;
-  bottom: 2px;
+  bottom: 3px;
   left: 0;
   width: 100%;
   text-align: center;
-  font-size: 8px;
-  font-weight: 700;
+  font-size: 9px;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   line-height: 1;
-  opacity: 0.85;
-  color: var(--color-bg); /* Default visible color on white tile face */
+  opacity: 0.9;
+  color: var(--color-wind);
   pointer-events: none;
 }
 
-/* Suit colors */
 .tile-rank.crak, .tile-suit-label.crak { color: var(--color-crak); }
 .tile-rank.bam, .tile-suit-label.bam { color: var(--color-bam); }
 .tile-rank.dot, .tile-suit-label.dot { color: var(--color-dot); }
 
-/* Special tiles */
 .tile-rank.wind {
   color: var(--color-wind);
-  margin-top: -6px; /* Shift wind letter up to avoid bottom label */
+  margin-top: -8px;
+  font-size: 22px;
 }
 .tile-suit-label.wind { color: var(--color-wind); }
 
 .tile-rank.dragon-red { color: var(--color-dragon-red); }
 .tile-suit-label.dragon-red { color: var(--color-dragon-red); }
-
 .tile-rank.dragon-green { color: var(--color-dragon-green); }
 .tile-suit-label.dragon-green { color: var(--color-dragon-green); }
-
 .tile-rank.dragon-white { color: var(--color-dragon-white); }
 .tile-suit-label.dragon-white { color: var(--color-dragon-white); }
 
 .tile-rank.flower {
   color: #d81b60;
-  font-size: 18px;
-  margin-top: -5px;
+  font-size: 22px;
+  margin-top: -6px;
 }
 
 .tile-suit-label.anemone {
-  font-size: 7px;
+  font-size: 8px;
   letter-spacing: 0.01em;
-  padding: 0 1px;
+  color: #d81b60;
 }
 
-.tile-rank.joker {
-  background: linear-gradient(135deg, #e91e63, #9c27b0, #2196f3, #4caf50);
+.tile-emoji.joker {
+  font-size: 28px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15));
+}
+
+.tile.mini .tile-emoji.joker {
+  font-size: 18px;
+}
+
+.tile.tiny .tile-emoji.joker {
+  font-size: 12px;
+}
+
+.tile-suit-label.joker {
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  font-weight: 800;
+  background: linear-gradient(135deg, #e91e63, #9c27b0, #2196f3);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  padding: 0 2px;
 }
 
-/* ---- Dot indicators (for dot suit) ---- */
 .dot-grid {
   display: grid;
-  gap: 2px;
+  gap: 3px;
   align-items: center;
   justify-items: center;
 }
 
 .dot-circle {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: var(--color-dot);
   border: 0.5px solid rgba(0, 0, 0, 0.2);
 }
 
 .tile.mini .dot-circle {
-  width: 4px;
-  height: 4px;
+  width: 5px;
+  height: 5px;
 }
 
-/* Emojis for sea theme suits */
 .tile-cjk,
 .tile-emoji {
   font-family: var(--font-tile);
-  font-size: 20px;
+  font-size: 26px;
   line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: -5px; /* Offset emoji up slightly to avoid bottom absolute label */
+  margin-top: -6px;
+}
+
+.tile-emoji.flower {
+  color: #d81b60;
 }
 
 .tile.mini .tile-cjk,
 .tile.mini .tile-emoji {
-  font-size: 14px;
+  font-size: 18px;
+  margin-top: -2px;
 }
 
-/* ---- Interactive States ---- */
+.tile.tiny .tile-cjk,
+.tile.tiny .tile-emoji {
+  font-size: 11px;
+  margin-top: 0;
+}
+
+/* Identity tip — portaled to body; must sit above claim bars / Charleston / modals */
+.tile-identity-tip {
+  z-index: var(--z-tip);
+  min-width: max-content;
+  max-width: min(260px, 82vw);
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(4, 22, 32, 0.98);
+  border: 1px solid rgba(255, 183, 77, 0.45);
+  color: var(--color-text-bright);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+  white-space: normal;
+  pointer-events: none;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
+}
+
+.tile-identity-tip--portal {
+  position: fixed;
+  /* Escape any stacking quirks on iOS */
+  isolation: isolate;
+}
+
+.tile-identity-tip--portal.tip-above {
+  transform: translate(-50%, -100%);
+  animation: tipFadeInAbove 120ms ease;
+}
+
+.tile-identity-tip--portal.tip-below {
+  transform: translate(-50%, 0);
+  animation: tipFadeInBelow 120ms ease;
+}
+
+.tile.tip-open {
+  z-index: 30;
+}
+
+@keyframes tipFadeInAbove {
+  from { opacity: 0; transform: translate(-50%, calc(-100% + 6px)); }
+  to { opacity: 1; transform: translate(-50%, -100%); }
+}
+
+@keyframes tipFadeInBelow {
+  from { opacity: 0; transform: translate(-50%, -6px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.tile-emoji.wind {
+  font-size: 24px;
+}
+
+.tile.mini .tile-emoji.wind {
+  font-size: 16px;
+}
+
 .tile.clickable {
   cursor: pointer;
 }
 
 @media (hover: hover) {
   .tile.clickable:hover {
-    transform: translateY(-6px);
+    transform: translateY(-8px);
     box-shadow:
-      0 8px 16px var(--color-tile-shadow),
-      0 0 12px rgba(244, 197, 66, 0.2);
+      0 10px 20px var(--color-tile-shadow),
+      0 0 14px rgba(244, 197, 66, 0.25);
     z-index: 20;
   }
 }
 
 .tile.selected {
-  transform: translateY(-12px);
+  transform: translateY(-14px);
   box-shadow:
-    0 12px 24px var(--color-tile-shadow),
-    0 0 20px var(--color-accent-glow);
+    0 14px 28px var(--color-tile-shadow),
+    0 0 22px var(--color-accent-glow);
   border-color: var(--color-accent);
 }
 
 .tile.highlighted {
   box-shadow:
-    0 0 12px rgba(76, 175, 80, 0.5),
-    0 2px 4px var(--color-tile-shadow);
+    0 0 14px rgba(76, 175, 80, 0.55),
+    0 3px 8px var(--color-tile-shadow);
   border-color: var(--color-success);
 }
 
@@ -215,45 +285,22 @@
 
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 0 8px rgba(244, 197, 66, 0.3), 0 2px 4px var(--color-tile-shadow);
+    box-shadow: 0 0 8px rgba(244, 197, 66, 0.3), 0 3px 8px var(--color-tile-shadow);
   }
   50% {
-    box-shadow: 0 0 20px rgba(244, 197, 66, 0.6), 0 2px 4px var(--color-tile-shadow);
+    box-shadow: 0 0 22px rgba(244, 197, 66, 0.65), 0 3px 8px var(--color-tile-shadow);
   }
 }
 
-/* ---- Tile Animations ---- */
 .tile.tile-enter {
   animation: tileEnter var(--transition-normal) ease;
 }
 
 @keyframes tileEnter {
-  from {
-    opacity: 0;
-    transform: translateY(-20px) scale(0.8);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  from { opacity: 0; transform: translateY(-20px) scale(0.85); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.tile.tile-discard {
-  animation: tileDiscard var(--transition-normal) ease;
-}
-
-@keyframes tileDiscard {
-  from {
-    opacity: 1;
-    transform: scale(1);
-  }
-  to {
-    opacity: 0.8;
-    transform: scale(0.9);
-  }
-}
-
-/* ---- Win Celebration ---- */
 .tile.winning {
   animation: winPulse 0.6s ease infinite alternate;
 }
@@ -269,266 +316,86 @@
   }
 }
 
-/* ---- Bamboo suit visual (sticks) ---- */
-.bam-visual {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1px;
-}
-
-.bam-stick {
-  width: 3px;
-  height: 8px;
-  background: var(--color-bam);
-  border-radius: 1px;
-}
-
-.tile.mini .bam-stick {
-  width: 2px;
-  height: 5px;
-}
-
-/* ============================================================
-   Tile Responsiveness Media Queries & Custom Layouts
-   ============================================================ */
-
-/* ---- Overlapping Hand Layout for Mobile Game Board ---- */
-.mobile-player-hand {
-  display: flex;
-  justify-content: center;
-  width: 100%;
-  padding: 8px 0 16px;
-  margin: 0 auto;
-}
-
-.mobile-player-hand .tile {
-  width: calc(min(38px, (100vw - 32px) / (var(--hand-size, 14) * 0.72 + 0.28))) !important;
-  height: calc(min(38px, (100vw - 32px) / (var(--hand-size, 14) * 0.72 + 0.28)) * 1.368) !important;
-  margin-right: calc(-1 * min(11px, (100vw - 32px) / (var(--hand-size, 14) * 0.72 + 0.28) * 0.28)) !important;
-  position: relative;
-  z-index: 2;
-  border-radius: 4px;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast), z-index var(--transition-fast);
-}
-
-.mobile-player-hand .tile:last-child {
-  margin-right: 0;
-}
-
-/* Hover and selection lifts tiles visually and raises their stack order */
-@media (hover: hover) {
-  .mobile-player-hand .tile.clickable:hover {
-    transform: translateY(-8px);
-    z-index: 10;
-  }
-}
-
-.mobile-player-hand .tile.selected {
-  transform: translateY(-16px);
-  z-index: 15;
-  box-shadow:
-    0 12px 24px rgba(0, 0, 0, 0.5),
-    0 0 16px var(--color-accent-glow);
-  border-color: var(--color-accent);
-}
-
-/* ---- Overlapping Layout for Charleston Dialog ---- */
+/* ---- Player hand: LARGE tiles, scroll sideways — never crush ---- */
+.mobile-player-hand,
+.player-hand,
 .charleston-hand-row {
   display: flex;
-  justify-content: center;
+  flex-wrap: nowrap;
+  gap: 6px;
+  align-items: flex-end;
   width: 100%;
-  padding: 8px 0;
-  margin-bottom: var(--space-md);
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  padding: 12px 4px 18px;
+  scrollbar-width: thin;
 }
 
-.charleston-hand-row .tile {
-  width: calc(min(32px, (100vw * 0.92 - 32px) / (var(--hand-size, 14) * 0.70 + 0.30))) !important;
-  height: calc(min(32px, (100vw * 0.92 - 32px) / (var(--hand-size, 14) * 0.70 + 0.30)) * 1.35) !important;
-  margin-right: calc(-1 * min(10px, (100vw * 0.92 - 32px) / (var(--hand-size, 14) * 0.70 + 0.30) * 0.30)) !important;
-  position: relative;
-  z-index: 2;
-  border-radius: 3px;
-  transition: transform var(--transition-fast), z-index var(--transition-fast);
+.mobile-player-hand .tile,
+.charleston-hand-row .tile,
+.player-hand .tile {
+  width: min(
+    var(--tile-hand-w),
+    calc((100vw - 48px - (var(--hand-size, 14) - 1) * 4px) / max(var(--hand-size, 14), 1))
+  ) !important;
+  height: auto !important;
+  aspect-ratio: 56 / 76;
+  margin-right: 0 !important;
+  scroll-snap-align: center;
+  border-radius: 8px;
+  flex: 0 0 auto;
+  max-width: var(--tile-hand-w);
 }
 
-.charleston-hand-row .tile:last-child {
-  margin-right: 0;
+.mobile-player-hand .tile .tile-emoji,
+.charleston-hand-row .tile .tile-emoji,
+.player-hand .tile .tile-emoji {
+  font-size: 28px;
 }
 
-.charleston-hand-row .tile.selected {
-  transform: translateY(-12px);
-  z-index: 10;
-  border-color: var(--color-accent);
+.mobile-player-hand .tile .tile-rank,
+.charleston-hand-row .tile .tile-rank,
+.player-hand .tile .tile-rank {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.mobile-player-hand .tile .tile-suit-label,
+.charleston-hand-row .tile .tile-suit-label,
+.player-hand .tile .tile-suit-label {
+  font-size: 9px;
+  display: block !important;
+}
+
+.mobile-player-hand .tile.selected,
+.charleston-hand-row .tile.selected,
+.player-hand .tile.selected {
+  transform: translateY(-14px) scale(1.04);
+  z-index: 15;
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.35),
+    0 0 0 2px rgba(255, 183, 77, 0.85),
+    0 0 18px rgba(255, 183, 77, 0.35);
 }
 
 .charleston-selected-row {
   display: flex;
   justify-content: center;
-  gap: 6px;
-  padding: 8px 0;
-  margin-bottom: var(--space-md);
-  min-height: 58px;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 0;
+  min-height: 96px;
   align-items: center;
 }
 
 .charleston-selected-row .tile {
-  width: 36px !important;
-  height: 50px !important;
-  border-radius: 4px;
+  width: var(--tile-hand-w) !important;
+  height: var(--tile-hand-h) !important;
 }
 
-/* Small tablets / iPads (max-width: 768px) */
-@media (max-width: 768px) {
-  .tile {
-    width: 32px;
-    height: 44px;
-    border-radius: 3px;
-  }
-  .tile-rank {
-    font-size: 13px;
-  }
-  .tile-suit-label {
-    font-size: 7px;
-  }
-  .tile-cjk, .tile-emoji {
-    font-size: 15px;
-  }
-  .tile.selected {
-    transform: translateY(-8px);
-  }
-  .tile.clickable:hover {
-    transform: translateY(-4px);
-  }
-  .tile.mini {
-    width: 22px;
-    height: 30px;
-  }
-  .tile.mini .tile-rank {
-    font-size: 9px;
-  }
-  .tile.mini .tile-emoji, .tile.mini .tile-cjk {
-    font-size: 11px;
-  }
-  .tile.mini .tile-suit-label {
-    font-size: 5px;
-  }
-}
-
-/* Mobile phones (max-width: 480px) */
-@media (max-width: 480px) {
-  /* Default tile (not in hand) sizing on mobile - for menu/tutorial */
-  .tile {
-    width: 28px;
-    height: 38px;
-    border-radius: 2px;
-    padding: 1px;
-  }
-  .tile-rank {
-    font-size: 11px;
-  }
-  .tile-suit-label {
-    font-size: 6px;
-  }
-  .mobile-player-hand .tile .tile-suit-label,
-  .charleston-hand-row .tile .tile-suit-label {
-    display: none !important;
-  }
-  .tile-cjk, .tile-emoji {
-    font-size: 13px;
-  }
-  .tile-suit-label.anemone {
-    font-size: 5px;
-    padding: 0;
-  }
-  .tile-rank.joker {
-    font-size: 9px;
-    padding: 0;
-  }
-  .tile.selected {
-    transform: translateY(-6px);
-  }
-  @media (hover: hover) {
-    .tile.clickable:hover {
-      transform: translateY(-2px);
-    }
-  }
-  .exposed-set {
-    padding: 2px;
-  }
-  
-  /* Mini tiles used in discard grids and exposed opponent sets */
-  .tile.mini {
-    width: 24px;
-    height: 32px;
-    padding: 1px;
-  }
-  .tile.mini .tile-rank {
-    font-size: 9px;
-  }
-  .tile.mini .tile-emoji, .tile.mini .tile-cjk {
-    font-size: 11px;
-  }
-  .tile.mini .tile-suit-label {
-    display: none;
-  }
-  
-  /* Tiny tiles used for opponent hand indicator and top bar exposed sets */
-  .tile.tiny {
-    width: 12px;
-    height: 16px;
-    border-radius: 2px;
-  }
-  .tile.tiny .tile-emoji, .tile.tiny .tile-cjk {
-    font-size: 9px;
-  }
-  .tile.tiny .tile-rank {
-    font-size: 7px;
-  }
-
-  /* Specific interior scaling override for hand & dialog tiles to ensure readability */
-  .mobile-player-hand .tile .tile-emoji,
-  .charleston-selected-row .tile .tile-emoji {
-    font-size: 18px;
-  }
-  .mobile-player-hand .tile .tile-rank,
-  .charleston-selected-row .tile .tile-rank {
-    font-size: 14px;
-    font-weight: 800;
-  }
-  .mobile-player-hand .tile .tile-suit-label,
-  .charleston-selected-row .tile .tile-suit-label {
-    font-size: 5.5px;
-    letter-spacing: -0.02em;
-  }
-  .mobile-player-hand .tile .tile-rank.joker,
-  .charleston-selected-row .tile .tile-rank.joker {
-    font-size: 9px;
-  }
-  .mobile-player-hand .tile .tile-rank.wind,
-  .charleston-selected-row .tile .tile-rank.wind {
-    font-size: 14px;
-  }
-  .mobile-player-hand .tile .tile-suit-label.wind,
-  .charleston-selected-row .tile .tile-suit-label.wind {
-    font-size: 5px;
-    letter-spacing: -0.02em;
-  }
-
-  .charleston-hand-row .tile .tile-emoji {
-    font-size: 16px;
-  }
-  .charleston-hand-row .tile .tile-rank {
-    font-size: 12px;
-    font-weight: 800;
-  }
-  .charleston-hand-row .tile .tile-suit-label {
-    font-size: 5px;
-    letter-spacing: -0.02em;
-  }
-}
-
-/* Expansion of touch zone for tiny clickable tiles to meet 44px minimum */
 .tile.tiny.clickable {
   position: relative;
 }
@@ -536,6 +403,16 @@
 .tile.tiny.clickable::before {
   content: '';
   position: absolute;
-  inset: -14px -16px;
+  inset: -12px -14px;
   z-index: 1;
+}
+
+/* Narrow phones: still large enough to read */
+@media (max-width: 400px) {
+  :root {
+    --tile-hand-w: 50px;
+    --tile-hand-h: 68px;
+    --tile-w: 46px;
+    --tile-h: 62px;
+  }
 }

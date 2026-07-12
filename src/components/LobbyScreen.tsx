@@ -2,7 +2,7 @@
 // LobbyScreen — Multiplayer lobby for creating/joining rooms
 // ============================================================
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { PeerManager, ConnectionStatus } from '../network/peer-manager';
 import { LobbyState, LobbySlot } from '../network/protocol';
 import { GameConfig } from '../engine/game';
@@ -11,25 +11,34 @@ interface LobbyScreenProps {
   peerManager: PeerManager;
   onStartGame: (config: GameConfig) => void;
   onBack: () => void;
+  defaultName?: string;
 }
 
-export function LobbyScreen({ peerManager, onStartGame, onBack }: LobbyScreenProps) {
+const SEATS = ['East', 'South', 'West', 'North'] as const;
+
+export function LobbyScreen({
+  peerManager,
+  onStartGame,
+  onBack,
+  defaultName = 'Player',
+}: LobbyScreenProps) {
   const [mode, setMode] = useState<'choose' | 'host' | 'join'>('choose');
   const [status, setStatus] = useState<ConnectionStatus>('disconnected');
   const [lobby, setLobby] = useState<LobbyState | null>(null);
-  const [playerName, setPlayerName] = useState('Player');
+  const [playerName, setPlayerName] = useState(defaultName);
   const [roomCode, setRoomCode] = useState('');
+  const [resumeKey, setResumeKey] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [chatMessages, setChatMessages] = useState<{ name: string; msg: string }[]>([]);
-  const [chatInput, setChatInput] = useState('');
 
-  // Update callbacks for Lobby
+  useEffect(() => {
+    setPlayerName(defaultName);
+  }, [defaultName]);
+
   useEffect(() => {
     peerManager.updateCallbacks({
       onStatusChange: setStatus,
       onLobbyUpdate: setLobby,
-      onChat: (name, msg) => setChatMessages(prev => [...prev, { name, msg }]),
-      onError: (err) => setError(err),
+      onError: err => setError(err),
     });
   }, [peerManager]);
 
@@ -39,7 +48,7 @@ export function LobbyScreen({ peerManager, onStartGame, onBack }: LobbyScreenPro
       await peerManager.createRoom(playerName || 'Host');
       setMode('host');
     } catch {
-      // Error handled by callback
+      /* callback */
     }
   }, [peerManager, playerName]);
 
@@ -47,43 +56,47 @@ export function LobbyScreen({ peerManager, onStartGame, onBack }: LobbyScreenPro
     if (!roomCode.trim()) return;
     setError(null);
     try {
-      await peerManager.joinRoom(roomCode.trim().toUpperCase(), playerName || 'Guest');
+      await peerManager.joinRoom(
+        roomCode.trim().toUpperCase(),
+        playerName || 'Guest',
+        resumeKey.trim() || undefined,
+      );
       setMode('join');
-    } catch {
-      // Error handled by callback
+    } catch (err) {
+      setMode('choose');
+      setError(err instanceof Error ? err.message : 'Could not join room');
     }
-  }, [peerManager, roomCode, playerName]);
+  }, [peerManager, roomCode, playerName, resumeKey]);
 
   const handleStartGame = useCallback(() => {
     if (!lobby) return;
-    const config: GameConfig = {
+    const offlineHuman = lobby.slots.find(s => s.type === 'human' && !s.connected);
+    if (offlineHuman) {
+      setError(
+        `${offlineHuman.playerName} is offline. Wait for them to reconnect, or remove them before starting.`,
+      );
+      return;
+    }
+    setError(null);
+    onStartGame({
       players: lobby.slots.map(s => ({
         name: s.playerName,
         type: s.type,
-        difficulty: s.type === 'ai' ? (s.difficulty || 'medium') : undefined,
+        difficulty: s.type === 'ai' ? s.difficulty || 'medium' : undefined,
       })),
-    };
-    onStartGame(config);
+    });
   }, [lobby, onStartGame]);
 
   const handleSlotChange = useCallback((index: number, updates: Partial<LobbySlot>) => {
-    if (peerManager.isHost) {
-      peerManager.updateSlot(index, updates);
-    }
+    if (peerManager.isHost) peerManager.updateSlot(index, updates);
   }, [peerManager]);
 
-  const handleSendChat = useCallback(() => {
-    if (chatInput.trim()) {
-      peerManager.sendChat(playerName || 'Player', chatInput.trim());
-      setChatInput('');
-    }
-  }, [peerManager, chatInput, playerName]);
-
   const copyRoomCode = () => {
-    if (peerManager.roomCode) {
-      navigator.clipboard.writeText(peerManager.roomCode);
-    }
+    if (peerManager.roomCode) void navigator.clipboard.writeText(peerManager.roomCode);
   };
+
+  const seatKey =
+    lobby?.slots[peerManager.playerIndex]?.resumeKey || peerManager.resumeKey || '';
 
   return (
     <div className="main-menu">
@@ -92,62 +105,52 @@ export function LobbyScreen({ peerManager, onStartGame, onBack }: LobbyScreenPro
         <p className="subtitle">Online Multiplayer</p>
       </div>
 
-      <div className="menu-card" style={{ maxWidth: 520 }}>
-        {error && (
-          <div style={{
-            background: 'rgba(239, 83, 80, 0.15)',
-            border: '1px solid var(--color-danger)',
-            borderRadius: 'var(--radius-md)',
-            padding: 'var(--space-md)',
-            marginBottom: 'var(--space-md)',
-            color: 'var(--color-danger)',
-            fontSize: 'var(--font-size-sm)',
-          }}>
-            {error}
-          </div>
-        )}
+      <div className="menu-card lobby-card">
+        {error && <div className="lobby-error">{error}</div>}
 
         {mode === 'choose' && (
           <>
             <h2>Multiplayer</h2>
-            <div style={{ marginBottom: 'var(--space-lg)' }}>
-              <label style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)' }}>
-                Your Name
-              </label>
+            <p className="mp-version-note">
+              Full online table — empty seats fill with AI. Dropped? Rejoin with Room + Seat key
+              (shown in Settings during play).
+            </p>
+            <label className="lobby-field">
+              <span>Your Name</span>
               <input
                 type="text"
                 value={playerName}
                 onChange={e => setPlayerName(e.target.value)}
                 placeholder="Enter your name"
-                className="setup-input"
                 id="mp-player-name"
-                style={{
-                  width: '100%', marginTop: 4,
-                  background: 'rgba(0,0,0,0.2)', border: '1px solid var(--color-panel-border)',
-                  borderRadius: 'var(--radius-sm)', padding: '8px 12px',
-                  color: 'var(--color-text)', fontFamily: 'var(--font-ui)',
-                }}
+                autoComplete="off"
               />
-            </div>
+            </label>
             <div className="menu-actions">
               <button className="btn btn-primary" onClick={handleCreateRoom} id="create-room-btn">
-                🏠 Create Room
+                Create Room
               </button>
-              <div style={{ display: 'flex', gap: 'var(--space-sm)', alignItems: 'center' }}>
+              <div className="lobby-join-row">
                 <input
                   type="text"
                   value={roomCode}
                   onChange={e => setRoomCode(e.target.value.toUpperCase())}
-                  placeholder="ROOM CODE"
+                  placeholder="ROOM"
                   maxLength={5}
                   id="room-code-input"
-                  style={{
-                    flex: 1, textAlign: 'center', letterSpacing: '0.2em',
-                    background: 'rgba(0,0,0,0.2)', border: '1px solid var(--color-panel-border)',
-                    borderRadius: 'var(--radius-sm)', padding: '12px',
-                    color: 'var(--color-text)', fontFamily: 'var(--font-ui)',
-                    fontWeight: 700, fontSize: 'var(--font-size-lg)',
-                  }}
+                  className="lobby-code-input"
+                  autoComplete="off"
+                />
+                <input
+                  type="text"
+                  value={resumeKey}
+                  onChange={e => setResumeKey(e.target.value.toUpperCase())}
+                  placeholder="SEAT"
+                  maxLength={4}
+                  title="Seat key — only needed to rejoin mid-game"
+                  id="resume-key-input"
+                  className="lobby-seat-input"
+                  autoComplete="off"
                 />
                 <button
                   className="btn btn-secondary"
@@ -158,6 +161,9 @@ export function LobbyScreen({ peerManager, onStartGame, onBack }: LobbyScreenPro
                   Join
                 </button>
               </div>
+              <p className="settings-hint lobby-hint">
+                Seat key optional — use it to reclaim your hand after a disconnect.
+              </p>
               <button className="btn btn-secondary" onClick={onBack} id="mp-back-btn">
                 ← Back
               </button>
@@ -167,107 +173,85 @@ export function LobbyScreen({ peerManager, onStartGame, onBack }: LobbyScreenPro
 
         {(mode === 'host' || mode === 'join') && lobby && (
           <>
-            <div style={{ textAlign: 'center', marginBottom: 'var(--space-lg)' }}>
-              <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)' }}>
-                Room Code
-              </div>
-              <div style={{
-                fontSize: 'var(--font-size-3xl)', fontWeight: 800, letterSpacing: '0.2em',
-                color: 'var(--color-accent)', cursor: 'pointer',
-              }} onClick={copyRoomCode} title="Click to copy">
+            <div className="lobby-room-header">
+              <div className="lobby-room-label">Room Code</div>
+              <button
+                type="button"
+                className="lobby-room-code"
+                onClick={copyRoomCode}
+                title="Click to copy"
+              >
                 {lobby.roomCode}
-              </div>
-              <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>
-                Share this code with friends • Click to copy
-              </div>
+              </button>
+              <p className="lobby-room-note">
+                Share this code · Seat key is below and in Settings once play starts
+              </p>
+              {seatKey && (
+                <p className="lobby-seat-key">
+                  Your seat key: <strong>{seatKey}</strong>
+                </p>
+              )}
             </div>
 
-            {/* Player slots */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)', marginBottom: 'var(--space-lg)' }}>
+            <div className="lobby-slots">
               {lobby.slots.map((slot, i) => (
                 <div key={i} className="setup-player">
-                  <span className="seat-label">{['East', 'South', 'West', 'North'][i]}</span>
-                  <span style={{
-                    flex: 1, fontWeight: 600,
-                    color: slot.connected ? 'var(--color-text)' : 'var(--color-text-muted)',
-                  }}>
+                  <span className="seat-label">{SEATS[i]}</span>
+                  <span className={`lobby-slot-name${slot.connected ? '' : ' is-offline'}`}>
                     {slot.playerName}
+                    {!slot.connected && slot.type === 'human' ? ' (offline)' : ''}
                   </span>
-                  <span style={{
-                    fontSize: 'var(--font-size-xs)',
-                    padding: '2px 8px',
-                    borderRadius: 'var(--radius-round)',
-                    background: slot.type === 'human'
-                      ? 'rgba(76, 175, 80, 0.2)'
-                      : 'rgba(255, 152, 0, 0.2)',
-                    color: slot.type === 'human' ? 'var(--color-success)' : '#ff9800',
-                  }}>
-                    {slot.type === 'human' ? '👤 Human' : '🤖 AI'}
-                  </span>
-                  {slot.connected && (
-                    <span style={{ fontSize: '10px', color: 'var(--color-success)' }}>●</span>
+                  {mode === 'host' && slot.type === 'ai' && (
+                    <select
+                      value={slot.difficulty || 'medium'}
+                      onChange={e =>
+                        handleSlotChange(i, {
+                          difficulty: e.target.value as LobbySlot['difficulty'],
+                        })
+                      }
+                      className="lobby-ai-select"
+                      aria-label={`${SEATS[i]} AI difficulty`}
+                    >
+                      <option value="easy">Easy</option>
+                      <option value="medium">Medium</option>
+                      <option value="hard">Hard</option>
+                    </select>
                   )}
+                  <span className={`lobby-type-badge lobby-type-badge--${slot.type}`}>
+                    {slot.type === 'human' ? 'Human' : 'AI'}
+                  </span>
                 </div>
               ))}
             </div>
 
-            {/* Chat */}
-            <div style={{
-              background: 'rgba(0,0,0,0.15)', borderRadius: 'var(--radius-md)',
-              padding: 'var(--space-sm)', marginBottom: 'var(--space-md)',
-              maxHeight: 120, overflowY: 'auto',
-            }}>
-              {chatMessages.length === 0 && (
-                <div style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-xs)', textAlign: 'center' }}>
-                  Chat messages will appear here
-                </div>
-              )}
-              {chatMessages.map((m, i) => (
-                <div key={i} style={{ fontSize: 'var(--font-size-xs)' }}>
-                  <strong>{m.name}:</strong> {m.msg}
-                </div>
-              ))}
-            </div>
-            <div style={{ display: 'flex', gap: 'var(--space-sm)', marginBottom: 'var(--space-md)' }}>
-              <input
-                value={chatInput}
-                onChange={e => setChatInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSendChat()}
-                placeholder="Type a message..."
-                style={{
-                  flex: 1, background: 'rgba(0,0,0,0.2)',
-                  border: '1px solid var(--color-panel-border)',
-                  borderRadius: 'var(--radius-sm)', padding: '6px 10px',
-                  color: 'var(--color-text)', fontFamily: 'var(--font-ui)',
-                }}
-              />
-              <button className="btn btn-secondary" onClick={handleSendChat} style={{ padding: '6px 12px' }}>
-                Send
-              </button>
-            </div>
-
-            <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
+            <div className="lobby-actions">
               {mode === 'host' && (
-                <button className="btn btn-primary" onClick={handleStartGame} style={{ flex: 1 }} id="start-mp-game-btn">
+                <button
+                  className="btn btn-primary"
+                  onClick={handleStartGame}
+                  id="start-mp-game-btn"
+                >
                   Start Game
                 </button>
               )}
               {mode === 'join' && (
-                <div style={{ flex: 1, textAlign: 'center', color: 'var(--color-text-muted)', padding: 'var(--space-md)' }}>
-                  Waiting for host to start...
-                </div>
+                <p className="lobby-waiting">Waiting for host to start…</p>
               )}
-              <button className="btn btn-danger" onClick={() => { peerManager.disconnect(); onBack(); }}>
+              <button
+                className="btn btn-danger"
+                onClick={() => {
+                  peerManager.disconnect();
+                  onBack();
+                }}
+              >
                 Leave
               </button>
             </div>
 
-            <div style={{
-              marginTop: 'var(--space-md)', textAlign: 'center',
-              fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)',
-            }}>
-              Status: {status} • {lobby.slots.filter(s => s.type === 'human' && s.connected).length}/4 humans
-            </div>
+            <p className="lobby-status">
+              Status: {status} ·{' '}
+              {lobby.slots.filter(s => s.type === 'human' && s.connected).length}/4 humans
+            </p>
           </>
         )}
       </div>

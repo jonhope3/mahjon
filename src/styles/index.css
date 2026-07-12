@@ -2,52 +2,44 @@
    Mahjon — Design System & Global Styles
    ============================================================ */
 
-/* ---- CSS Custom Properties (Design Tokens) ---- */
 :root {
   /* Colors — Ocean & Beach Theme */
-  --color-felt: #0c576e;           /* Beautiful turquoise ocean water */
-  --color-felt-dark: #053443;      /* Deep ocean blue */
-  --color-felt-light: #177e89;     /* Coastal sunlit surf */
-  --color-wood: #dfc294;           /* Sandy beach driftwood */
-  --color-wood-light: #eedab3;     /* Sunny dry sand */
-  --color-wood-dark: #c3a072;      /* Wet shoreline sand */
+  --color-felt: #0c576e;
+  --color-felt-dark: #053443;
+  --color-felt-light: #1a8a98;
+  --color-wood: #dfc294;
+  --color-wood-light: #eedab3;
+  --color-wood-dark: #c3a072;
 
-  /* Tile Colors */
-  --color-tile-face: #fdfbf7;      /* Seashell white */
-  --color-tile-border: #dfc294;    /* Sand border */
-  --color-tile-shadow: rgba(5, 52, 67, 0.45);
-  --color-tile-back: #118a99;      /* Sea glass teal */
+  --color-tile-face: #fdfbf7;
+  --color-tile-border: #d4b88a;
+  --color-tile-shadow: rgba(5, 52, 67, 0.4);
+  --color-tile-back: #118a99;
   --color-tile-back-pattern: #0d727f;
 
-  /* Suit Colors (traditional) */
-  --color-crak: #e05e5e;           /* Warm coral red */
-  --color-bam: #2fa581;            /* Marine green */
-  --color-dot: #1a65a4;            /* Lagoon blue */
+  --color-crak: #e05e5e;
+  --color-bam: #2fa581;
+  --color-dot: #1a65a4;
 
-  /* Dragon Colors */
   --color-dragon-red: #e05e5e;
   --color-dragon-green: #2fa581;
   --color-dragon-white: #5c6bc0;
-
-  /* Wind Color */
   --color-wind: #455a64;
 
-  /* UI Colors */
-  --color-bg: #041620;             /* Sunken reef deep blue */
-  --color-surface: rgba(12, 87, 110, 0.8); /* Sea glass overlay */
-  --color-surface-hover: rgba(23, 126, 137, 0.85);
-  --color-panel: rgba(255, 255, 255, 0.08);
-  --color-panel-border: rgba(255, 255, 255, 0.15);
-  --color-text: #f5f2eb;           /* Seashell light */
-  --color-text-muted: #8da6b0;     /* Muted ocean spray */
+  --color-bg: #041620;
+  --color-surface: rgba(8, 70, 88, 0.88);
+  --color-surface-hover: rgba(23, 126, 137, 0.9);
+  --color-panel: rgba(255, 255, 255, 0.1);
+  --color-panel-border: rgba(238, 218, 179, 0.22);
+  --color-text: #f5f2eb;
+  --color-text-muted: #9bb4be;
   --color-text-bright: #ffffff;
-  --color-accent: #ffb74d;         /* Sunrise gold */
-  --color-accent-glow: rgba(255, 183, 77, 0.35);
+  --color-accent: #ffb74d;
+  --color-accent-glow: rgba(255, 183, 77, 0.4);
   --color-danger: #ef5350;
   --color-success: #66bb6a;
   --color-info: #42a5f5;
 
-  /* Action button colors */
   --color-action-draw: #4caf50;
   --color-action-pung: #ff9800;
   --color-action-kong: #e91e63;
@@ -55,7 +47,6 @@
   --color-action-mahjong: #f4c542;
   --color-action-pass: #78909c;
 
-  /* Spacing */
   --space-xs: 4px;
   --space-sm: 8px;
   --space-md: 16px;
@@ -63,44 +54,50 @@
   --space-xl: 32px;
   --space-2xl: 48px;
 
-  /* Borders & Radius */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 28px;
   --radius-round: 9999px;
 
-  /* Shadows */
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
-  --shadow-lg: 0 8px 24px rgba(0,0,0,0.5);
-  --shadow-glow: 0 0 20px var(--color-accent-glow);
+  --shadow-md: 0 6px 18px rgba(0,0,0,0.35);
+  --shadow-lg: 0 12px 36px rgba(0,0,0,0.45);
+  --shadow-glow: 0 0 24px var(--color-accent-glow);
 
-  /* Transitions */
   --transition-fast: 120ms ease;
   --transition-normal: 250ms ease;
   --transition-slow: 400ms ease;
 
-  /* Typography */
-  --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-tile: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-size-xs: 0.75rem;
-  --font-size-sm: 0.875rem;
-  --font-size-md: 1rem;
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-ui: 'Nunito', system-ui, -apple-system, sans-serif;
+  --font-tile: 'Nunito', system-ui, sans-serif;
+
+  --font-size-xs: 0.8125rem;
+  --font-size-sm: 0.9375rem;
+  --font-size-md: 1.0625rem;
   --font-size-lg: 1.25rem;
   --font-size-xl: 1.5rem;
   --font-size-2xl: 2rem;
   --font-size-3xl: 2.5rem;
-  --font-size-hero: 4rem;
+  --font-size-hero: clamp(2.75rem, 10vw, 4.25rem);
 
-  /* Z-indices */
+  --tile-w: 52px;
+  --tile-h: 70px;
+  --tile-mini-w: 36px;
+  --tile-mini-h: 48px;
+  --tile-hand-w: 56px;
+  --tile-hand-h: 76px;
+
+  --touch-min: 48px;
+
   --z-tiles: 10;
   --z-overlay: 50;
   --z-modal: 100;
   --z-toast: 200;
+  --z-tip: 10000;
 }
 
-/* ---- Reset & Globals ---- */
 *, *::before, *::after {
   margin: 0;
   padding: 0;
@@ -120,8 +117,20 @@ body {
   min-height: 100vh;
   min-height: 100dvh;
   overflow-x: hidden;
-  overscroll-behavior: none;
   line-height: 1.5;
+}
+
+/* Home/menu: allow browser pull-to-refresh. Game/tutorial: lock it. */
+html.app-screen-menu body {
+  overscroll-behavior-y: auto;
+}
+
+html.app-screen-playing body,
+html.app-screen-lobby body,
+html.app-screen-tutorial body,
+html.app-screen-connecting body {
+  overscroll-behavior-y: none;
+  overscroll-behavior: none;
 }
 
 #root {
@@ -146,9 +155,9 @@ button:focus-visible {
 input, select, textarea {
   font-size: 16px;
   touch-action: manipulation;
+  font-family: var(--font-ui);
 }
 
-/* ---- Utility Classes ---- */
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -161,10 +170,9 @@ input, select, textarea {
   border-width: 0;
 }
 
-/* ---- Scrollbar Styling ---- */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -172,10 +180,21 @@ input, select, textarea {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.18);
   border-radius: var(--radius-round);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.28);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

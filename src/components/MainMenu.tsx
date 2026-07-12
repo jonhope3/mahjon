@@ -2,14 +2,19 @@
 // MainMenu — Landing screen with game setup
 // ============================================================
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { PlayerType, Difficulty } from '../engine/types';
 import { GameConfig } from '../engine/game';
+import { AppPrefs, prefsToGamePlayers } from '../game-settings';
+import { useFreshReload } from '../hooks/useFreshReload';
+import { InstallNudge } from './InstallNudge';
 
 interface MainMenuProps {
   onStartGame: (config: GameConfig) => void;
   onPlayMultiplayer: () => void;
   onStartTutorial: () => void;
+  onOpenSettings: () => void;
+  prefs: AppPrefs;
 }
 
 interface PlayerSetup {
@@ -18,42 +23,120 @@ interface PlayerSetup {
   difficulty: Difficulty;
 }
 
-const DEFAULT_PLAYERS: PlayerSetup[] = [
-  { name: 'You', type: 'human', difficulty: 'medium' },
-  { name: 'Bot Alice', type: 'ai', difficulty: 'medium' },
-  { name: 'Bot Bob', type: 'ai', difficulty: 'medium' },
-  { name: 'Bot Carol', type: 'ai', difficulty: 'medium' },
-];
+function prefsToSetup(prefs: AppPrefs): PlayerSetup[] {
+  return prefsToGamePlayers(prefs).map(p => ({
+    name: p.name,
+    type: p.type,
+    difficulty: 'difficulty' in p && p.difficulty ? p.difficulty : 'medium',
+  }));
+}
 
 const SEAT_LABELS = ['East', 'South', 'West', 'North'];
+const PULL_THRESHOLD = 72;
 
-export function MainMenu({ onStartGame, onPlayMultiplayer, onStartTutorial }: MainMenuProps) {
-  const [players, setPlayers] = useState<PlayerSetup[]>(DEFAULT_PLAYERS);
+export function MainMenu({
+  onStartGame,
+  onPlayMultiplayer,
+  onStartTutorial,
+  onOpenSettings,
+  prefs,
+}: MainMenuProps) {
+  const [players, setPlayers] = useState<PlayerSetup[]>(() => prefsToSetup(prefs));
   const [showSetup, setShowSetup] = useState(false);
+  const [pullY, setPullY] = useState(0);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const startY = useRef<number | null>(null);
+  const { busy, clearCacheAndReload } = useFreshReload();
+
+  useEffect(() => {
+    if (!showSetup) setPlayers(prefsToSetup(prefs));
+  }, [prefs, showSetup]);
+
+  // PWA-friendly pull-to-refresh → clear cache & reload
+  useEffect(() => {
+    const el = menuRef.current;
+    if (!el) return;
+    let pulling = false;
+
+    const onStart = (e: TouchEvent) => {
+      if (busy) return;
+      const scrollTop = el.scrollTop || window.scrollY;
+      if (scrollTop > 2) {
+        startY.current = null;
+        return;
+      }
+      startY.current = e.touches[0]?.clientY ?? null;
+      pulling = true;
+    };
+
+    const onMove = (e: TouchEvent) => {
+      if (!pulling || startY.current == null || busy) return;
+      const delta = Math.max(0, (e.touches[0]?.clientY ?? 0) - startY.current);
+      if (delta > 8) {
+        if (e.cancelable) e.preventDefault();
+        setPullY(Math.min(delta * 0.55, 120));
+      }
+    };
+
+    const onEnd = () => {
+      if (!pulling) return;
+      pulling = false;
+      startY.current = null;
+      setPullY(prev => {
+        if (prev >= PULL_THRESHOLD) void clearCacheAndReload();
+        return 0;
+      });
+    };
+
+    el.addEventListener('touchstart', onStart, { passive: true });
+    el.addEventListener('touchmove', onMove, { passive: false });
+    el.addEventListener('touchend', onEnd);
+    el.addEventListener('touchcancel', onEnd);
+    return () => {
+      el.removeEventListener('touchstart', onStart);
+      el.removeEventListener('touchmove', onMove);
+      el.removeEventListener('touchend', onEnd);
+      el.removeEventListener('touchcancel', onEnd);
+    };
+  }, [busy, clearCacheAndReload]);
 
   const updatePlayer = (index: number, updates: Partial<PlayerSetup>) => {
-    setPlayers(prev => prev.map((p, i) => i === index ? { ...p, ...updates } : p));
+    setPlayers(prev => prev.map((p, i) => (i === index ? { ...p, ...updates } : p)));
   };
 
-  const handleStart = () => {
-    onStartGame({
-      players: players.map(p => ({
-        name: p.name,
-        type: p.type,
-        difficulty: p.type === 'ai' ? p.difficulty : undefined,
-      })),
-    });
-  };
-
-  const handleQuickStart = () => {
-    onStartGame({ players: DEFAULT_PLAYERS });
-  };
+  const pullReady = pullY >= PULL_THRESHOLD;
 
   return (
-    <div className="main-menu">
-      {/* Decorative elements */}
-      <div className="deco-tiles left"></div>
-      <div className="deco-tiles right"></div>
+    <div className="main-menu" ref={menuRef}>
+      <div
+        className={`menu-pull-refresh${pullReady ? ' is-ready' : ''}${busy ? ' is-refreshing' : ''}`}
+        style={{ height: busy ? 56 : pullY }}
+        aria-hidden={!pullY && !busy}
+      >
+        <span>
+          {busy
+            ? 'Refreshing…'
+            : pullReady
+              ? 'Release to clear cache & reload'
+              : 'Pull to refresh'}
+        </span>
+      </div>
+
+      <button
+        type="button"
+        className="menu-settings-btn"
+        onClick={onOpenSettings}
+        aria-label="Settings"
+      >
+        ⚙
+      </button>
+
+      <div className="deco-tiles left" aria-hidden="true">
+        🐚
+      </div>
+      <div className="deco-tiles right" aria-hidden="true">
+        🌊
+      </div>
 
       <div className="menu-logo">
         <h1>Mahjon</h1>
@@ -64,30 +147,39 @@ export function MainMenu({ onStartGame, onPlayMultiplayer, onStartTutorial }: Ma
         <div className="menu-card">
           <h2>Play Mahjong</h2>
           <div className="menu-actions">
-            <button className="btn btn-primary" onClick={handleQuickStart} id="quick-start-btn">
+            <button
+              className="btn btn-primary"
+              onClick={() => onStartGame({ players: prefsToGamePlayers(prefs) })}
+              id="quick-start-btn"
+            >
               Quick Start vs AI
             </button>
-            <button className="btn btn-secondary" onClick={() => setShowSetup(true)} id="custom-game-btn">
+            <button
+              className="btn btn-secondary"
+              onClick={() => setShowSetup(true)}
+              id="custom-game-btn"
+            >
               Custom Game
             </button>
-            <button className="btn btn-secondary" onClick={onPlayMultiplayer} id="multiplayer-btn">
+            <button
+              className="btn btn-secondary"
+              onClick={onPlayMultiplayer}
+              id="multiplayer-btn"
+            >
               Online Multiplayer
             </button>
             <button className="btn btn-secondary" onClick={onStartTutorial} id="tutorial-btn">
-              How to Play (Tutorial)
+              How to Play
             </button>
           </div>
-          <p style={{
-            marginTop: 'var(--space-lg)',
-            textAlign: 'center',
-            fontSize: 'var(--font-size-xs)',
-            color: 'var(--color-text-muted)',
-          }}>
-            2026 NMJL Hand Card • Play with friends or AI
+          <p className="menu-footnote">
+            Learn as you play · Long-press any tile · Teaching mode in Settings
           </p>
+          <InstallNudge />
+          <p className="menu-refresh-hint">Pull down to hard refresh</p>
         </div>
       ) : (
-        <div className="menu-card">
+        <div className="menu-card menu-card--setup">
           <h2>Game Setup</h2>
           <div className="game-setup">
             {players.map((player, i) => (
@@ -99,19 +191,31 @@ export function MainMenu({ onStartGame, onPlayMultiplayer, onStartTutorial }: Ma
                   onChange={e => updatePlayer(i, { name: e.target.value })}
                   placeholder="Player name"
                   id={`player-name-${i}`}
+                  autoComplete="off"
                 />
                 <select
                   value={player.type}
-                  onChange={e => updatePlayer(i, { type: e.target.value as PlayerType })}
+                  onChange={e => {
+                    if (i === 0) return;
+                    updatePlayer(i, { type: e.target.value as PlayerType });
+                  }}
                   id={`player-type-${i}`}
+                  disabled={i === 0}
                 >
-                  <option value="human">Human</option>
-                  <option value="ai">AI</option>
+                  {i === 0 ? (
+                    <option value="human">You</option>
+                  ) : (
+                    <>
+                      <option value="ai">AI</option>
+                    </>
+                  )}
                 </select>
                 {player.type === 'ai' && (
                   <select
                     value={player.difficulty}
-                    onChange={e => updatePlayer(i, { difficulty: e.target.value as Difficulty })}
+                    onChange={e =>
+                      updatePlayer(i, { difficulty: e.target.value as Difficulty })
+                    }
                     id={`player-difficulty-${i}`}
                   >
                     <option value="easy">Easy</option>
@@ -121,11 +225,27 @@ export function MainMenu({ onStartGame, onPlayMultiplayer, onStartTutorial }: Ma
                 )}
               </div>
             ))}
-            <div style={{ display: 'flex', gap: 'var(--space-md)', marginTop: 'var(--space-md)' }}>
-              <button className="btn btn-primary" onClick={handleStart} style={{ flex: 1 }} id="start-game-btn">
+            <div className="setup-actions">
+              <button
+                className="btn btn-primary"
+                onClick={() =>
+                  onStartGame({
+                    players: players.map(p => ({
+                      name: p.name,
+                      type: p.type,
+                      difficulty: p.type === 'ai' ? p.difficulty : undefined,
+                    })),
+                  })
+                }
+                id="start-game-btn"
+              >
                 Start Game
               </button>
-              <button className="btn btn-secondary" onClick={() => setShowSetup(false)} id="back-btn">
+              <button
+                className="btn btn-secondary"
+                onClick={() => setShowSetup(false)}
+                id="back-btn"
+              >
                 Back
               </button>
             </div>

@@ -1,13 +1,26 @@
 // ============================================================
-// GameBoard — Main game UI layout
+// GameBoard — Main game UI (mobile + desktop shells)
 // ============================================================
 
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, type CSSProperties } from 'react';
 import { GameState, Tile, ActionType, Player } from '../engine/types';
 import { TileComponent } from './TileComponent';
 import { sortTiles, wallRemaining } from '../engine/tiles';
 import { getValidActions } from '../engine/actions';
-import { ALL_HAND_CATEGORIES } from '../engine/hands';
+import { HandCardModal } from './HandCardModal';
+import { HelpPanel, PLAY_HELP } from './HelpPanel';
+import { ClaimCoach } from './ClaimCoach';
+import { RoundEndOverlay } from './RoundEndOverlay';
+import { ActionButtons } from './ActionButtons';
+import type { TeachMode } from '../game-settings';
+import {
+  handProgressHint,
+  markJokerSwapTipSeen,
+  shouldShowJokerSwapTip,
+  showHandProgress,
+  showTurnCoaching,
+  turnHint,
+} from '../teach';
 
 interface GameBoardProps {
   state: GameState;
@@ -15,6 +28,14 @@ interface GameBoardProps {
   onAction: (action: ActionType, tiles?: Tile[]) => void;
   selectedTile: Tile | null;
   onSelectTile: (tile: Tile | null) => void;
+  onOpenSettings: () => void;
+  onQuitToMenu: () => void;
+  teachMode?: TeachMode;
+  /** Shown during MP so a disconnected player can rejoin */
+  resumeKey?: string;
+  roomCode?: string;
+  /** Host (or solo) can start the next round */
+  canStartNextRound?: boolean;
 }
 
 export function GameBoard({
@@ -23,68 +44,121 @@ export function GameBoard({
   onAction,
   selectedTile,
   onSelectTile,
+  onOpenSettings,
+  onQuitToMenu,
+  teachMode = 'guided',
+  resumeKey,
+  roomCode,
+  canStartNextRound = true,
 }: GameBoardProps) {
   const [showHandCard, setShowHandCard] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [showJokerTip, setShowJokerTip] = useState(false);
+  const [showRecent, setShowRecent] = useState(false);
   const [isMobile, setIsMobile] = useState(() =>
-    window.matchMedia('(max-width: 767px)').matches
+    window.matchMedia('(max-width: 1024px), ((hover: none) and (pointer: coarse))').matches,
   );
 
   useEffect(() => {
-    const mq = window.matchMedia('(max-width: 767px)');
+    const mq = window.matchMedia('(max-width: 1024px), ((hover: none) and (pointer: coarse))');
     const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
     mq.addEventListener('change', handler);
     return () => mq.removeEventListener('change', handler);
   }, []);
+
   const humanPlayer = state.players[humanPlayerIndex]!;
   const validActions = getValidActions(state, humanPlayerIndex);
   const isMyTurn = state.currentPlayerIndex === humanPlayerIndex;
-
-  // Get opponent indices (relative to human: across, left, right)
+  const isClaimWindow = validActions.includes('pass');
+  const discarder = state.lastDiscardBy
+    ? state.players.find(p => p.id === state.lastDiscardBy)
+    : undefined;
+  const claimActions = validActions.filter(a =>
+    ['pung', 'kong', 'quint', 'mahjong'].includes(a),
+  );
   const opponentIndices = [
-    (humanPlayerIndex + 2) % 4, // across (top)
-    (humanPlayerIndex + 1) % 4, // right
-    (humanPlayerIndex + 3) % 4, // left
+    (humanPlayerIndex + 2) % 4,
+    (humanPlayerIndex + 1) % 4,
+    (humanPlayerIndex + 3) % 4,
   ];
+  const allDiscards = state.players.flatMap(p => p.discards);
+
+  const exposedJokerExists = state.players.some(p =>
+    p.exposedSets.some(s => s.tiles.some(t => t.kind.type === 'joker')),
+  );
+  const canSwapJoker = isMyTurn && state.hasDrawn && !!selectedTile && exposedJokerExists;
+
+  useEffect(() => {
+    if (canSwapJoker && shouldShowJokerSwapTip(teachMode)) {
+      setShowJokerTip(true);
+    }
+  }, [canSwapJoker, teachMode]);
+
+  const hint = showTurnCoaching(teachMode)
+    ? turnHint(state, humanPlayerIndex, validActions, !!selectedTile)
+    : null;
+  const progress = showHandProgress(teachMode) ? handProgressHint(humanPlayer) : null;
 
   const handleTileClick = useCallback((tile: Tile) => {
-    if (selectedTile?.id === tile.id) {
-      onSelectTile(null);
-    } else {
-      onSelectTile(tile);
-    }
+    onSelectTile(selectedTile?.id === tile.id ? null : tile);
   }, [selectedTile, onSelectTile]);
 
   const handleDiscard = useCallback(() => {
-    if (selectedTile) {
-      onAction('discard', [selectedTile]);
-      onSelectTile(null);
-    }
+    if (!selectedTile) return;
+    onAction('discard', [selectedTile]);
+    onSelectTile(null);
   }, [selectedTile, onAction, onSelectTile]);
 
   const handleExposedJokerClick = useCallback((jokerTile: Tile) => {
     if (isMyTurn && state.hasDrawn && selectedTile) {
+      if (showJokerTip) {
+        markJokerSwapTipSeen();
+        setShowJokerTip(false);
+      }
       onAction('swap_joker', [selectedTile, jokerTile]);
       onSelectTile(null);
     }
-  }, [isMyTurn, state.hasDrawn, selectedTile, onAction, onSelectTile]);
+  }, [isMyTurn, state.hasDrawn, selectedTile, onAction, onSelectTile, showJokerTip]);
 
-  const allDiscards = state.players.flatMap(p => p.discards);
+  const openHelp = () => setShowHelp(true);
+
+  const overlays = (
+    <>
+      {state.phase === 'round_end' && (
+        <RoundEndOverlay
+          state={state}
+          onNewRound={() => onAction('draw')}
+          onQuitToMenu={onQuitToMenu}
+          onOpenHandCard={() => setShowHandCard(true)}
+          canStartNextRound={canStartNextRound}
+        />
+      )}
+      {showHandCard && <HandCardModal onClose={() => setShowHandCard(false)} />}
+      {showHelp && (
+        <HelpPanel title="How this turn works" onClose={() => setShowHelp(false)}>
+          {PLAY_HELP}
+        </HelpPanel>
+      )}
+    </>
+  );
+
+  const rotatePrompt = (
+    <div className="rotate-prompt">
+      <div className="rotate-prompt-content">
+        <span className="rotate-icon">📱</span>
+        <h3>Please Rotate Your Device</h3>
+        <p>Mahjon is best played in portrait mode on mobile devices.</p>
+      </div>
+    </div>
+  );
 
   if (isMobile) {
     const latestLog = state.log[state.log.length - 1];
-    const tickerMessage = latestLog ? latestLog.message : "Game started. Pass or draw to begin.";
+    const tickerMessage = latestLog ? latestLog.message : 'Game started. Pass or draw to begin.';
 
     return (
-      <div className="game-board mobile">
-        {/* Landscape Phone Rotation Prompt */}
-        <div className="rotate-prompt">
-          <div className="rotate-prompt-content">
-            <span className="rotate-icon">📱</span>
-            <h3>Please Rotate Your Device</h3>
-            <p>Mahjon is best played in portrait mode on mobile devices.</p>
-          </div>
-        </div>
-        {/* Mobile Top Bar */}
+      <div className={`game-board mobile${isClaimWindow ? ' claim-active' : ''}`}>
+        {rotatePrompt}
         <div className="mobile-top-bar">
           <div className="status-pill round">
             <span className="label">R:</span>
@@ -100,13 +174,14 @@ export function GameBoard({
           </div>
         </div>
 
-        {/* Mobile Opponents Row */}
         <div className="mobile-opponents-row">
-          {opponentIndices.map((idx) => {
+          {opponentIndices.map(idx => {
             const opp = state.players[idx]!;
-            const isActive = state.currentPlayerIndex === idx;
             return (
-              <div key={idx} className={`mobile-opponent-card ${isActive ? 'active' : ''}`}>
+              <div
+                key={idx}
+                className={`mobile-opponent-card${state.currentPlayerIndex === idx ? ' active' : ''}`}
+              >
                 <div className="opp-avatar-row">
                   <div className="opp-avatar">{opp.seatWind[0]?.toUpperCase()}</div>
                   <div className="opp-meta">
@@ -140,19 +215,51 @@ export function GameBoard({
           })}
         </div>
 
-        {/* Mobile Activity Ticker */}
-        <div className="mobile-activity-ticker">
-          <span className="ticker-dot"></span>
+        <button
+          type="button"
+          className="mobile-activity-ticker"
+          onClick={() => setShowRecent(r => !r)}
+          aria-expanded={showRecent}
+        >
+          <span className="ticker-dot" />
           <span className="ticker-text">{tickerMessage}</span>
-        </div>
+        </button>
+        {showRecent && (
+          <div className="mobile-recent-log">
+            {state.log.slice(-6).reverse().map((entry, i) => (
+              <div key={i} className="log-entry">{entry.message}</div>
+            ))}
+          </div>
+        )}
+        {progress && <div className="coach-hand-hint">{progress}</div>}
+        {showJokerTip && canSwapJoker && (
+          <div className="coach-banner coach-banner--inline">
+            <p>
+              Joker swap: select a natural tile that matches an exposed set, then tap the{' '}
+              <strong>jellyfish</strong> (joker) to swap.
+            </p>
+            <button
+              type="button"
+              className="btn btn-secondary btn-compact"
+              onClick={() => {
+                markJokerSwapTipSeen();
+                setShowJokerTip(false);
+              }}
+            >
+              Got it
+            </button>
+          </div>
+        )}
+        {roomCode && resumeKey && (
+          <div className="resume-chip" title="Share if you drop offline">
+            Room {roomCode} · Seat key {resumeKey}
+          </div>
+        )}
 
-        {/* Mobile Discard Pool */}
         <div className="mobile-discard-pool">
-          {allDiscards.length === 0 && (
-            <span className="discard-pool-label">Discards</span>
-          )}
+          {allDiscards.length === 0 && <span className="discard-pool-label">Discards</span>}
           <div className="discard-grid">
-            {allDiscards.map((tile) => (
+            {allDiscards.map(tile => (
               <TileComponent
                 key={tile.id}
                 tile={tile}
@@ -163,198 +270,128 @@ export function GameBoard({
           </div>
         </div>
 
-        {/* Mobile Bottom Bar */}
         <div className="mobile-bottom-bar">
-          <div className="mobile-player-status">
-            <div className="player-avatar-col">
-              <div className="player-avatar">{humanPlayer.seatWind[0]?.toUpperCase()}</div>
-              <span className="player-name">{humanPlayer.name}</span>
-            </div>
-            <div className="player-score-col">
-              <span className="player-score">Score: <strong>{humanPlayer.score}</strong></span>
-            </div>
-            <button className="btn-view-card" onClick={() => setShowHandCard(true)}>
-              View Card
-            </button>
-          </div>
-
-          {/* Exposed Sets */}
-          {humanPlayer.exposedSets.length > 0 && (
-            <div className="mobile-player-exposed">
-              {humanPlayer.exposedSets.map((set, i) => (
-                <div key={i} className="exposed-set">
-                  {set.tiles.map((tile) => {
-                    const isJok = tile.kind.type === 'joker';
-                    return (
-                      <TileComponent
-                        key={tile.id}
-                        tile={tile}
-                        size="mini"
-                        clickable={isJok && isMyTurn && state.hasDrawn && !!selectedTile}
-                        onClick={isJok ? () => handleExposedJokerClick(tile) : undefined}
-                      />
-                    );
-                  })}
+          <div className="mobile-bottom-main">
+            <div className="mobile-player-status">
+              <div className="player-avatar-col">
+                <div className="player-avatar" aria-hidden>
+                  {humanPlayer.seatWind[0]?.toUpperCase()}
                 </div>
-              ))}
-            </div>
-          )}
-
-          {/* Player Hand */}
-          <div className="mobile-player-hand" style={{ '--hand-size': humanPlayer.hand.length } as React.CSSProperties}>
-            {sortTiles(humanPlayer.hand).map((tile) => (
-              <TileComponent
-                key={tile.id}
-                tile={tile}
-                clickable={isMyTurn && state.hasDrawn}
-                selected={selectedTile?.id === tile.id}
-                onClick={handleTileClick}
-                size="normal"
-              />
-            ))}
-          </div>
-
-          {/* Action Bar */}
-          <div className="mobile-action-bar">
-            {validActions.includes('draw') && (
-              <button className="btn btn-action draw" onClick={() => onAction('draw')}>Draw</button>
-            )}
-            {validActions.includes('discard') && selectedTile && (
-              <button className="btn btn-action discard" onClick={handleDiscard}>Discard</button>
-            )}
-            {validActions.includes('pung') && (
-              <button className="btn btn-action pung" onClick={() => onAction('pung')}>Pung</button>
-            )}
-            {validActions.includes('kong') && (
-              <button className="btn btn-action kong" onClick={() => onAction('kong')}>Kong</button>
-            )}
-            {validActions.includes('quint') && (
-              <button className="btn btn-action quint" onClick={() => onAction('quint')}>Quint</button>
-            )}
-            {validActions.includes('mahjong') && (
-              <button className="btn btn-action mahjong" onClick={() => onAction('mahjong')}>Mahjong!</button>
-            )}
-            {validActions.includes('pass') && (
-              <button className="btn btn-action pass" onClick={() => onAction('pass')}>Pass</button>
-            )}
-            <span className="mobile-turn-indicator">
-              {isMyTurn ? '● Your Turn' : 
-                validActions.includes('pass') ? `● Claim discard from ${state.players.find(p => p.id === state.lastDiscardBy)?.name}?` :
-                `● ${state.players[state.currentPlayerIndex]?.name}'s turn`}
-            </span>
-          </div>
-        </div>
-
-        {/* Round End Overlay */}
-        {state.phase === 'round_end' && (
-          <div className="round-end-overlay">
-            <div className="round-end-content">
-              <h2>{state.winner
-                ? `${state.players.find(p => p.id === state.winner)?.name} Wins!`
-                : 'Draw Game'
-              }</h2>
-              {state.winningHand && (
-                <p className="winning-pattern">
-                  {state.winningHand.description}
-                  <br />
-                  <span style={{ color: 'var(--color-text-muted)' }}>
-                    {state.winningHand.category} • {state.winningHand.value} points
+                <div className="player-meta">
+                  <span className="player-name">{humanPlayer.name}</span>
+                  <span className="player-score-col">
+                    {humanPlayer.score} pts
                   </span>
-                </p>
-              )}
-              <div className="scoreboard">
-                {state.players.map((p, i) => (
-                  <div key={i} className={`score-card ${p.id === state.winner ? 'winner' : ''}`}>
-                    <div className="player-name">{p.name}</div>
-                    <div className="score-value">{p.score}</div>
+                </div>
+              </div>
+              <div className="mobile-utility-btns" role="toolbar" aria-label="Game tools">
+                <button
+                  type="button"
+                  className="btn-tool btn-tool--accent"
+                  onClick={() => setShowHandCard(true)}
+                >
+                  Card
+                </button>
+                <button type="button" className="btn-tool" onClick={openHelp}>
+                  Help
+                </button>
+                <button
+                  type="button"
+                  className="btn-tool"
+                  onClick={onOpenSettings}
+                  aria-label="Settings"
+                  title="Settings"
+                >
+                  ···
+                </button>
+              </div>
+            </div>
+
+            {humanPlayer.exposedSets.length > 0 && (
+              <div className="mobile-player-exposed">
+                {humanPlayer.exposedSets.map((set, i) => (
+                  <div key={i} className="exposed-set">
+                    {set.tiles.map(tile => {
+                      const isJok = tile.kind.type === 'joker';
+                      return (
+                        <TileComponent
+                          key={tile.id}
+                          tile={tile}
+                          size="mini"
+                          clickable={isJok && isMyTurn && state.hasDrawn && !!selectedTile}
+                          onClick={isJok ? () => handleExposedJokerClick(tile) : undefined}
+                        />
+                      );
+                    })}
                   </div>
                 ))}
               </div>
-              <div style={{ marginTop: 'var(--space-xl)', display: 'flex', gap: 'var(--space-md)', justifyContent: 'center' }}>
-                <button className="btn btn-primary" onClick={() => onAction('draw')}>
-                  New Round
-                </button>
-                <button className="btn btn-secondary" onClick={() => window.location.reload()}>
-                  Main Menu
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+            )}
 
-        {/* Hand card modal */}
-        {showHandCard && (
-          <div className="modal-overlay" onClick={() => setShowHandCard(false)}>
-            <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 700, maxHeight: '85vh', overflowY: 'auto' }}>
-              <h2>2026 Hand Patterns</h2>
-              <div style={{
-                background: 'rgba(255,255,255,0.05)',
-                borderRadius: 'var(--radius-md)',
-                padding: 'var(--space-sm) var(--space-md)',
-                marginBottom: 'var(--space-md)',
-                fontSize: 'var(--font-size-xs)',
-                lineHeight: '1.4',
-                border: '1px solid var(--color-panel-border)',
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))',
-                gap: 'var(--space-sm)',
-                textAlign: 'left',
-              }}>
-                <div><strong>F</strong> = Anemone (Flower)</div>
-                <div><strong>D</strong> = Dragon (Coral / Wave / Pearl)</div>
-                <div><strong>E/S/W/N</strong> = Winds</div>
-                <div><strong>Suits</strong> = Shell / Kelp / Pearl</div>
-              </div>
-              {ALL_HAND_CATEGORIES.map(cat => (
-                <div key={cat.name} style={{ marginBottom: 'var(--space-lg)' }}>
-                  <h3 style={{
-                    color: 'var(--color-accent)', fontSize: 'var(--font-size-md)',
-                    borderBottom: '1px solid var(--color-panel-border)',
-                    paddingBottom: 'var(--space-xs)', marginBottom: 'var(--space-sm)',
-                  }}>
-                    {cat.name}
-                  </h3>
-                  {cat.hands.map(hand => (
-                    <div key={hand.id} style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '4px 0',
-                      fontSize: 'var(--font-size-sm)',
-                      borderBottom: '1px solid rgba(255,255,255,0.03)',
-                    }}>
-                      <span style={{ flex: 1, textAlign: 'left' }}>{hand.description}</span>
-                      <span style={{
-                        color: hand.concealed ? 'var(--color-info)' : 'var(--color-success)',
-                        fontWeight: 700, minWidth: 50, textAlign: 'right',
-                      }}>
-                        {hand.concealed ? 'C' : 'X'}{hand.value}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+            <div
+              className="mobile-player-hand"
+              style={{ '--hand-size': humanPlayer.hand.length } as CSSProperties}
+            >
+              {sortTiles(humanPlayer.hand).map(tile => (
+                <TileComponent
+                  key={tile.id}
+                  tile={tile}
+                  clickable={isMyTurn && state.hasDrawn}
+                  selected={selectedTile?.id === tile.id}
+                  onClick={handleTileClick}
+                  size="normal"
+                />
               ))}
-              <button className="btn btn-secondary" onClick={() => setShowHandCard(false)} style={{ width: '100%', marginTop: 'var(--space-md)' }}>
-                Close
-              </button>
             </div>
+
+            {isClaimWindow && state.lastDiscard && (
+              <ClaimCoach
+                discard={state.lastDiscard}
+                discarderName={discarder?.name}
+                claimActions={claimActions}
+                onHelp={openHelp}
+              />
+            )}
           </div>
-        )}
+
+          <div
+            className={`mobile-action-bar${isClaimWindow ? ' claim-mode' : ''}${
+              validActions.includes('draw') ? ' draw-ready' : ''
+            }`}
+          >
+            {hint && (
+              <div className="mobile-action-hint" role="status">
+                {hint}
+              </div>
+            )}
+            <div className="mobile-action-buttons">
+              <ActionButtons
+                validActions={validActions}
+                canDiscard={!!selectedTile}
+                onAction={a => onAction(a)}
+                onDiscard={handleDiscard}
+              />
+            </div>
+            {!hint && (
+              <span className="mobile-turn-indicator">
+                {isClaimWindow
+                  ? 'Choose a claim, or Pass'
+                  : isMyTurn
+                    ? '● Your Turn'
+                    : `● ${state.players[state.currentPlayerIndex]?.name}'s turn`}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {overlays}
       </div>
     );
   }
 
   return (
     <div className="game-board">
-      {/* Landscape Phone Rotation Prompt */}
-      <div className="rotate-prompt">
-        <div className="rotate-prompt-content">
-          <span className="rotate-icon">📱</span>
-          <h3>Please Rotate Your Device</h3>
-          <p>Mahjon is best played in portrait mode on mobile devices.</p>
-        </div>
-      </div>
-      {/* Top Bar */}
+      {rotatePrompt}
       <div className="top-bar">
         <div className="game-info">
           <div className="game-info-item">
@@ -369,11 +406,22 @@ export function GameBoard({
             <span className="game-info-label">Wall</span>
             <span className="game-info-value">{wallRemaining(state.wall)}</span>
           </div>
-          <button className="btn btn-secondary" onClick={() => setShowHandCard(true)} style={{ marginLeft: 'var(--space-md)' }}>
-            View Card
-          </button>
+          <div className="board-utility-btns" role="toolbar" aria-label="Game tools">
+            <button
+              type="button"
+              className="btn btn-primary btn-compact"
+              onClick={() => setShowHandCard(true)}
+            >
+              Hand Card
+            </button>
+            <button type="button" className="btn btn-secondary btn-compact" onClick={openHelp}>
+              Help
+            </button>
+            <button type="button" className="btn btn-secondary btn-compact" onClick={onOpenSettings}>
+              Settings
+            </button>
+          </div>
         </div>
-        {/* Top opponent */}
         <OpponentDisplay
           player={state.players[opponentIndices[0]!]!}
           isActive={state.currentPlayerIndex === opponentIndices[0]}
@@ -390,9 +438,7 @@ export function GameBoard({
         </div>
       </div>
 
-      {/* Center Area */}
       <div className="center-area">
-        {/* Left opponent */}
         <div className="opponent-area left">
           <OpponentDisplay
             player={state.players[opponentIndices[2]!]!}
@@ -401,13 +447,9 @@ export function GameBoard({
             onJokerClick={handleExposedJokerClick}
           />
         </div>
-
-        {/* Discard pool */}
         <div className="discard-pool">
-          {allDiscards.length === 0 && (
-            <span className="discard-pool-label">Discards</span>
-          )}
-          {allDiscards.map((tile) => (
+          {allDiscards.length === 0 && <span className="discard-pool-label">Discards</span>}
+          {allDiscards.map(tile => (
             <TileComponent
               key={tile.id}
               tile={tile}
@@ -416,8 +458,6 @@ export function GameBoard({
             />
           ))}
         </div>
-
-        {/* Right opponent */}
         <div className="opponent-area right">
           <OpponentDisplay
             player={state.players[opponentIndices[1]!]!}
@@ -426,27 +466,48 @@ export function GameBoard({
             onJokerClick={handleExposedJokerClick}
           />
         </div>
-
-        {/* Wall counter overlay */}
         <div className="wall-counter">
           <div className="count">{wallRemaining(state.wall)}</div>
           <div className="label">Tiles Left</div>
         </div>
       </div>
 
-      {/* Bottom Bar - Player's hand & actions */}
       <div className="bottom-bar">
-        {/* Player info */}
+        {progress && <div className="coach-hand-hint">{progress}</div>}
+        {showJokerTip && canSwapJoker && (
+          <div className="coach-banner coach-banner--inline">
+            <p>
+              Joker swap: select a natural tile that matches an exposed set, then tap the{' '}
+              <strong>jellyfish</strong> (joker) to swap.
+            </p>
+            <button
+              type="button"
+              className="btn btn-secondary btn-compact"
+              onClick={() => {
+                markJokerSwapTipSeen();
+                setShowJokerTip(false);
+              }}
+            >
+              Got it
+            </button>
+          </div>
+        )}
+        {roomCode && resumeKey && (
+          <div className="resume-chip" title="Share if you drop offline">
+            Room {roomCode} · Seat key {resumeKey}
+          </div>
+        )}
         <div className="player-info-bar">
           <span className="player-name">{humanPlayer.name}</span>
           <span className="player-wind">{humanPlayer.seatWind}</span>
           <span className="player-score">Score: {humanPlayer.score}</span>
         </div>
-
-        {/* Hand + Exposed sets */}
         <div className="player-hand-container">
-          <div className="player-hand">
-            {sortTiles(humanPlayer.hand).map((tile) => (
+          <div
+            className="player-hand"
+            style={{ '--hand-size': humanPlayer.hand.length } as CSSProperties}
+          >
+            {sortTiles(humanPlayer.hand).map(tile => (
               <TileComponent
                 key={tile.id}
                 tile={tile}
@@ -460,7 +521,7 @@ export function GameBoard({
             <div className="exposed-sets">
               {humanPlayer.exposedSets.map((set, i) => (
                 <div key={i} className="exposed-set">
-                  {set.tiles.map((tile) => {
+                  {set.tiles.map(tile => {
                     const isJok = tile.kind.type === 'joker';
                     return (
                       <TileComponent
@@ -478,160 +539,50 @@ export function GameBoard({
           )}
         </div>
 
-        {/* Action Bar */}
-        <div className="action-bar">
-          <span className={`turn-indicator ${isMyTurn ? 'your-turn' : ''}`}>
-            {isMyTurn ? 'Your Turn' : 
-              validActions.includes('pass') ? `Claim discard from ${state.players.find(p => p.id === state.lastDiscardBy)?.name}?` :
-              `${state.players[state.currentPlayerIndex]?.name}'s turn`}
-          </span>
-
-          {validActions.includes('draw') && (
-            <button className="btn btn-action draw" onClick={() => onAction('draw')}>
-              Draw
-            </button>
+        <div className="action-bar-wrap">
+          {isClaimWindow && state.lastDiscard && (
+            <ClaimCoach
+              discard={state.lastDiscard}
+              discarderName={discarder?.name}
+              claimActions={claimActions}
+              onHelp={openHelp}
+              variant="desktop"
+            />
           )}
-          {validActions.includes('discard') && selectedTile && (
-            <button className="btn btn-action" onClick={handleDiscard}
-              style={{ background: '#607d8b', color: 'white' }}>
-              Discard
-            </button>
-          )}
-          {validActions.includes('pung') && (
-            <button className="btn btn-action pung" onClick={() => onAction('pung')}>
-              Pung
-            </button>
-          )}
-          {validActions.includes('kong') && (
-            <button className="btn btn-action kong" onClick={() => onAction('kong')}>
-              Kong
-            </button>
-          )}
-          {validActions.includes('quint') && (
-            <button className="btn btn-action quint" onClick={() => onAction('quint')}>
-              Quint
-            </button>
-          )}
-          {validActions.includes('mahjong') && (
-            <button className="btn btn-action mahjong" onClick={() => onAction('mahjong')}>
-              Mahjong!
-            </button>
-          )}
-          {validActions.includes('pass') && (
-            <button className="btn btn-action pass" onClick={() => onAction('pass')}>
-              Pass
-            </button>
-          )}
+          <div
+            className={`action-bar${isClaimWindow ? ' claim-mode' : ''}${
+              validActions.includes('draw') ? ' draw-ready' : ''
+            }`}
+          >
+            <span className={`turn-indicator${isMyTurn ? ' your-turn' : ''}`}>
+              {hint ??
+                (isClaimWindow
+                  ? 'Claim or Pass'
+                  : isMyTurn
+                    ? 'Your Turn'
+                    : `${state.players[state.currentPlayerIndex]?.name}'s turn`)}
+            </span>
+            <ActionButtons
+              validActions={validActions}
+              canDiscard={!!selectedTile}
+              onAction={a => onAction(a)}
+              onDiscard={handleDiscard}
+            />
+          </div>
         </div>
       </div>
 
-      {/* Game Log */}
       <div className="game-log">
         {state.log.slice(-8).reverse().map((entry, i) => (
           <div key={i} className="log-entry">{entry.message}</div>
         ))}
       </div>
 
-      {/* Round End Overlay */}
-      {state.phase === 'round_end' && (
-        <div className="round-end-overlay">
-          <div className="round-end-content">
-            <h2>{state.winner
-              ? `${state.players.find(p => p.id === state.winner)?.name} Wins!`
-              : 'Draw Game'
-            }</h2>
-            {state.winningHand && (
-              <p className="winning-pattern">
-                {state.winningHand.description}
-                <br />
-                <span style={{ color: 'var(--color-text-muted)' }}>
-                  {state.winningHand.category} • {state.winningHand.value} points
-                </span>
-              </p>
-            )}
-            <div className="scoreboard">
-              {state.players.map((p, i) => (
-                <div key={i} className={`score-card ${p.id === state.winner ? 'winner' : ''}`}>
-                  <div className="player-name">{p.name}</div>
-                  <div className="score-value">{p.score}</div>
-                </div>
-              ))}
-            </div>
-            <div style={{ marginTop: 'var(--space-xl)', display: 'flex', gap: 'var(--space-md)', justifyContent: 'center' }}>
-              <button className="btn btn-primary" onClick={() => onAction('draw')}>
-                New Round
-              </button>
-              <button className="btn btn-secondary" onClick={() => window.location.reload()}>
-                Main Menu
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Hand card modal */}
-      {showHandCard && (
-        <div className="modal-overlay" onClick={() => setShowHandCard(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 700, maxHeight: '85vh', overflowY: 'auto' }}>
-            <h2>2026 Hand Patterns</h2>
-            <div style={{
-              background: 'rgba(255,255,255,0.05)',
-              borderRadius: 'var(--radius-md)',
-              padding: 'var(--space-sm) var(--space-md)',
-              marginBottom: 'var(--space-md)',
-              fontSize: 'var(--font-size-xs)',
-              lineHeight: '1.4',
-              border: '1px solid var(--color-panel-border)',
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))',
-              gap: 'var(--space-sm)',
-              textAlign: 'left',
-            }}>
-              <div><strong>F</strong> = Anemone (Flower)</div>
-              <div><strong>D</strong> = Dragon (Coral / Wave / Pearl)</div>
-              <div><strong>E/S/W/N</strong> = Winds</div>
-              <div><strong>Suits</strong> = Shell / Kelp / Pearl</div>
-            </div>
-            {ALL_HAND_CATEGORIES.map(cat => (
-              <div key={cat.name} style={{ marginBottom: 'var(--space-lg)' }}>
-                <h3 style={{
-                  color: 'var(--color-accent)', fontSize: 'var(--font-size-md)',
-                  borderBottom: '1px solid var(--color-panel-border)',
-                  paddingBottom: 'var(--space-xs)', marginBottom: 'var(--space-sm)',
-                }}>
-                  {cat.name}
-                </h3>
-                {cat.hands.map(hand => (
-                  <div key={hand.id} style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '4px 0',
-                    fontSize: 'var(--font-size-sm)',
-                    borderBottom: '1px solid rgba(255,255,255,0.03)',
-                  }}>
-                    <span style={{ flex: 1, textAlign: 'left' }}>{hand.description}</span>
-                    <span style={{
-                      color: hand.concealed ? 'var(--color-info)' : 'var(--color-success)',
-                      fontWeight: 700, minWidth: 50, textAlign: 'right',
-                    }}>
-                      {hand.concealed ? 'C' : 'X'}{hand.value}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ))}
-            <button className="btn btn-secondary" onClick={() => setShowHandCard(false)} style={{ width: '100%', marginTop: 'var(--space-md)' }}>
-              Close
-            </button>
-          </div>
-        </div>
-      )}
+      {overlays}
     </div>
   );
 }
 
-// ---- Opponent Display Component ----
 function OpponentDisplay({
   player,
   isActive,
@@ -647,20 +598,20 @@ function OpponentDisplay({
   const maxShow = position === 'top' ? 14 : 8;
 
   return (
-    <div className={`opponent-info ${isActive ? 'active' : ''}`}>
+    <div className={`opponent-info${isActive ? ' active' : ''}`}>
       <span className="opponent-name">{player.name}</span>
       <span className="opponent-wind">{player.seatWind}</span>
       <span className="opponent-tile-count">{tileCount} tiles</span>
-      <div className={`opponent-tiles ${position !== 'top' ? 'vertical' : ''}`}>
+      <div className={`opponent-tiles${position !== 'top' ? ' vertical' : ''}`}>
         {Array.from({ length: Math.min(tileCount, maxShow) }, (_, i) => (
           <TileComponent key={i} faceUp={false} size="tiny" />
         ))}
       </div>
       {player.exposedSets.length > 0 && (
-        <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <div className="opponent-exposed">
           {player.exposedSets.map((set, i) => (
-            <div key={i} style={{ display: 'flex', gap: '1px' }}>
-              {set.tiles.map((tile) => {
+            <div key={i} className="opponent-exposed-set">
+              {set.tiles.map(tile => {
                 const isJok = tile.kind.type === 'joker';
                 return (
                   <TileComponent

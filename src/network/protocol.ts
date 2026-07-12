@@ -6,14 +6,15 @@ import { GameState, GameAction, PlayerType, Difficulty } from '../engine/types';
 
 /** All message types exchanged between peers */
 export type NetworkMessage =
-  | { type: 'join_request'; payload: { playerName: string } }
-  | { type: 'join_accepted'; payload: { playerIndex: number; lobbyState: LobbyState } }
+  | { type: 'join_request'; payload: { playerName: string; resumeKey?: string } }
+  | { type: 'join_accepted'; payload: { playerIndex: number; lobbyState: LobbyState; resumeKey?: string } }
   | { type: 'join_rejected'; payload: { reason: string } }
   | { type: 'lobby_update'; payload: LobbyState }
   | { type: 'game_start'; payload: { gameState: SerializableGameState } }
   | { type: 'game_action'; payload: { action: SerializableAction } }
   | { type: 'game_state_sync'; payload: { gameState: SerializableGameState } }
   | { type: 'charleston_tiles'; payload: { playerIndex: number; tileIds: number[] } }
+  | { type: 'charleston_control'; payload: { kind: 'skip_pass' | 'skip_rest' } }
   | { type: 'chat'; payload: { playerName: string; message: string } }
   | { type: 'ping'; payload: Record<string, never> }
   | { type: 'pong'; payload: Record<string, never> };
@@ -32,6 +33,8 @@ export interface LobbySlot {
   type: PlayerType;
   difficulty?: Difficulty;
   peerId?: string;    // PeerJS peer id (empty for AI/host)
+  /** Short code so a dropped player can reclaim this seat */
+  resumeKey?: string;
   connected: boolean;
   ready: boolean;
 }
@@ -85,21 +88,6 @@ export function serializeAction(action: GameAction): SerializableAction {
   };
 }
 
-/** Create an empty lobby */
-export function createLobby(roomCode: string, hostName: string): LobbyState {
-  return {
-    roomCode,
-    hostName,
-    maxPlayers: 4,
-    slots: [
-      { index: 0, playerName: hostName, type: 'human', connected: true, ready: true },
-      { index: 1, playerName: 'AI Player 2', type: 'ai', difficulty: 'medium', connected: true, ready: true },
-      { index: 2, playerName: 'AI Player 3', type: 'ai', difficulty: 'medium', connected: true, ready: true },
-      { index: 3, playerName: 'AI Player 4', type: 'ai', difficulty: 'medium', connected: true, ready: true },
-    ],
-  };
-}
-
 /** Generate a short room code */
 export function generateRoomCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -108,4 +96,36 @@ export function generateRoomCode(): string {
     code += chars[Math.floor(Math.random() * chars.length)];
   }
   return code;
+}
+
+/** Short seat key for mid-game rejoin */
+export function generateResumeKey(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 4; i++) {
+    code += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return code;
+}
+
+/** Create an empty lobby */
+export function createLobby(roomCode: string, hostName: string): LobbyState {
+  return {
+    roomCode,
+    hostName,
+    maxPlayers: 4,
+    slots: [
+      {
+        index: 0,
+        playerName: hostName,
+        type: 'human',
+        connected: true,
+        ready: true,
+        resumeKey: generateResumeKey(),
+      },
+      { index: 1, playerName: 'AI Player 2', type: 'ai', difficulty: 'medium', connected: true, ready: true },
+      { index: 2, playerName: 'AI Player 3', type: 'ai', difficulty: 'medium', connected: true, ready: true },
+      { index: 3, playerName: 'AI Player 4', type: 'ai', difficulty: 'medium', connected: true, ready: true },
+    ],
+  };
 }

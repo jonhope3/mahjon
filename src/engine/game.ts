@@ -6,10 +6,9 @@ import {
   GameState, Player, Tile, GameAction, GameLogEntry,
   SeatWind, PlayerType, Difficulty, GamePhase, ExposedSet,
 } from './types';
-import { createTileSet, shuffleTiles, buildWall, drawFromWall, sortTiles } from './tiles';
+import { createTileSet, shuffleTiles, buildWall, drawFromWall, sortTiles, isJoker } from './tiles';
 import { checkWin, calculateScore } from './scoring';
-import { claimPriority } from './actions';
-import { isJoker } from './tiles';
+import { nextCharlestonPhase } from './charleston';
 
 const SEAT_WINDS: SeatWind[] = ['east', 'south', 'west', 'north'];
 
@@ -63,16 +62,17 @@ export function createGame(config: GameConfig): GameState {
   return state;
 }
 
-/** Deal tiles to all players. East gets 14, others get 13. */
+/** Deal tiles to all players. Dealer gets 14, others get 13. */
 export function dealTiles(state: GameState): GameState {
   let newState = { ...state, wall: { ...state.wall, tiles: [...state.wall.tiles] } };
   const newPlayers = newState.players.map(p => ({ ...p, hand: [...p.hand] }));
+  const dealer = newState.dealerIndex;
 
   // Deal 13 tiles to each player (4 rounds of 3, then 1 round of 1)
   for (let round = 0; round < 4; round++) {
     const count = round < 3 ? 3 : 1;
     for (let p = 0; p < 4; p++) {
-      for (let c = 0; c < count + (round === 3 && p === 0 ? 1 : 0); c++) {
+      for (let c = 0; c < count + (round === 3 && p === dealer ? 1 : 0); c++) {
         const result = drawFromWall(newState.wall);
         if (!result) throw new Error('Not enough tiles to deal');
         const [tile, updatedWall] = result;
@@ -88,11 +88,36 @@ export function dealTiles(state: GameState): GameState {
   }
 
   newState.players = newPlayers;
+  newState.currentPlayerIndex = dealer;
   newState.phase = 'charleston_first_right';
 
   addLog(newState, 'system', 'draw', 'Tiles dealt. Charleston begins.');
 
   return newState;
+}
+
+/** Next round: keep scores/players, rotate dealer, redeal. */
+export function startNextRound(prev: GameState): GameState {
+  const nextDealer = (prev.dealerIndex + 1) % 4;
+  const fresh = createGame({
+    players: prev.players.map(p => ({
+      name: p.name,
+      type: p.type,
+      difficulty: p.difficulty,
+    })),
+  });
+  fresh.dealerIndex = nextDealer;
+  fresh.currentPlayerIndex = nextDealer;
+  fresh.roundNumber = prev.roundNumber + 1;
+  // Rotate seat winds so the dealer is East
+  for (let i = 0; i < 4; i++) {
+    fresh.players[i]!.seatWind = SEAT_WINDS[(i - nextDealer + 4) % 4]!;
+  }
+  const dealt = dealTiles(fresh);
+  for (let i = 0; i < 4; i++) {
+    dealt.players[i]!.score = prev.players[i]!.score;
+  }
+  return dealt;
 }
 
 /** Skip charleston and go straight to playing */
@@ -102,6 +127,13 @@ export function skipCharleston(state: GameState): GameState {
     phase: 'playing',
     hasDrawn: state.currentPlayerIndex === state.dealerIndex, // dealer already has 14
   };
+}
+
+/** Advance one Charleston step with no tile exchange (optional pass skip) */
+export function advanceCharlestonWithoutPass(state: GameState): GameState {
+  const nextPhase = nextCharlestonPhase(state.phase);
+  if (nextPhase === 'playing') return skipCharleston(state);
+  return { ...state, phase: nextPhase };
 }
 
 /** Process a game action */
@@ -277,15 +309,27 @@ function handleMahjong(state: GameState, action: GameAction): GameState {
     return state;
   }
 
-  const selfDrawn = !state.lastDiscard || state.lastDiscardBy === player.id;
+  const claimedFromDiscard = !!(state.lastDiscard && state.lastDiscardBy !== player.id);
+  const selfDrawn = !claimedFromDiscard;
   const jokerCount = player.hand.filter(t => isJoker(t)).length;
   const score = calculateScore(winPattern, selfDrawn, jokerCount);
+
+  if (claimedFromDiscard && state.lastDiscard && state.lastDiscardBy) {
+    const discarderIdx = state.players.findIndex(p => p.id === state.lastDiscardBy);
+    if (discarderIdx !== -1) {
+      const discards = state.players[discarderIdx]!.discards;
+      const discardIdx = discards.findIndex(t => t.id === state.lastDiscard!.id);
+      if (discardIdx !== -1) discards.splice(discardIdx, 1);
+    }
+  }
 
   player.score += score;
   state.winner = player.id;
   state.winningHand = winPattern;
   state.phase = 'round_end';
   state.claimWindow = null;
+  state.lastDiscard = null;
+  state.lastDiscardBy = null;
 
   addLog(state, action.playerId, 'mahjong',
     `Mahjong! ${winPattern.description} (${winPattern.category}) for ${score} points!`);
@@ -293,24 +337,12 @@ function handleMahjong(state: GameState, action: GameAction): GameState {
   return state;
 }
 
-function handlePass(state: GameState, _action: GameAction): GameState {
-  // If all non-discarders have passed, advance turn
+function handlePass(state: GameState, action: GameAction): GameState {
+  // Record pass — turn advances only after the claim window fully resolves (AI loop / host)
   if (state.claimWindow) {
-    state.claimWindow.resolved = true;
+    state.claimWindow.claims.set(action.playerId, 'pass');
   }
-  return state;
-}
-
-/** Resolve claim window and advance to next turn */
-export function resolveClaimWindow(state: GameState): GameState {
-  if (!state.claimWindow?.resolved) return state;
-
-  // No one claimed — advance to next player
-  state.claimWindow = null;
-  state.currentPlayerIndex = (state.currentPlayerIndex + 1) % 4;
-  state.hasDrawn = false;
-  state.turnNumber++;
-
+  addLog(state, action.playerId, 'pass', 'Passed on the discard.');
   return state;
 }
 

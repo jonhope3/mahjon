@@ -1,5 +1,5 @@
 // ============================================================
-// CharlestonDialog — Tile-passing dialog
+// CharlestonDialog — Tile-passing dialog + learning help
 // ============================================================
 
 import { useState, useCallback, useEffect } from 'react';
@@ -7,29 +7,49 @@ import { Tile, GamePhase } from '../engine/types';
 import { getCharlestonDirection, getCharlestonRound } from '../engine/charleston';
 import { TileComponent } from './TileComponent';
 import { sortTiles } from '../engine/tiles';
+import { HandCardModal } from './HandCardModal';
+import { HelpPanel, CHARLESTON_HELP } from './HelpPanel';
+import type { TeachMode } from '../game-settings';
+import {
+  markCharlestonIntroSeen,
+  shouldShowCharlestonIntro,
+  showTurnCoaching,
+} from '../teach';
 
 interface CharlestonDialogProps {
   phase: GamePhase;
   hand: Tile[];
   onConfirm: (tiles: Tile[]) => void;
   onSkip?: () => void;
+  /** Jump past remaining optional Charleston (2nd + courtesy) into play */
+  onSkipRest?: () => void;
+  teachMode?: TeachMode;
+  /** When true, show waiting state after you've already passed */
+  waitingForOthers?: boolean;
 }
 
-export function CharlestonDialog({ phase, hand, onConfirm, onSkip }: CharlestonDialogProps) {
+export function CharlestonDialog({
+  phase,
+  hand,
+  onConfirm,
+  onSkip,
+  onSkipRest,
+  teachMode = 'guided',
+  waitingForOthers = false,
+}: CharlestonDialogProps) {
   const [selectedTiles, setSelectedTiles] = useState<Tile[]>([]);
-  const [isMobile, setIsMobile] = useState(() =>
-    window.matchMedia('(max-width: 767px)').matches
-  );
-
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 767px)');
-    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, []);
+  const [showHelp, setShowHelp] = useState(false);
+  const [showHandCard, setShowHandCard] = useState(false);
+  const [showIntro, setShowIntro] = useState(false);
 
   const direction = getCharlestonDirection(phase);
   const round = getCharlestonRound(phase);
+
+  useEffect(() => {
+    if (round === 'first' && shouldShowCharlestonIntro(teachMode)) {
+      setShowIntro(true);
+    }
+  }, [round, teachMode]);
 
   const handleTileClick = useCallback((tile: Tile) => {
     setSelectedTiles(prev => {
@@ -49,76 +69,137 @@ export function CharlestonDialog({ phase, hand, onConfirm, onSkip }: CharlestonD
     }
   };
 
+  const dismissIntro = () => {
+    markCharlestonIntroSeen();
+    setShowIntro(false);
+  };
+
   const isReady = selectedTiles.length === 3;
   const roundLabel = round === 'first' ? 'First' : round === 'second' ? 'Second' : 'Courtesy';
+  const help = CHARLESTON_HELP[round ?? 'first'];
+  const canSkipRest = round === 'second' || round === 'courtesy';
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-content">
-        <div className="charleston-panel">
-          <h2>Charleston</h2>
-          <div className="charleston-direction">
-            Pass {direction} →
-          </div>
-          <p className="charleston-instruction">
-            {roundLabel} Charleston — Select 3 tiles to pass {direction.toLowerCase()}
-          </p>
+    <>
+      <div className="modal-overlay charleston-overlay">
+        <div className="modal-content charleston-modal">
+          <div className="charleston-panel">
+            <header className="charleston-header">
+              <p className="charleston-kicker">{roundLabel} Charleston</p>
+              <h2 className="charleston-title">Pass {direction}</h2>
+            </header>
 
-          {/* Selected tiles area */}
-          <div className={`charleston-selected ${isReady ? 'ready' : ''} charleston-selected-row`}>
-            {selectedTiles.length === 0 && (
-              <span style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)' }}>
-                Click tiles below to select them
-              </span>
+            {showIntro && showTurnCoaching(teachMode) && (
+              <div className="coach-banner">
+                <p>
+                  Pass <strong>3 tiles</strong> you don’t need — right, across, then left. Keep
+                  jokers.
+                </p>
+                <button type="button" className="btn btn-primary btn-compact" onClick={dismissIntro}>
+                  Got it
+                </button>
+              </div>
             )}
-            {selectedTiles.map(tile => (
-              <TileComponent
-                key={tile.id}
-                tile={tile}
-                clickable
-                onClick={() => handleTileClick(tile)}
-                highlighted
-                size="normal"
-              />
-            ))}
-          </div>
 
-          {/* Hand */}
-          <div className="charleston-hand-row" style={{ '--hand-size': hand.length } as React.CSSProperties}>
-            {sortTiles(hand).map(tile => (
-              <TileComponent
-                key={tile.id}
-                tile={tile}
-                clickable
-                selected={selectedTiles.some(t => t.id === tile.id)}
-                onClick={handleTileClick}
-                size="normal"
-              />
-            ))}
-          </div>
+            {waitingForOthers ? (
+              <p className="charleston-waiting" role="status">
+                Tiles sent — waiting for the other players…
+              </p>
+            ) : (
+              <>
+                <p className="charleston-hint">
+                  {round === 'courtesy'
+                    ? 'Optional — pass 3 across, or skip.'
+                    : round === 'second'
+                      ? 'Optional — pass, skip this pass, or skip the rest.'
+                      : 'Tap 3 tiles to pass. Long-press a tile to identify it.'}
+                </p>
 
-          <div style={{ display: 'flex', gap: 'var(--space-md)', justifyContent: 'center' }}>
-            <button
-              className="btn btn-primary"
-              onClick={handleConfirm}
-              disabled={!isReady}
-              id="confirm-charleston-btn"
-            >
-              Pass Tiles
-            </button>
-            {round === 'second' && onSkip && (
-              <button className="btn btn-secondary" onClick={onSkip} id="skip-charleston-btn">
-                Skip 2nd Charleston
-              </button>
-            )}
-            {round === 'courtesy' && onSkip && (
-              <button className="btn btn-secondary" onClick={onSkip} id="skip-courtesy-btn">
-                Skip Courtesy
-              </button>
+                <div className={`charleston-selected ${isReady ? 'ready' : ''} charleston-selected-row`}>
+                  {selectedTiles.length === 0 && (
+                    <span className="charleston-placeholder">Select 3 tiles</span>
+                  )}
+                  {selectedTiles.map(tile => (
+                    <TileComponent
+                      key={tile.id}
+                      tile={tile}
+                      clickable
+                      onClick={() => handleTileClick(tile)}
+                      highlighted
+                      size="normal"
+                    />
+                  ))}
+                </div>
+
+                <div
+                  className="charleston-hand-row"
+                  style={{ '--hand-size': hand.length } as React.CSSProperties}
+                >
+                  {sortTiles(hand).map(tile => (
+                    <TileComponent
+                      key={tile.id}
+                      tile={tile}
+                      clickable
+                      selected={selectedTiles.some(t => t.id === tile.id)}
+                      onClick={handleTileClick}
+                      size="normal"
+                    />
+                  ))}
+                </div>
+
+                <div className="charleston-actions">
+                  <button
+                    className="btn btn-primary"
+                    onClick={handleConfirm}
+                    disabled={!isReady}
+                    id="confirm-charleston-btn"
+                  >
+                    Pass ({selectedTiles.length}/3)
+                  </button>
+                  {round === 'second' && onSkip && (
+                    <button className="btn btn-secondary" onClick={onSkip} id="skip-charleston-btn">
+                      Skip this pass
+                    </button>
+                  )}
+                  {round === 'courtesy' && onSkip && (
+                    <button className="btn btn-secondary" onClick={onSkip} id="skip-courtesy-btn">
+                      Skip courtesy
+                    </button>
+                  )}
+                  {canSkipRest && onSkipRest && (
+                    <button
+                      className="btn btn-secondary"
+                      onClick={onSkipRest}
+                      id="skip-rest-charleston-btn"
+                    >
+                      Skip rest → play
+                    </button>
+                  )}
+                </div>
+
+                <div className="charleston-links">
+                  <button type="button" className="linkish" onClick={() => setShowHandCard(true)}>
+                    Hand card
+                  </button>
+                  <span className="charleston-links-sep" aria-hidden>
+                    ·
+                  </span>
+                  <button type="button" className="linkish" onClick={() => setShowHelp(true)}>
+                    Help
+                  </button>
+                </div>
+              </>
             )}
           </div>
         </div>
       </div>
-    </div>
+
+      {showHelp && (
+        <HelpPanel title={help.title} onClose={() => setShowHelp(false)}>
+          {help.body}
+        </HelpPanel>
+      )}
+      {showHandCard && <HandCardModal onClose={() => setShowHandCard(false)} />}
+    </>
   );
 }
