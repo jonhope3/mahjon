@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mahjon-cache-v7';
+const CACHE_NAME = 'mahjon-cache-v8';
 
 const PRECACHE_ASSETS = [
   './',
@@ -53,7 +53,8 @@ self.addEventListener('fetch', event => {
       }
 
       return fetch(event.request).then(networkResponse => {
-        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+        if (!networkResponse || networkResponse.status !== 200 || 
+            (networkResponse.type !== 'basic' && networkResponse.type !== 'cors')) {
           return networkResponse;
         }
 

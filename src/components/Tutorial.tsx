@@ -7,6 +7,7 @@ import { TileComponent } from './TileComponent';
 import { createTileSet } from '../engine/tiles';
 import { Tile, TileKind } from '../engine/types';
 import { ALL_HAND_CATEGORIES } from '../engine/hands';
+import '../styles/tutorial.css';
 
 interface TutorialProps {
   onBack: () => void;
@@ -50,12 +51,15 @@ interface TutorialStep {
 export function Tutorial({ onBack }: TutorialProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [showHandCard, setShowHandCard] = useState(false);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isMobile, setIsMobile] = useState(() =>
+    window.matchMedia('(max-width: 767px)').matches
+  );
 
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    const mq = window.matchMedia('(max-width: 767px)');
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
   }, []);
 
   const steps: TutorialStep[] = [
@@ -81,7 +85,7 @@ export function Tutorial({ onBack }: TutorialProps) {
 
           <div className="tutorial-section">
             <h4 style={{ color: 'var(--color-crak)' }}>Shells</h4>
-            <p>Marked with a unique ocean life or shell emoji.</p>
+            <p>Marked with a unique ocean life or shell type label.</p>
             <div className="tutorial-tiles-row">
               {[1,2,3,4,5,6,7,8,9].map(r =>
                 <TileComponent key={r} tile={makeTile(800+r, {type:'suited',suit:'crak',rank:r})} size="normal" />
@@ -128,7 +132,7 @@ export function Tutorial({ onBack }: TutorialProps) {
 
           <div className="tutorial-section">
             <h4>Dragons (4 copies each = 12 tiles)</h4>
-            <p>Coral (🪸), Sea Wave (🌊), and Pearl Oyster (🦪). The "0" in year hands (2026) uses the Pearl Dragon Oyster.</p>
+            <p>Coral (Coral Dragon), Sea Wave (Wave Dragon), and Pearl (Pearl Dragon). The "0" in year hands (2026) uses the Pearl Dragon.</p>
             <div className="tutorial-tiles-row">
               <TileComponent tile={SAMPLE_TILES.dragonRed} size="normal" />
               <TileComponent tile={SAMPLE_TILES.dragonGreen} size="normal" />
@@ -213,10 +217,10 @@ export function Tutorial({ onBack }: TutorialProps) {
             </ul>
           </div>
 
-          <p>Declare <strong>"Mahjong!"</strong> when your hand matches a pattern — either after drawing or by claiming a discard.</p>
+          <p>Declare <strong>"Mahjong"</strong> when your hand matches a pattern — either after drawing or by claiming a discard.</p>
 
           <button className="btn btn-secondary" onClick={() => setShowHandCard(true)} style={{ marginTop: 'var(--space-md)' }}>
-            📋 View 2026 Hand Patterns
+            View 2026 Hand Patterns
           </button>
         </div>
       ),
@@ -247,7 +251,7 @@ export function Tutorial({ onBack }: TutorialProps) {
           </div>
 
           <p style={{ textAlign: 'center', marginTop: 'var(--space-lg)', fontSize: 'var(--font-size-lg)', fontWeight: 600 }}>
-            You're ready to play! 🌊
+            You're ready to play!
           </p>
         </div>
       ),
@@ -323,10 +327,10 @@ export function Tutorial({ onBack }: TutorialProps) {
               gap: 'var(--space-sm)',
               textAlign: 'left',
             }}>
-              <div><strong>F</strong> = Anemone (Flower) 🪸</div>
-              <div><strong>D</strong> = Dragon (🪸 / 🌊 / 🦪)</div>
-              <div><strong>E/S/W/N</strong> = Winds 🧭</div>
-              <div><strong>Suits</strong> = Shell 🐚 / Kelp 🌿 / Pearl 🫧</div>
+              <div><strong>F</strong> = Anemone (Flower)</div>
+              <div><strong>D</strong> = Dragon (Coral / Wave / Pearl)</div>
+              <div><strong>E/S/W/N</strong> = Winds</div>
+              <div><strong>Suits</strong> = Shell / Kelp / Pearl</div>
             </div>
             {ALL_HAND_CATEGORIES.map(cat => (
               <div key={cat.name} style={{ marginBottom: 'var(--space-lg)' }}>

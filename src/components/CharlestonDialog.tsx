@@ -17,12 +17,15 @@ interface CharlestonDialogProps {
 
 export function CharlestonDialog({ phase, hand, onConfirm, onSkip }: CharlestonDialogProps) {
   const [selectedTiles, setSelectedTiles] = useState<Tile[]>([]);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isMobile, setIsMobile] = useState(() =>
+    window.matchMedia('(max-width: 767px)').matches
+  );
 
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    const mq = window.matchMedia('(max-width: 767px)');
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
   }, []);
 
   const direction = getCharlestonDirection(phase);
@@ -81,7 +84,7 @@ export function CharlestonDialog({ phase, hand, onConfirm, onSkip }: CharlestonD
           </div>
 
           {/* Hand */}
-          <div className="charleston-hand-row">
+          <div className="charleston-hand-row" style={{ '--hand-size': hand.length } as React.CSSProperties}>
             {sortTiles(hand).map(tile => (
               <TileComponent
                 key={tile.id}

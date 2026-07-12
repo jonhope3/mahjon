@@ -18,19 +18,6 @@ interface TileComponentProps {
   className?: string;
 }
 
-/** Emojis for Shell suit (ranks 1-9) */
-const SHELL_EMOJIS: Record<number, string> = {
-  1: '🐚', // Conch Shell
-  2: '🦪', // Oyster
-  3: '🪸', // Coral
-  4: '🦀', // Crab
-  5: '🐡', // Pufferfish
-  6: '🐙', // Octopus
-  7: '🐬', // Dolphin
-  8: '🐳', // Whale
-  9: '🦈', // Shark
-};
-
 /** Wind display labels */
 const WIND_LABELS: Record<string, string> = {
   east: 'EAST', south: 'SOUTH', west: 'WEST', north: 'NORTH',
@@ -38,9 +25,9 @@ const WIND_LABELS: Record<string, string> = {
 
 /** Dragon display configuration */
 const DRAGON_DISPLAY: Record<string, { char: string; label: string; cls: string }> = {
-  red: { char: '🪸', label: 'Coral', cls: 'dragon-red' },
-  green: { char: '🌊', label: 'Wave', cls: 'dragon-green' },
-  white: { char: '🦪', label: 'Pearl', cls: 'dragon-white' },
+  red: { char: 'C', label: 'Coral', cls: 'dragon-red' },
+  green: { char: 'W', label: 'Wave', cls: 'dragon-green' },
+  white: { char: 'P', label: 'Pearl', cls: 'dragon-white' },
 };
 
 export function TileComponent({
@@ -96,7 +83,7 @@ function renderTileFace(tile: Tile, size: string) {
         <>
           <span className="tile-rank wind">{kind.wind[0]?.toUpperCase()}</span>
           {size === 'normal' && (
-            <span className="tile-suit-label wind">🧭 {WIND_LABELS[kind.wind]}</span>
+            <span className="tile-suit-label wind">{WIND_LABELS[kind.wind]}</span>
           )}
         </>
       );
@@ -104,7 +91,7 @@ function renderTileFace(tile: Tile, size: string) {
       const d = DRAGON_DISPLAY[kind.dragon]!;
       return (
         <>
-          <span className={`tile-emoji ${d.cls}`} style={{ fontSize: size === 'normal' ? '24px' : '16px' }}>{d.char}</span>
+          <span className={`tile-rank dragon ${d.cls}`}>{d.char}</span>
           {size === 'normal' && (
             <span className={`tile-suit-label ${d.cls}`}>
               {d.label}
@@ -116,7 +103,7 @@ function renderTileFace(tile: Tile, size: string) {
     case 'flower':
       return (
         <>
-          <span className="tile-emoji flower" style={{ fontSize: size === 'normal' ? '22px' : '16px' }}>🪸</span>
+          <span className="tile-rank flower">A</span>
           {size === 'normal' && (
             <span className="tile-suit-label anemone" style={{ color: '#d81b60' }}>Anemone</span>
           )}
@@ -136,9 +123,9 @@ function renderSuitedTile(suit: string, rank: number, size: string) {
     case 'crak':
       return (
         <>
-          <span className="tile-emoji">{SHELL_EMOJIS[rank]}</span>
+          <span className="tile-rank crak">{rank}</span>
           {size === 'normal' && (
-            <span className="tile-suit-label crak">{rank}</span>
+            <span className="tile-suit-label crak">SHELL</span>
           )}
         </>
       );
@@ -147,14 +134,17 @@ function renderSuitedTile(suit: string, rank: number, size: string) {
         <>
           <span className={`tile-rank dot`}>{rank}</span>
           {renderDots(rank, size)}
+          {size === 'normal' && (
+            <span className="tile-suit-label dot">PEARL</span>
+          )}
         </>
       );
     case 'bam':
       return (
         <>
-          <span className="tile-emoji">🌿</span>
+          <span className="tile-rank bam">{rank}</span>
           {size === 'normal' && (
-            <span className="tile-suit-label bam">{rank}</span>
+            <span className="tile-suit-label bam">KELP</span>
           )}
         </>
       );

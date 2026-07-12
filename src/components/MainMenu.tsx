@@ -52,8 +52,8 @@ export function MainMenu({ onStartGame, onPlayMultiplayer, onStartTutorial }: Ma
   return (
     <div className="main-menu">
       {/* Decorative elements */}
-      <div className="deco-tiles left">🐚</div>
-      <div className="deco-tiles right">🌊</div>
+      <div className="deco-tiles left"></div>
+      <div className="deco-tiles right"></div>
 
       <div className="menu-logo">
         <h1>Mahjon</h1>
@@ -65,19 +65,15 @@ export function MainMenu({ onStartGame, onPlayMultiplayer, onStartTutorial }: Ma
           <h2>Play Mahjong</h2>
           <div className="menu-actions">
             <button className="btn btn-primary" onClick={handleQuickStart} id="quick-start-btn">
-              <span className="btn-icon">🐚</span>
               Quick Start vs AI
             </button>
             <button className="btn btn-secondary" onClick={() => setShowSetup(true)} id="custom-game-btn">
-              <span className="btn-icon">⚙️</span>
               Custom Game
             </button>
             <button className="btn btn-secondary" onClick={onPlayMultiplayer} id="multiplayer-btn">
-              <span className="btn-icon">🌐</span>
               Online Multiplayer
             </button>
             <button className="btn btn-secondary" onClick={onStartTutorial} id="tutorial-btn">
-              <span className="btn-icon">📖</span>
               How to Play (Tutorial)
             </button>
           </div>

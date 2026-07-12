@@ -184,12 +184,14 @@
   cursor: pointer;
 }
 
-.tile.clickable:hover {
-  transform: translateY(-6px);
-  box-shadow:
-    0 8px 16px var(--color-tile-shadow),
-    0 0 12px rgba(244, 197, 66, 0.2);
-  z-index: 20;
+@media (hover: hover) {
+  .tile.clickable:hover {
+    transform: translateY(-6px);
+    box-shadow:
+      0 8px 16px var(--color-tile-shadow),
+      0 0 12px rgba(244, 197, 66, 0.2);
+    z-index: 20;
+  }
 }
 
 .tile.selected {
@@ -301,9 +303,9 @@
 }
 
 .mobile-player-hand .tile {
-  width: 38px !important;
-  height: 52px !important;
-  margin-right: -11px; /* Overlap right-to-left */
+  width: calc(min(38px, (100vw - 32px) / (var(--hand-size, 14) * 0.72 + 0.28))) !important;
+  height: calc(min(38px, (100vw - 32px) / (var(--hand-size, 14) * 0.72 + 0.28)) * 1.368) !important;
+  margin-right: calc(-1 * min(11px, (100vw - 32px) / (var(--hand-size, 14) * 0.72 + 0.28) * 0.28)) !important;
   position: relative;
   z-index: 2;
   border-radius: 4px;
@@ -315,9 +317,11 @@
 }
 
 /* Hover and selection lifts tiles visually and raises their stack order */
-.mobile-player-hand .tile.clickable:hover {
-  transform: translateY(-8px);
-  z-index: 10;
+@media (hover: hover) {
+  .mobile-player-hand .tile.clickable:hover {
+    transform: translateY(-8px);
+    z-index: 10;
+  }
 }
 
 .mobile-player-hand .tile.selected {
@@ -339,9 +343,9 @@
 }
 
 .charleston-hand-row .tile {
-  width: 34px !important;
-  height: 46px !important;
-  margin-right: -10px;
+  width: calc(min(32px, (100vw * 0.92 - 32px) / (var(--hand-size, 14) * 0.70 + 0.30))) !important;
+  height: calc(min(32px, (100vw * 0.92 - 32px) / (var(--hand-size, 14) * 0.70 + 0.30)) * 1.35) !important;
+  margin-right: calc(-1 * min(10px, (100vw * 0.92 - 32px) / (var(--hand-size, 14) * 0.70 + 0.30) * 0.30)) !important;
   position: relative;
   z-index: 2;
   border-radius: 3px;
@@ -426,6 +430,10 @@
   .tile-suit-label {
     font-size: 6px;
   }
+  .mobile-player-hand .tile .tile-suit-label,
+  .charleston-hand-row .tile .tile-suit-label {
+    display: none !important;
+  }
   .tile-cjk, .tile-emoji {
     font-size: 13px;
   }
@@ -440,8 +448,10 @@
   .tile.selected {
     transform: translateY(-6px);
   }
-  .tile.clickable:hover {
-    transform: translateY(-2px);
+  @media (hover: hover) {
+    .tile.clickable:hover {
+      transform: translateY(-2px);
+    }
   }
   .exposed-set {
     padding: 2px;
@@ -516,4 +526,16 @@
     font-size: 5px;
     letter-spacing: -0.02em;
   }
+}
+
+/* Expansion of touch zone for tiny clickable tiles to meet 44px minimum */
+.tile.tiny.clickable {
+  position: relative;
+}
+
+.tile.tiny.clickable::before {
+  content: '';
+  position: absolute;
+  inset: -14px -16px;
+  z-index: 1;
 }

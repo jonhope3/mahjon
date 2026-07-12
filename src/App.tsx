@@ -75,6 +75,7 @@ export default function App() {
       ...state,
       players: newPlayers,
       phase: nextPhase,
+      hasDrawn: nextPhase === 'playing' ? true : state.hasDrawn,
     };
 
     selections.clear();
@@ -261,6 +262,7 @@ export default function App() {
       ...prev,
       players: newPlayers,
       phase: nextPhase,
+      hasDrawn: nextPhase === 'playing' ? true : prev.hasDrawn,
     } : null);
   }, [peerManager, checkCharlestonComplete]);
 
@@ -353,7 +355,7 @@ export default function App() {
             }
             return newState;
           });
-        }, 600);
+        }, 1200);
         return () => { if (aiTimerRef.current) clearTimeout(aiTimerRef.current); };
       }
 
@@ -367,7 +369,7 @@ export default function App() {
           }
           return newState;
         });
-      }, 400);
+      }, 1000);
       return () => { if (aiTimerRef.current) clearTimeout(aiTimerRef.current); };
     }
 
@@ -378,15 +380,7 @@ export default function App() {
           if (!prev) return null;
           const aiAction = getAIAction(prev, prev.currentPlayerIndex);
           if (aiAction) {
-            let newState = processAction(prev, aiAction);
-
-            // If AI drew, immediately decide on discard
-            if (aiAction.type === 'draw') {
-              const discardAction = getAIAction(newState, prev.currentPlayerIndex);
-              if (discardAction) {
-                newState = processAction(newState, discardAction);
-              }
-            }
+            const newState = processAction(prev, aiAction);
 
             if (peerManager?.isHost) {
               peerManager.syncGameState(newState);
@@ -395,7 +389,7 @@ export default function App() {
           }
           return prev;
         });
-      }, 500 + Math.random() * 500);
+      }, 1000 + Math.random() * 400);
 
       return () => { if (aiTimerRef.current) clearTimeout(aiTimerRef.current); };
     }

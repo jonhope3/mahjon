@@ -25,12 +25,15 @@ export function GameBoard({
   onSelectTile,
 }: GameBoardProps) {
   const [showHandCard, setShowHandCard] = useState(false);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isMobile, setIsMobile] = useState(() =>
+    window.matchMedia('(max-width: 767px)').matches
+  );
 
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    const mq = window.matchMedia('(max-width: 767px)');
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
   }, []);
   const humanPlayer = state.players[humanPlayerIndex]!;
   const validActions = getValidActions(state, humanPlayerIndex);
@@ -68,8 +71,19 @@ export function GameBoard({
   const allDiscards = state.players.flatMap(p => p.discards);
 
   if (isMobile) {
+    const latestLog = state.log[state.log.length - 1];
+    const tickerMessage = latestLog ? latestLog.message : "Game started. Pass or draw to begin.";
+
     return (
       <div className="game-board mobile">
+        {/* Landscape Phone Rotation Prompt */}
+        <div className="rotate-prompt">
+          <div className="rotate-prompt-content">
+            <span className="rotate-icon">📱</span>
+            <h3>Please Rotate Your Device</h3>
+            <p>Mahjon is best played in portrait mode on mobile devices.</p>
+          </div>
+        </div>
         {/* Mobile Top Bar */}
         <div className="mobile-top-bar">
           <div className="status-pill round">
@@ -97,7 +111,7 @@ export function GameBoard({
                   <div className="opp-avatar">{opp.seatWind[0]?.toUpperCase()}</div>
                   <div className="opp-meta">
                     <span className="opp-name">{opp.name}</span>
-                    <span className="opp-count">🀄 {opp.hand.length}</span>
+                    <span className="opp-count">Hand: {opp.hand.length}</span>
                   </div>
                 </div>
                 {opp.exposedSets.length > 0 && (
@@ -124,6 +138,12 @@ export function GameBoard({
               </div>
             );
           })}
+        </div>
+
+        {/* Mobile Activity Ticker */}
+        <div className="mobile-activity-ticker">
+          <span className="ticker-dot"></span>
+          <span className="ticker-text">{tickerMessage}</span>
         </div>
 
         {/* Mobile Discard Pool */}
@@ -154,7 +174,7 @@ export function GameBoard({
               <span className="player-score">Score: <strong>{humanPlayer.score}</strong></span>
             </div>
             <button className="btn-view-card" onClick={() => setShowHandCard(true)}>
-              📋 View Card
+              View Card
             </button>
           </div>
 
@@ -181,7 +201,7 @@ export function GameBoard({
           )}
 
           {/* Player Hand */}
-          <div className="mobile-player-hand">
+          <div className="mobile-player-hand" style={{ '--hand-size': humanPlayer.hand.length } as React.CSSProperties}>
             {sortTiles(humanPlayer.hand).map((tile) => (
               <TileComponent
                 key={tile.id}
@@ -197,25 +217,25 @@ export function GameBoard({
           {/* Action Bar */}
           <div className="mobile-action-bar">
             {validActions.includes('draw') && (
-              <button className="btn btn-action draw" onClick={() => onAction('draw')}>➕ Draw</button>
+              <button className="btn btn-action draw" onClick={() => onAction('draw')}>Draw</button>
             )}
             {validActions.includes('discard') && selectedTile && (
-              <button className="btn btn-action discard" onClick={handleDiscard}>🗑️ Discard</button>
+              <button className="btn btn-action discard" onClick={handleDiscard}>Discard</button>
             )}
             {validActions.includes('pung') && (
-              <button className="btn btn-action pung" onClick={() => onAction('pung')}>🔥 Pung</button>
+              <button className="btn btn-action pung" onClick={() => onAction('pung')}>Pung</button>
             )}
             {validActions.includes('kong') && (
-              <button className="btn btn-action kong" onClick={() => onAction('kong')}>✨ Kong</button>
+              <button className="btn btn-action kong" onClick={() => onAction('kong')}>Kong</button>
             )}
             {validActions.includes('quint') && (
-              <button className="btn btn-action quint" onClick={() => onAction('quint')}>👑 Quint</button>
+              <button className="btn btn-action quint" onClick={() => onAction('quint')}>Quint</button>
             )}
             {validActions.includes('mahjong') && (
-              <button className="btn btn-action mahjong" onClick={() => onAction('mahjong')}>🏆 Mahjong!</button>
+              <button className="btn btn-action mahjong" onClick={() => onAction('mahjong')}>Mahjong!</button>
             )}
             {validActions.includes('pass') && (
-              <button className="btn btn-action pass" onClick={() => onAction('pass')}>🤝 Pass</button>
+              <button className="btn btn-action pass" onClick={() => onAction('pass')}>Pass</button>
             )}
             <span className="mobile-turn-indicator">
               {isMyTurn ? '● Your Turn' : `● ${state.players[state.currentPlayerIndex]?.name}'s turn`}
@@ -228,7 +248,7 @@ export function GameBoard({
           <div className="round-end-overlay">
             <div className="round-end-content">
               <h2>{state.winner
-                ? `🏆 ${state.players.find(p => p.id === state.winner)?.name} Wins!`
+                ? `${state.players.find(p => p.id === state.winner)?.name} Wins!`
                 : 'Draw Game'
               }</h2>
               {state.winningHand && (
@@ -278,10 +298,10 @@ export function GameBoard({
                 gap: 'var(--space-sm)',
                 textAlign: 'left',
               }}>
-                <div><strong>F</strong> = Anemone (Flower) 🪸</div>
-                <div><strong>D</strong> = Dragon (🪸 / 🌊 / 🦪)</div>
-                <div><strong>E/S/W/N</strong> = Winds 🧭</div>
-                <div><strong>Suits</strong> = Shell 🐚 / Kelp 🌿 / Pearl 🫧</div>
+                <div><strong>F</strong> = Anemone (Flower)</div>
+                <div><strong>D</strong> = Dragon (Coral / Wave / Pearl)</div>
+                <div><strong>E/S/W/N</strong> = Winds</div>
+                <div><strong>Suits</strong> = Shell / Kelp / Pearl</div>
               </div>
               {ALL_HAND_CATEGORIES.map(cat => (
                 <div key={cat.name} style={{ marginBottom: 'var(--space-lg)' }}>
@@ -324,6 +344,14 @@ export function GameBoard({
 
   return (
     <div className="game-board">
+      {/* Landscape Phone Rotation Prompt */}
+      <div className="rotate-prompt">
+        <div className="rotate-prompt-content">
+          <span className="rotate-icon">📱</span>
+          <h3>Please Rotate Your Device</h3>
+          <p>Mahjon is best played in portrait mode on mobile devices.</p>
+        </div>
+      </div>
       {/* Top Bar */}
       <div className="top-bar">
         <div className="game-info">
@@ -340,7 +368,7 @@ export function GameBoard({
             <span className="game-info-value">{wallRemaining(state.wall)}</span>
           </div>
           <button className="btn btn-secondary" onClick={() => setShowHandCard(true)} style={{ marginLeft: 'var(--space-md)' }}>
-            📋 View Card
+            View Card
           </button>
         </div>
         {/* Top opponent */}
@@ -451,7 +479,7 @@ export function GameBoard({
         {/* Action Bar */}
         <div className="action-bar">
           <span className={`turn-indicator ${isMyTurn ? 'your-turn' : ''}`}>
-            {isMyTurn ? '⟡ Your Turn' : `${state.players[state.currentPlayerIndex]?.name}'s turn`}
+            {isMyTurn ? 'Your Turn' : `${state.players[state.currentPlayerIndex]?.name}'s turn`}
           </span>
 
           {validActions.includes('draw') && (
@@ -505,7 +533,7 @@ export function GameBoard({
         <div className="round-end-overlay">
           <div className="round-end-content">
             <h2>{state.winner
-              ? `🏆 ${state.players.find(p => p.id === state.winner)?.name} Wins!`
+              ? `${state.players.find(p => p.id === state.winner)?.name} Wins!`
               : 'Draw Game'
             }</h2>
             {state.winningHand && (
@@ -555,10 +583,10 @@ export function GameBoard({
               gap: 'var(--space-sm)',
               textAlign: 'left',
             }}>
-              <div><strong>F</strong> = Anemone (Flower) 🪸</div>
-              <div><strong>D</strong> = Dragon (🪸 / 🌊 / 🦪)</div>
-              <div><strong>E/S/W/N</strong> = Winds 🧭</div>
-              <div><strong>Suits</strong> = Shell 🐚 / Kelp 🌿 / Pearl 🫧</div>
+              <div><strong>F</strong> = Anemone (Flower)</div>
+              <div><strong>D</strong> = Dragon (Coral / Wave / Pearl)</div>
+              <div><strong>E/S/W/N</strong> = Winds</div>
+              <div><strong>Suits</strong> = Shell / Kelp / Pearl</div>
             </div>
             {ALL_HAND_CATEGORIES.map(cat => (
               <div key={cat.name} style={{ marginBottom: 'var(--space-lg)' }}>

@@ -239,7 +239,6 @@ export function LobbyScreen({ peerManager, onStartGame, onBack }: LobbyScreenPro
                   border: '1px solid var(--color-panel-border)',
                   borderRadius: 'var(--radius-sm)', padding: '6px 10px',
                   color: 'var(--color-text)', fontFamily: 'var(--font-ui)',
-                  fontSize: 'var(--font-size-sm)',
                 }}
               />
               <button className="btn btn-secondary" onClick={handleSendChat} style={{ padding: '6px 12px' }}>
