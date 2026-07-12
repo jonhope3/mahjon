@@ -7,6 +7,7 @@ import { TileComponent } from './TileComponent';
 import { Tile, TileKind } from '../engine/types';
 import { tileLabel } from '../engine/tiles';
 import { HandCardModal } from './HandCardModal';
+import { BrandTitle } from './BrandTitle';
 import '../styles/tutorial.css';
 
 interface TutorialProps {
@@ -344,6 +345,7 @@ export function Tutorial({ onBack, onStartPlaying }: TutorialProps) {
     <div className="tutorial-screen">
       <div className="tutorial-shell">
         <header className="tutorial-header">
+          <BrandTitle variant="compact" as="span" className="tutorial-brand" />
           <div className="tutorial-progress" aria-hidden="true">
             {steps.map((_, i) => (
               <div

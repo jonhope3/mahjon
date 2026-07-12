@@ -59,6 +59,16 @@
   gap: var(--space-lg);
 }
 
+.game-info .board-brand {
+  margin-right: calc(var(--space-sm) * -1);
+}
+
+.game-info .board-brand .brand-title__btn {
+  font-size: 1rem;
+  padding: 4px 0;
+  color: var(--color-accent);
+}
+
 .game-info-item {
   display: flex;
   flex-direction: column;
@@ -599,6 +609,19 @@
   padding: calc(10px + env(safe-area-inset-top, 0px)) 12px 8px;
   z-index: 10;
   flex-shrink: 0;
+}
+
+.board-brand {
+  flex-shrink: 0;
+  margin-right: 2px;
+}
+
+.board-brand .brand-title__btn {
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  color: rgba(244, 197, 66, 0.85);
+  padding: 6px 4px;
+  min-height: 32px;
 }
 
 .status-pill {

@@ -34,19 +34,66 @@
   text-align: center;
 }
 
-.menu-logo h1 {
+.menu-logo .brand-title,
+.menu-logo .brand-title__btn {
   font-family: var(--font-display);
   font-size: var(--font-size-hero);
   font-weight: 800;
+  letter-spacing: -0.03em;
+  text-transform: none;
+  line-height: 1.1;
+}
+
+.menu-logo .brand-title__btn {
   background: linear-gradient(135deg, var(--color-accent), #fff8e7, var(--color-accent));
   background-size: 200% 200%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   animation: shimmer 4s ease infinite;
-  letter-spacing: -0.03em;
-  text-transform: none;
   filter: drop-shadow(0 8px 28px rgba(0, 0, 0, 0.4));
+}
+
+.brand-title {
+  margin: 0;
+  display: inline-flex;
+  justify-content: center;
+}
+
+.brand-title__btn {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+
+.brand-title.is-refreshing .brand-title__btn {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.brand-title--compact .brand-title__btn {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--color-accent);
+  opacity: 0.9;
+  padding: 4px 2px;
+  line-height: 1;
+}
+
+.brand-title--compact.is-refreshing .brand-title__btn {
+  opacity: 0.45;
 }
 
 .menu-logo .subtitle {
@@ -131,12 +178,17 @@
   max-width: 320px;
 }
 
-.connecting-card h1 {
+.connecting-card .brand-title,
+.connecting-card .brand-title__btn {
   font-family: var(--font-display);
   font-size: clamp(2rem, 8vw, 2.75rem);
   font-weight: 800;
   color: var(--color-accent);
   margin-bottom: var(--space-lg);
+}
+
+.connecting-card .brand-title__btn {
+  color: var(--color-accent);
 }
 
 .connecting-title {
@@ -689,7 +741,8 @@
     margin-top: var(--space-sm);
   }
 
-  .menu-logo h1 {
+  .menu-logo .brand-title,
+  .menu-logo .brand-title__btn {
     font-size: clamp(1.75rem, 8vw, 2.25rem);
     letter-spacing: -0.01em;
   }
@@ -740,6 +793,17 @@
   .setup-actions .btn-primary,
   .setup-actions .btn-secondary {
     width: 100%;
+  }
+
+  .lobby-actions {
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .lobby-actions .btn,
+  .lobby-waiting {
+    width: 100%;
+    flex: none;
   }
 
   .game-setup {
@@ -828,7 +892,8 @@
 }
 
 @media (max-width: 380px) {
-  .menu-logo h1 {
+  .menu-logo .brand-title,
+  .menu-logo .brand-title__btn {
     font-size: 1.6rem;
   }
 
@@ -1288,19 +1353,24 @@
 .lobby-actions {
   display: flex;
   gap: var(--space-md);
-  align-items: center;
+  align-items: stretch;
 }
 
-.lobby-actions .btn-primary,
+.lobby-actions .btn,
 .lobby-waiting {
   flex: 1;
+  min-width: 0;
 }
 
 .lobby-waiting {
   margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   color: var(--color-text-muted);
   padding: var(--space-md);
+  min-height: var(--touch-min);
 }
 
 .lobby-status {

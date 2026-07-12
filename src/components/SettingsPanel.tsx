@@ -292,7 +292,8 @@ export function SettingsPanel({
               </div>
               <h3>Hard refresh</h3>
               <p className="settings-hint">
-                Wipe the offline cache and reload. Same as pull-down on the home screen.
+                Wipe the offline cache and reload. Same as long-pressing or right-clicking the
+                Mahjon title (or pull-down on the home screen).
               </p>
               <button
                 type="button"

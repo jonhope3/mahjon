@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { PeerManager, ConnectionStatus } from '../network/peer-manager';
 import { LobbyState, LobbySlot } from '../network/protocol';
 import { GameConfig } from '../engine/game';
+import { BrandTitle } from './BrandTitle';
 
 interface LobbyScreenProps {
   peerManager: PeerManager;
@@ -101,7 +102,7 @@ export function LobbyScreen({
   return (
     <div className="main-menu">
       <div className="menu-logo">
-        <h1>Mahjon</h1>
+        <BrandTitle />
         <p className="subtitle">Online Multiplayer</p>
       </div>
 
