@@ -4,7 +4,7 @@
 
 import { GameState, Tile, GameAction, Player, Difficulty } from '../engine/types';
 import { getValidActions, canPung, canKong, canQuint } from '../engine/actions';
-import { checkWin } from '../engine/scoring';
+import { checkWin, evaluateHandDistance } from '../engine/scoring';
 import { getBestDiscard, evaluateHand } from './evaluator';
 import { isJoker } from '../engine/tiles';
 
@@ -75,6 +75,7 @@ export function getAIAction(state: GameState, playerIndex: number): GameAction |
 
 /**
  * Evaluate whether to claim a discarded tile.
+ * Prefer claims that improve distance to a card hand — don't auto-grab every quint.
  */
 function evaluateClaim(
   state: GameState,
@@ -85,33 +86,76 @@ function evaluateClaim(
   const discard = state.lastDiscard;
   if (!discard) return null;
 
-  // Difficulty affects claim aggressiveness
-  const claimThreshold = difficulty === 'easy' ? 0.3 : difficulty === 'medium' ? 0.5 : 0.7;
+  const claimThreshold = difficulty === 'easy' ? 0.25 : difficulty === 'medium' ? 0.4 : 0.55;
+  const before = evaluateHandDistance(player)[0]?.distance ?? 99;
 
-  // Check what claims are possible
-  const canDoQuint = canQuint(player, discard);
-  const canDoKong = canKong(player, discard);
-  const canDoPung = canPung(player, discard);
+  const simulate = (type: 'quint' | 'kong' | 'pung'): number | null => {
+    const setSize = type === 'pung' ? 3 : type === 'kong' ? 4 : 5;
+    const matching = player.hand.filter(
+      t => !isJoker(t) && JSON.stringify(t.kind) === JSON.stringify(discard.kind),
+    );
+    const jokers = player.hand.filter(t => isJoker(t));
+    const need = setSize - 1;
+    if (matching.length + jokers.length < need) return null;
 
-  // Quints are always worth claiming
-  if (canDoQuint) {
-    return { type: 'quint', playerId: player.id, targetTile: discard };
+    const fromMatch = Math.min(matching.length, need);
+    const fromJok = need - fromMatch;
+    const remove = new Set([
+      ...matching.slice(0, fromMatch).map(t => t.id),
+      ...jokers.slice(0, fromJok).map(t => t.id),
+    ]);
+    const afterPlayer: Player = {
+      ...player,
+      hand: player.hand.filter(t => !remove.has(t.id)),
+      exposedSets: [
+        ...player.exposedSets,
+        {
+          tiles: [...matching.slice(0, fromMatch), ...jokers.slice(0, fromJok), discard],
+          setType: type,
+          claimedTile: discard,
+        },
+      ],
+    };
+    return evaluateHandDistance(afterPlayer)[0]?.distance ?? 99;
+  };
+
+  const accept = (type: 'quint' | 'kong' | 'pung'): GameAction | null => {
+    const after = simulate(type);
+    if (after === null) return null;
+    if (after < before) return { type, playerId: player.id, targetTile: discard };
+    if (after <= before && before <= 4) return { type, playerId: player.id, targetTile: discard };
+    if (difficulty === 'hard' && after <= before + 1 && before <= 6) {
+      return { type, playerId: player.id, targetTile: discard };
+    }
+    return null;
+  };
+
+  if (canQuint(player, discard)) {
+    const q = accept('quint');
+    if (q) return q;
+  }
+  if (canKong(player, discard)) {
+    const k = accept('kong');
+    if (k) return k;
+  }
+  if (canPung(player, discard)) {
+    const p = accept('pung');
+    if (p) return p;
   }
 
-  // Evaluate if claiming helps our hand
+  // Fallback: natural copies already valued in hand
   const handEvals = evaluateHand(player);
   const discardRelevance = handEvals
     .filter(e => !isJoker(e.tile) && JSON.stringify(e.tile.kind) === JSON.stringify(discard.kind))
     .reduce((sum, e) => sum + e.usefulness, 0);
-
-  const avgUsefulness = handEvals.reduce((sum, e) => sum + e.usefulness, 0) / handEvals.length;
+  const avgUsefulness =
+    handEvals.reduce((sum, e) => sum + e.usefulness, 0) / Math.max(handEvals.length, 1);
   const relativeValue = discardRelevance / Math.max(avgUsefulness, 1);
 
-  if (canDoKong && relativeValue > claimThreshold * 0.8) {
+  if (canKong(player, discard) && relativeValue > claimThreshold * 0.85) {
     return { type: 'kong', playerId: player.id, targetTile: discard };
   }
-
-  if (canDoPung && relativeValue > claimThreshold) {
+  if (canPung(player, discard) && relativeValue > claimThreshold) {
     return { type: 'pung', playerId: player.id, targetTile: discard };
   }
 

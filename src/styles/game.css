@@ -481,6 +481,64 @@
   }
 }
 
+/* iPad / tablet table layout — phone shell ends at 699px
+   Covers mini 744 → Pro 13" 1032 portrait and landscape widths to 1376 */
+@media (min-width: 700px) and (max-width: 1400px) {
+  .game-board:not(.mobile) {
+    padding: 0;
+  }
+
+  .game-board:not(.mobile) .top-bar {
+    padding: calc(10px + env(safe-area-inset-top, 0px))
+      calc(16px + env(safe-area-inset-right, 0px))
+      8px
+      calc(16px + env(safe-area-inset-left, 0px));
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .game-board:not(.mobile) .center-area {
+    grid-template-columns: minmax(0, 88px) minmax(0, 1fr) minmax(0, 88px);
+    grid-template-rows: minmax(0, 88px) minmax(0, 1fr) minmax(0, 88px);
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  .game-board:not(.mobile) .bottom-bar {
+    max-height: min(42dvh, 380px);
+    padding:
+      8px
+      calc(16px + env(safe-area-inset-right, 0px))
+      calc(12px + env(safe-area-inset-bottom, 0px))
+      calc(16px + env(safe-area-inset-left, 0px));
+  }
+
+  .game-board:not(.mobile) .player-hand .tile {
+    width: min(58px, var(--tile-hand-w)) !important;
+  }
+
+  .game-board:not(.mobile) .action-bar .btn-action {
+    min-height: 48px;
+    min-width: 88px;
+  }
+}
+
+/* iPad landscape — table stays playable (heights 744–1032, never ≤520) */
+@media (min-width: 700px) and (orientation: landscape) and (max-height: 900px) {
+  .game-board:not(.mobile) .center-area {
+    grid-template-columns: minmax(0, 72px) minmax(0, 1fr) minmax(0, 72px);
+    grid-template-rows: minmax(0, 64px) minmax(0, 1fr) minmax(0, 64px);
+  }
+
+  .game-board:not(.mobile) .bottom-bar {
+    max-height: min(48dvh, 300px);
+  }
+
+  .game-board:not(.mobile) .player-hand .tile {
+    width: min(48px, var(--tile-hand-w)) !important;
+  }
+}
+
 @media (max-height: 900px) {
   .game-board::after {
     border-width: 6px;
@@ -517,8 +575,15 @@
     width: min(42px, var(--tile-hand-w)) !important;
   }
 
+  /* Keep claim coach visible — beginners need it most in cramped layouts */
   .claim-coach--desktop {
-    display: none;
+    max-width: 100%;
+    padding: 8px 10px;
+  }
+
+  .claim-coach--desktop .claim-coach-copy p {
+    font-size: 12px;
+    margin-bottom: 4px;
   }
 }
 
@@ -581,7 +646,10 @@
 }
 
 /* ============================================================
-   Mobile app shell — readable, roomy, nothing clipped
+   Mobile app shell — phone CSS viewports only (≤699)
+   iPhone 14 390×844 | 14 Pro 393×852 | Pixel 10 Pro 410×914 |
+   14 Plus 428×926 | 14 Pro Max 430×932
+   iPads (≥744) use the table layout, not this shell.
    ============================================================ */
 .game-board.mobile {
   display: flex;
@@ -643,6 +711,8 @@
   justify-content: space-between;
   z-index: 10;
   flex-shrink: 0;
+  /* Cap so exposed sets can't steal the discard pool (Safari ~720dvh worst case) */
+  max-height: 96px;
 }
 
 .mobile-opponent-card {
@@ -654,11 +724,13 @@
   -webkit-backdrop-filter: blur(14px);
   border-radius: var(--radius-lg);
   border: 1px solid rgba(223, 194, 148, 0.14);
-  padding: 10px 8px;
+  padding: 8px 6px;
   text-align: center;
   gap: 4px;
   max-width: 33%;
-  min-height: 56px;
+  min-height: 52px;
+  max-height: 88px;
+  overflow: hidden;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
   transition: border-color var(--transition-normal), box-shadow var(--transition-normal), background var(--transition-normal);
 }
@@ -749,6 +821,7 @@
   z-index: 10;
   flex-shrink: 0;
   width: calc(100% - 24px);
+  min-height: 44px;
   cursor: pointer;
   font: inherit;
   color: inherit;
@@ -782,8 +855,14 @@
 }
 
 .mobile-discard-pool {
-  flex: 1;
-  min-height: 0;
+  flex: 1 1 auto;
+  /*
+    Vertical leftover after top chrome + bottom bar:
+    iPhone 14 Pro PWA: 852 − ~229 top − ~250 bottom ≈ 365 (comfortable)
+    Safari tab ~720 + tall opponents: need ≥120 floor or discard collapses
+    2 mini-tile rows ≈ 48×2 + gap + pad ≈ 130
+  */
+  min-height: 140px;
   margin: 0 12px 8px;
   padding: 14px;
   border-radius: var(--radius-xl);
@@ -837,7 +916,12 @@
   backdrop-filter: blur(22px);
   -webkit-backdrop-filter: blur(22px);
   flex-shrink: 0;
-  max-height: min(52dvh, 420px);
+  /*
+    Natural bottom ≈ 249px (48px tiles + actions + safe 34).
+    Cap leaves discard ≥140 on 844/852/914 PWA heights.
+    0.46×844=388; 0.46×852=392 — still above natural.
+  */
+  max-height: min(46dvh, 380px);
   min-height: 0;
 }
 
@@ -874,12 +958,67 @@
 }
 
 .game-board.mobile.claim-active .mobile-discard-pool {
-  flex: 0.45;
-  min-height: 48px;
+  flex: 0 0 auto;
+  min-height: 120px;
+  max-height: 26dvh;
 }
 
 .game-board.mobile.claim-active .mobile-bottom-bar {
-  max-height: min(62dvh, 520px);
+  /* Claim + coach ≈ 361; 0.50×852=426 — cap before discard starves */
+  max-height: min(50dvh, 420px);
+}
+
+/*
+  Short visual viewports: Safari tab chrome on iPhone 14 / 14 Pro
+  (~664–760 dvh) and any phone under Pixel 10 Pro height.
+*/
+@media (max-height: 860px) {
+  .game-board.mobile .mobile-bottom-bar {
+    max-height: min(44dvh, 340px);
+  }
+
+  .game-board.mobile.claim-active .mobile-bottom-bar {
+    max-height: min(48dvh, 380px);
+  }
+
+  .game-board.mobile .mobile-discard-pool {
+    min-height: 120px;
+  }
+
+  .game-board.mobile.claim-active .mobile-discard-pool {
+    min-height: 112px;
+    max-height: 22dvh;
+  }
+
+  .game-board.mobile .mobile-activity-ticker {
+    padding: 8px 14px;
+    margin-bottom: 6px;
+  }
+
+  .game-board.mobile .mobile-opponents-row {
+    max-height: 80px;
+  }
+
+  .game-board.mobile .coach-hand-hint,
+  .game-board.mobile .resume-chip {
+    display: none;
+  }
+}
+
+/* Safari/Chrome tab: even tighter when dvh drops under ~740 */
+@media (max-height: 740px) {
+  .game-board.mobile .mobile-bottom-bar {
+    max-height: min(42dvh, 320px);
+  }
+
+  .game-board.mobile.claim-active .mobile-bottom-bar {
+    max-height: min(46dvh, 350px);
+  }
+
+  .game-board.mobile .mobile-discard-pool {
+    min-height: 112px;
+    padding: 10px;
+  }
 }
 
 .player-avatar-col {
@@ -963,8 +1102,8 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--radius-round);
   padding: 0 14px;
-  min-height: 40px;
-  min-width: 40px;
+  min-height: 44px;
+  min-width: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1062,12 +1201,45 @@
 }
 
 .resume-chip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 10px;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-align: center;
   color: var(--color-text-muted);
   padding: 4px 8px 8px;
+}
+
+.resume-chip-main strong {
+  color: var(--color-accent);
+  letter-spacing: 0.1em;
+}
+
+.resume-chip-sep {
+  margin: 0 4px;
+  opacity: 0.5;
+}
+
+.resume-chip-share {
+  appearance: none;
+  border: 1px solid var(--color-panel-border);
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--color-accent);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 6px 10px;
+  min-height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.resume-chip-flash {
+  color: var(--color-success);
 }
 
 .settings-resume-line {
@@ -1088,10 +1260,13 @@ button.linkish {
   font-weight: 800;
   text-decoration: underline;
   text-underline-offset: 2px;
-  padding: 0;
+  padding: 10px 4px;
+  min-height: 44px;
   cursor: pointer;
   font-size: inherit;
   font-family: inherit;
+  display: inline-flex;
+  align-items: center;
 }
 
 .mobile-recent-log {

@@ -28,21 +28,21 @@ export function getCharlestonRound(phase: GamePhase): 'first' | 'second' | 'cour
 
 /**
  * Get the target player index for passing tiles.
- * In American Mahjong, players sit: 0=East, 1=South, 2=West, 3=North
- * "Right" means the player to your right (counterclockwise in American)
+ * Seats: 0=East, 1=South, 2=West, 3=North (same order as turn advance).
+ * Play and Charleston "right" both go to the next seat (+1).
  */
 export function getPassTarget(fromIndex: number, phase: GamePhase): number {
   switch (phase) {
     case 'charleston_first_right':
     case 'charleston_second_right':
-      return (fromIndex + 3) % 4; // right
+      return (fromIndex + 1) % 4; // right = next seat (turn direction)
     case 'charleston_first_across':
     case 'charleston_second_across':
     case 'charleston_courtesy':
       return (fromIndex + 2) % 4; // across
     case 'charleston_first_left':
     case 'charleston_second_left':
-      return (fromIndex + 1) % 4; // left
+      return (fromIndex + 3) % 4; // left = opposite of right
     default:
       return fromIndex;
   }

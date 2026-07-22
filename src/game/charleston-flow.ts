@@ -21,7 +21,8 @@ export function resolveCharlestonSelections(
     }
     const ids = humanIds.get(i);
     if (!ids || ids.length !== 3) return null;
-    const tiles = ids.map(id => p.hand.find(t => t.id === id)!).filter(Boolean);
+    if (new Set(ids).size !== 3) return null; // no duplicate tile ids
+    const tiles = ids.map(id => p.hand.find(t => t.id === id)).filter((t): t is Tile => !!t);
     if (tiles.length !== 3) return null;
     out.set(i, tiles);
   }

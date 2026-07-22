@@ -38,11 +38,13 @@ export function ClaimCoach({
     <div className={`claim-coach${variant === 'desktop' ? ' claim-coach--desktop' : ''}`}>
       <TileComponent tile={discard} size="normal" isLastDiscard />
       <div className="claim-coach-copy">
-        <strong>{discarderName ?? 'Someone'} discarded</strong>
+        <strong>
+          {discarderName ?? 'Someone'} discarded {discard.label}
+        </strong>
         <p>
           {can
-            ? `Claim with ${list}, or Pass.`
-            : 'Nothing to claim — Pass to continue.'}
+            ? `Claim ${discard.label} with ${list}, or Pass.`
+            : `Nothing to claim on ${discard.label} — Pass to continue.`}
         </p>
         <button type="button" className="claim-coach-help" onClick={onHelp}>
           {helpLabel}

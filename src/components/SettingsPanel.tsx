@@ -71,15 +71,11 @@ export function SettingsPanel({
   }, [players]);
 
   const setSpeed = (speed: GameSpeed) => {
-    const next = { ...draft, speed };
-    setDraft(next);
-    onPrefsChange(cleanPrefs(next));
+    setDraft(d => ({ ...d, speed }));
   };
 
   const setTeachMode = (teachMode: TeachMode) => {
-    const next = { ...draft, teachMode };
-    setDraft(next);
-    onPrefsChange(cleanPrefs(next));
+    setDraft(d => ({ ...d, teachMode }));
   };
 
   const setBot = (index: number, updates: Partial<BotPref>) => {
@@ -116,7 +112,15 @@ export function SettingsPanel({
             <button type="button" className="btn btn-primary" onClick={handleSave}>
               Save
             </button>
-            <button type="button" className="btn btn-secondary" onClick={onClose}>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => {
+                setDraft(prefs);
+                if (players) setLiveNames(players.map(p => p.name));
+                onClose();
+              }}
+            >
               Cancel
             </button>
           </div>
@@ -162,6 +166,7 @@ export function SettingsPanel({
                 type="button"
                 className={`btn btn-compact${draft.teachMode === m ? ' btn-primary' : ' btn-secondary'}`}
                 onClick={() => setTeachMode(m)}
+                aria-pressed={draft.teachMode === m}
               >
                 {TEACH_LABEL[m]}
               </button>
@@ -179,6 +184,7 @@ export function SettingsPanel({
                 type="button"
                 className={`btn btn-compact${draft.speed === s ? ' btn-primary' : ' btn-secondary'}`}
                 onClick={() => setSpeed(s)}
+                aria-pressed={draft.speed === s}
               >
                 {SPEED_LABEL[s]}
               </button>
@@ -193,8 +199,8 @@ export function SettingsPanel({
           <section className="settings-section settings-section--wide">
             <h3>Rejoin this table</h3>
             <p className="settings-hint">
-              If you drop offline, open Multiplayer → Join with the room code and seat key. Your hand
-              stays on the table.
+              Dropped offline? Open Play with Group → Join with the room code. Use the same name you
+              played with, or your seat key below. This phone also remembers “Resume my seat.”
             </p>
             {roomCode && (
               <p className="settings-resume-line">
@@ -249,10 +255,12 @@ export function SettingsPanel({
           ))}
         </section>
 
-        {inGame && players && (
+        {inGame && players && onApplyLiveNames && (
           <section className="settings-section settings-section--wide">
             <h3>This game — rename seats</h3>
-            <p className="settings-hint">Changes names on the board right away (does not reshuffle).</p>
+            <p className="settings-hint">
+              Saved with Settings → Save. Host syncs names to the table.
+            </p>
             {players.map((p, i) => (
               <label key={p.id} className="settings-field">
                 <span>
@@ -296,11 +304,22 @@ export function SettingsPanel({
               <h3>Hard refresh</h3>
               <p className="settings-hint">
                 Wipe the offline cache and reload. Same as pull-down on the home screen.
+                {inGame
+                  ? ' Warning: this abandons the current hand (multiplayer clients need Room + Seat key to rejoin if the host stays up).'
+                  : ''}
               </p>
               <button
                 type="button"
                 className="btn btn-secondary"
-                onClick={clearCacheAndReload}
+                onClick={() => {
+                  if (inGame) {
+                    const ok = window.confirm(
+                      'Hard refresh now? Your current game may be lost.',
+                    );
+                    if (!ok) return;
+                  }
+                  clearCacheAndReload();
+                }}
                 disabled={busy}
               >
                 {busy ? 'Refreshing…' : 'Hard refresh'}

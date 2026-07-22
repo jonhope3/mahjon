@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mahjon-cache-v23';
+const CACHE_NAME = 'mahjon-cache-v26';
 
 
 const PRECACHE_ASSETS = [
@@ -12,7 +12,7 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(PRECACHE_ASSETS))
-      .then(() => self.skipWaiting())
+      // Do not skipWaiting here — stay "waiting" so the in-app banner can prompt reload
   );
 });
 

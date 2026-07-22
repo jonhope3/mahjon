@@ -6,11 +6,20 @@
 // to exactly one pattern on the card. Jokers act as wildcards for
 // groups of 3+ (Pung, Kong, Quint) but NOT for singles or pairs.
 //
-// This module checks if a player's tiles match any defined hand pattern.
+// Exposed sets must map to whole card groups (no splitting a pung
+// across unrelated pattern slots). Dragon "D" groups must be one
+// color; when next to a suited group they follow suit color
+// (red↔crak, green↔bam, white↔dot).
 
-import { Tile, Player, HandPattern, Suit, ExposedSet } from './types';
+import { Tile, Player, HandPattern, Suit, Dragon, PatternGroup, ExposedSet } from './types';
 import { ALL_HANDS } from './hands';
 import { isJoker } from './tiles';
+
+const SUIT_TO_DRAGON: Record<Suit, Dragon> = {
+  crak: 'red',
+  bam: 'green',
+  dot: 'white',
+};
 
 /** All tiles a player has (hand + exposed sets) */
 function getAllPlayerTiles(player: Player): Tile[] {
@@ -24,44 +33,32 @@ function getAllPlayerTiles(player: Player): Tile[] {
  */
 export function checkWin(player: Player): HandPattern | null {
   const allTiles = getAllPlayerTiles(player);
-
-  // Must have exactly 14 tiles
   if (allTiles.length !== 14) return null;
 
-  // If player has exposed sets, they can't win with a concealed hand
   const hasExposed = player.exposedSets.length > 0;
 
   for (const pattern of ALL_HANDS) {
     if (pattern.concealed && hasExposed) continue;
-    if (matchesPattern(allTiles, pattern)) {
+    if (matchesPlayerToPattern(player, pattern)) {
       return pattern;
     }
   }
   return null;
 }
 
-/**
- * Check if tiles match a specific pattern.
- * Uses a constraint-satisfaction approach with backtracking.
- */
-function matchesPattern(tiles: Tile[], pattern: HandPattern): boolean {
-  // Calculate total tiles needed by the pattern
+function matchesPlayerToPattern(player: Player, pattern: HandPattern): boolean {
   const totalNeeded = pattern.groups.reduce((sum, g) => sum + g.count, 0);
   if (totalNeeded !== 14) return false;
 
-  // Try all possible suit assignments for constraint labels
   const suits: Suit[] = ['bam', 'crak', 'dot'];
-  const permutations = generateSuitPermutations(suits);
-
-  for (const perm of permutations) {
+  for (const perm of generateSuitPermutations(suits)) {
     const suitMap: Record<string, Suit> = {
       a: perm[0]!,
       b: perm[1]!,
       c: perm[2]!,
     };
-    if (tryMatch(tiles, pattern, suitMap)) return true;
+    if (tryMatchPlayer(player, pattern, suitMap)) return true;
   }
-
   return false;
 }
 
@@ -81,141 +78,210 @@ function generateSuitPermutations(suits: Suit[]): Suit[][] {
 }
 
 /**
- * Try to match tiles to a pattern with a specific suit assignment.
- * Uses greedy matching with joker allocation.
+ * Prefer an explicit dragon color; otherwise inherit from the nearest
+ * suited group (card reading: D next to numbers takes that suit's dragon).
  */
-function tryMatch(tiles: Tile[], pattern: HandPattern, suitMap: Record<string, Suit>): boolean {
-  // Create a pool of available tiles (by id)
-  const available = new Set(tiles.map(t => t.id));
-  const jokerIds = tiles.filter(t => isJoker(t)).map(t => t.id);
-  let jokersAvailable = jokerIds.length;
+function resolveDragonColor(
+  pattern: HandPattern,
+  groupIndex: number,
+  suitMap: Record<string, Suit>,
+): Dragon | 'any' {
+  const group = pattern.groups[groupIndex]!;
+  if (group.dragon && group.dragon !== 'any') return group.dragon;
 
-  // For each joker, mark it as available but track separately
-  for (const jid of jokerIds) {
-    available.delete(jid);
+  if (group.suitConstraint && group.suitConstraint !== 'any') {
+    return SUIT_TO_DRAGON[suitMap[group.suitConstraint]!];
   }
 
-  // Try to satisfy each group in the pattern
-  for (const group of pattern.groups) {
-    let needed = group.count;
+  for (let i = groupIndex - 1; i >= 0; i--) {
+    const g = pattern.groups[i]!;
+    if (g.type === 'suited' && g.suitConstraint && g.suitConstraint !== 'any') {
+      return SUIT_TO_DRAGON[suitMap[g.suitConstraint]!];
+    }
+  }
+  for (let i = groupIndex + 1; i < pattern.groups.length; i++) {
+    const g = pattern.groups[i]!;
+    if (g.type === 'suited' && g.suitConstraint && g.suitConstraint !== 'any') {
+      return SUIT_TO_DRAGON[suitMap[g.suitConstraint]!];
+    }
+  }
+  return 'any';
+}
+
+function tileFitsGroup(
+  tile: Tile,
+  group: PatternGroup,
+  groupIndex: number,
+  pattern: HandPattern,
+  suitMap: Record<string, Suit>,
+): boolean {
+  if (isJoker(tile)) return false;
+
+  switch (group.type) {
+    case 'flower':
+      return tile.kind.type === 'flower';
+    case 'wind':
+      return (
+        tile.kind.type === 'wind' &&
+        (group.wind === 'any' || tile.kind.wind === group.wind)
+      );
+    case 'dragon': {
+      if (tile.kind.type !== 'dragon') return false;
+      const want = resolveDragonColor(pattern, groupIndex, suitMap);
+      return want === 'any' || tile.kind.dragon === want;
+    }
+    case 'suited': {
+      if (tile.kind.type !== 'suited') return false;
+      if (tile.kind.rank !== group.rank) return false;
+      if (!group.suitConstraint || group.suitConstraint === 'any') return true;
+      return tile.kind.suit === suitMap[group.suitConstraint];
+    }
+    case 'news':
+      return tile.kind.type === 'wind';
+    default:
+      return false;
+  }
+}
+
+/** Can this exposed pung/kong/quint fill this entire pattern group? */
+function exposedSetFitsGroup(
+  set: ExposedSet,
+  group: PatternGroup,
+  groupIndex: number,
+  pattern: HandPattern,
+  suitMap: Record<string, Suit>,
+): boolean {
+  // Exposures are always 3+ identical (plus jokers); singles/pairs/NEWS stay concealed
+  if (group.count < 3) return false;
+  if (group.type === 'news') return false;
+  if (set.tiles.length !== group.count) return false;
+
+  const naturals = set.tiles.filter(t => !isJoker(t));
+  const jokers = set.tiles.length - naturals.length;
+  if (naturals.length + jokers < group.count) return false;
+
+  // Every natural must fit; jokers fill the rest (only legal in 3+ groups)
+  if (naturals.length === 0) {
+    // All-joker exposure: only legal for 3+ wild groups — allow
+    return group.count >= 3;
+  }
+
+  // Same identity among naturals
+  const first = naturals[0]!;
+  for (const t of naturals) {
+    if (!tileFitsGroup(t, group, groupIndex, pattern, suitMap)) return false;
+    if (first.kind.type !== t.kind.type) return false;
+    if (first.kind.type === 'suited' && t.kind.type === 'suited') {
+      if (first.kind.suit !== t.kind.suit || first.kind.rank !== t.kind.rank) return false;
+    }
+    if (first.kind.type === 'wind' && t.kind.type === 'wind' && first.kind.wind !== t.kind.wind) {
+      return false;
+    }
+    if (first.kind.type === 'dragon' && t.kind.type === 'dragon' && first.kind.dragon !== t.kind.dragon) {
+      return false;
+    }
+  }
+
+  // If group wants a specific dragon color, naturals already checked via tileFitsGroup
+  return true;
+}
+
+function tryMatchPlayer(
+  player: Player,
+  pattern: HandPattern,
+  suitMap: Record<string, Suit>,
+): boolean {
+  const exposed = player.exposedSets;
+  const groupIndexes = pattern.groups.map((_, i) => i);
+
+  // Assign each exposed set to a distinct pattern group, then match the hand
+  const assign = (setIdx: number, usedGroups: Set<number>): boolean => {
+    if (setIdx >= exposed.length) {
+      return tryMatchConcealed(player.hand, pattern, suitMap, usedGroups);
+    }
+    const set = exposed[setIdx]!;
+    for (const gi of groupIndexes) {
+      if (usedGroups.has(gi)) continue;
+      const group = pattern.groups[gi]!;
+      if (!exposedSetFitsGroup(set, group, gi, pattern, suitMap)) continue;
+      usedGroups.add(gi);
+      if (assign(setIdx + 1, usedGroups)) return true;
+      usedGroups.delete(gi);
+    }
+    return false;
+  };
+
+  return assign(0, new Set());
+}
+
+/**
+ * Match concealed tiles to pattern groups not already filled by exposures.
+ * Dragon groups must be a single color (and suit-linked when applicable).
+ */
+function tryMatchConcealed(
+  hand: Tile[],
+  pattern: HandPattern,
+  suitMap: Record<string, Suit>,
+  usedGroups: Set<number>,
+): boolean {
+  const available = new Set(hand.map(t => t.id));
+  const jokerIds = hand.filter(t => isJoker(t)).map(t => t.id);
+  let jokersAvailable = jokerIds.length;
+  for (const jid of jokerIds) available.delete(jid);
+
+  for (let gi = 0; gi < pattern.groups.length; gi++) {
+    if (usedGroups.has(gi)) continue;
+    const group = pattern.groups[gi]!;
 
     if (group.type === 'news') {
-      // Need one of each wind: N, E, W, S
       const winds = ['north', 'east', 'west', 'south'] as const;
       for (const wind of winds) {
         let found = false;
-        for (const tile of tiles) {
+        for (const tile of hand) {
           if (available.has(tile.id) && tile.kind.type === 'wind' && tile.kind.wind === wind) {
             available.delete(tile.id);
             found = true;
             break;
           }
         }
-        if (!found) {
-          // Can't use joker for NEWS (it's singles)
-          return false;
-        }
+        if (!found) return false;
       }
       continue;
     }
 
-    if (group.type === 'flower') {
-      // Match flower tiles
-      let matched = 0;
-      for (const tile of tiles) {
-        if (available.has(tile.id) && tile.kind.type === 'flower') {
-          available.delete(tile.id);
-          matched++;
-          if (matched >= needed) break;
+    const needed = group.count;
+    let matched = 0;
+    let lockedDragon: Dragon | null = null;
+    const wantDragon =
+      group.type === 'dragon' ? resolveDragonColor(pattern, gi, suitMap) : null;
+
+    for (const tile of hand) {
+      if (!available.has(tile.id)) continue;
+      if (!tileFitsGroup(tile, group, gi, pattern, suitMap)) continue;
+
+      if (group.type === 'dragon' && tile.kind.type === 'dragon') {
+        if (wantDragon !== 'any' && wantDragon !== null && tile.kind.dragon !== wantDragon) {
+          continue;
         }
+        if (lockedDragon && tile.kind.dragon !== lockedDragon) continue;
+        lockedDragon = tile.kind.dragon;
       }
-      // Flowers can be supplemented with jokers only in groups of 3+
-      if (matched < needed) {
-        if (needed >= 3) {
-          const jokerUse = Math.min(needed - matched, jokersAvailable);
-          jokersAvailable -= jokerUse;
-          matched += jokerUse;
-        }
-        if (matched < needed) return false;
-      }
-      continue;
+
+      available.delete(tile.id);
+      matched++;
+      if (matched >= needed) break;
     }
 
-    if (group.type === 'dragon') {
-      // Match dragon tiles
-      let matched = 0;
-      for (const tile of tiles) {
-        if (available.has(tile.id) && tile.kind.type === 'dragon') {
-          if (group.dragon === 'any' || tile.kind.dragon === group.dragon) {
-            available.delete(tile.id);
-            matched++;
-            if (matched >= needed) break;
-          }
-        }
+    if (matched < needed) {
+      if (needed >= 3) {
+        const jokerUse = Math.min(needed - matched, jokersAvailable);
+        jokersAvailable -= jokerUse;
+        matched += jokerUse;
       }
-      if (matched < needed) {
-        // Jokers can fill in for groups of 3+
-        if (needed >= 3) {
-          const jokerUse = Math.min(needed - matched, jokersAvailable);
-          jokersAvailable -= jokerUse;
-          matched += jokerUse;
-        }
-        if (matched < needed) return false;
-      }
-      continue;
-    }
-
-    if (group.type === 'wind') {
-      let matched = 0;
-      for (const tile of tiles) {
-        if (available.has(tile.id) && tile.kind.type === 'wind') {
-          if (group.wind === 'any' || tile.kind.wind === group.wind) {
-            available.delete(tile.id);
-            matched++;
-            if (matched >= needed) break;
-          }
-        }
-      }
-      if (matched < needed) {
-        if (needed >= 3) {
-          const jokerUse = Math.min(needed - matched, jokersAvailable);
-          jokersAvailable -= jokerUse;
-          matched += jokerUse;
-        }
-        if (matched < needed) return false;
-      }
-      continue;
-    }
-
-    if (group.type === 'suited') {
-      const suit = group.suitConstraint === 'any'
-        ? undefined
-        : suitMap[group.suitConstraint!];
-      const rank = group.rank!;
-
-      let matched = 0;
-      for (const tile of tiles) {
-        if (available.has(tile.id) && tile.kind.type === 'suited') {
-          if (tile.kind.rank === rank && (suit === undefined || tile.kind.suit === suit)) {
-            available.delete(tile.id);
-            matched++;
-            if (matched >= needed) break;
-          }
-        }
-      }
-      if (matched < needed) {
-        if (needed >= 3) {
-          const jokerUse = Math.min(needed - matched, jokersAvailable);
-          jokersAvailable -= jokerUse;
-          matched += jokerUse;
-        }
-        if (matched < needed) return false;
-      }
-      continue;
+      if (matched < needed) return false;
     }
   }
 
-  // All groups satisfied and no tiles left over
   return available.size === 0 && jokersAvailable === 0;
 }
 
@@ -232,58 +298,81 @@ export function calculateScore(pattern: HandPattern, selfDrawn: boolean, jokerCo
 }
 
 /**
- * Get how "close" a player is to each possible winning hand.
- * Returns patterns sorted by distance (fewest tiles needed).
- * Used by AI for hand evaluation.
+ * How close a player is to each card hand (for AI + gentle coaching).
+ * Distance 0 means the matcher thinks the hand is complete — callers
+ * that coach humans should not spoil that as "you can win."
  */
 export function evaluateHandDistance(player: Player): { pattern: HandPattern; distance: number }[] {
-  const allTiles = getAllPlayerTiles(player);
   const results: { pattern: HandPattern; distance: number }[] = [];
   const hasExposed = player.exposedSets.length > 0;
 
   for (const pattern of ALL_HANDS) {
     if (pattern.concealed && hasExposed) continue;
-    const distance = calculateDistance(allTiles, pattern);
+    // Prefer exact win check when complete so coaching distance stays honest
+    if (matchesPlayerToPattern(player, pattern)) {
+      results.push({ pattern, distance: 0 });
+      continue;
+    }
+    const distance = calculateDistance(player, pattern);
     results.push({ pattern, distance });
   }
 
   return results.sort((a, b) => a.distance - b.distance);
 }
 
-/**
- * Calculate the minimum number of tile changes needed to complete a pattern.
- * Lower = closer to winning.
- */
-function calculateDistance(tiles: Tile[], pattern: HandPattern): number {
+function calculateDistance(player: Player, pattern: HandPattern): number {
   const suits: Suit[] = ['bam', 'crak', 'dot'];
-  const permutations = generateSuitPermutations(suits);
   let minDistance = Infinity;
 
-  for (const perm of permutations) {
+  for (const perm of generateSuitPermutations(suits)) {
     const suitMap: Record<string, Suit> = {
       a: perm[0]!,
       b: perm[1]!,
       c: perm[2]!,
     };
-    const dist = calculateDistanceForMapping(tiles, pattern, suitMap);
+    const dist = calculateDistanceForMapping(player, pattern, suitMap);
     minDistance = Math.min(minDistance, dist);
   }
 
   return minDistance;
 }
 
+/**
+ * Approximate tiles still needed. Exposed sets that don't fit any group
+ * add a large penalty so coaching won't push illegal exposures.
+ */
 function calculateDistanceForMapping(
-  tiles: Tile[],
+  player: Player,
   pattern: HandPattern,
-  suitMap: Record<string, Suit>
+  suitMap: Record<string, Suit>,
 ): number {
-  let totalMissing = 0;
+  const usedGroups = new Set<number>();
+  let penalty = 0;
+
+  // Greedily bind exposures to fitting groups (same rules as win check)
+  for (const set of player.exposedSets) {
+    let bound = false;
+    for (let gi = 0; gi < pattern.groups.length; gi++) {
+      if (usedGroups.has(gi)) continue;
+      if (exposedSetFitsGroup(set, pattern.groups[gi]!, gi, pattern, suitMap)) {
+        usedGroups.add(gi);
+        bound = true;
+        break;
+      }
+    }
+    if (!bound) penalty += set.tiles.length; // exposure doesn't belong on this card line
+  }
+
+  const tiles = player.hand;
+  let totalMissing = penalty;
   const used = new Set<number>();
   const jokerIds = tiles.filter(t => isJoker(t)).map(t => t.id);
   let jokersAvailable = jokerIds.length;
   for (const jid of jokerIds) used.add(jid);
 
-  for (const group of pattern.groups) {
+  for (let gi = 0; gi < pattern.groups.length; gi++) {
+    if (usedGroups.has(gi)) continue;
+    const group = pattern.groups[gi]!;
     let needed = group.count;
 
     if (group.type === 'news') {
@@ -303,48 +392,23 @@ function calculateDistanceForMapping(
     }
 
     let matched = 0;
+    let lockedDragon: Dragon | null = null;
+    const wantDragon =
+      group.type === 'dragon' ? resolveDragonColor(pattern, gi, suitMap) : null;
 
-    if (group.type === 'flower') {
-      for (const tile of tiles) {
-        if (!used.has(tile.id) && tile.kind.type === 'flower') {
-          used.add(tile.id);
-          matched++;
-          if (matched >= needed) break;
+    for (const tile of tiles) {
+      if (used.has(tile.id)) continue;
+      if (!tileFitsGroup(tile, group, gi, pattern, suitMap)) continue;
+      if (group.type === 'dragon' && tile.kind.type === 'dragon') {
+        if (wantDragon !== 'any' && wantDragon !== null && tile.kind.dragon !== wantDragon) {
+          continue;
         }
+        if (lockedDragon && tile.kind.dragon !== lockedDragon) continue;
+        lockedDragon = tile.kind.dragon;
       }
-    } else if (group.type === 'dragon') {
-      for (const tile of tiles) {
-        if (!used.has(tile.id) && tile.kind.type === 'dragon') {
-          if (group.dragon === 'any' || tile.kind.dragon === group.dragon) {
-            used.add(tile.id);
-            matched++;
-            if (matched >= needed) break;
-          }
-        }
-      }
-    } else if (group.type === 'wind') {
-      for (const tile of tiles) {
-        if (!used.has(tile.id) && tile.kind.type === 'wind') {
-          if (group.wind === 'any' || tile.kind.wind === group.wind) {
-            used.add(tile.id);
-            matched++;
-            if (matched >= needed) break;
-          }
-        }
-      }
-    } else if (group.type === 'suited') {
-      const suit = group.suitConstraint === 'any'
-        ? undefined
-        : suitMap[group.suitConstraint!];
-      for (const tile of tiles) {
-        if (!used.has(tile.id) && tile.kind.type === 'suited') {
-          if (tile.kind.rank === group.rank && (suit === undefined || tile.kind.suit === suit)) {
-            used.add(tile.id);
-            matched++;
-            if (matched >= needed) break;
-          }
-        }
-      }
+      used.add(tile.id);
+      matched++;
+      if (matched >= needed) break;
     }
 
     if (matched < needed) {

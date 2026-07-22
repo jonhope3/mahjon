@@ -58,16 +58,17 @@ export function turnHint(
   return null;
 }
 
-/** Gentle closest-hand line for Coach mode (not a full solver spoil). */
+/** Gentle closest-hand line for Coach mode — never spoils a ready win. */
 export function handProgressHint(player: Player): string | null {
   try {
     const ranked = evaluateHandDistance(player);
     const top = ranked[0];
     if (!top) return null;
     const { pattern, distance } = top;
-    if (distance <= 0) return `You may have ${pattern.description} — check for Mahjong!`;
-    if (distance === 1) return `Close: about 1 tile from “${pattern.description}”.`;
-    if (distance === 2) return `Building toward “${pattern.description}” (~2 tiles away).`;
+    // distance 0 = matcher thinks it's complete. Stay quiet; player must notice.
+    if (distance <= 0) return null;
+    if (distance === 1) return `Close to “${pattern.description}”.`;
+    if (distance === 2) return `Building toward “${pattern.description}”.`;
     if (distance <= 4) return `Nearest card shape: “${pattern.description}”.`;
     return null;
   } catch {

@@ -19,6 +19,15 @@ export function countJokers(hand: Tile[]): number {
   return hand.filter(t => isJoker(t)).length;
 }
 
+/** Count jokers across concealed hand + exposed sets */
+export function countPlayerJokers(player: Player): number {
+  const exposed = player.exposedSets.reduce(
+    (n, set) => n + set.tiles.filter(t => isJoker(t)).length,
+    0,
+  );
+  return countJokers(player.hand) + exposed;
+}
+
 /**
  * Check if a player can claim a discard for a Pung (3 of a kind).
  * Needs 2 matching + discard, or 1 matching + 1 joker + discard, etc.
@@ -54,46 +63,62 @@ export function canQuint(player: Player, discard: Tile): boolean {
   return matching + jokers >= 4;
 }
 
+/** True while a discard is waiting for claim responses */
+export function isClaimWindowOpen(state: GameState): boolean {
+  return !!(state.lastDiscard && state.claimWindow && !state.claimWindow.resolved);
+}
+
+/** Claim actions available for a discard (ignores whether the player already responded). */
+export function getClaimOptions(state: GameState, playerIndex: number): ActionType[] {
+  const player = state.players[playerIndex];
+  if (!player || !state.lastDiscard) return [];
+  if (state.lastDiscardBy === player.id) return [];
+
+  const actions: ActionType[] = [];
+  if (canPung(player, state.lastDiscard)) actions.push('pung');
+  if (canKong(player, state.lastDiscard)) actions.push('kong');
+  if (canQuint(player, state.lastDiscard)) actions.push('quint');
+
+  const tempPlayer = {
+    ...player,
+    hand: [...player.hand, state.lastDiscard],
+  };
+  if (checkWin(tempPlayer)) {
+    actions.push('mahjong');
+  }
+
+  return actions;
+}
+
 /**
  * Get all valid actions for a player given the current game state.
  */
 export function getValidActions(state: GameState, playerIndex: number): ActionType[] {
   const player = state.players[playerIndex];
   if (!player) return [];
-  const actions: ActionType[] = [];
-
-  const isCurrentPlayer = playerIndex === state.currentPlayerIndex;
 
   if (state.phase !== 'playing') return [];
 
-  // If there's a discard to claim
-  if (state.lastDiscard && state.lastDiscardBy !== player.id) {
-    if (canPung(player, state.lastDiscard)) actions.push('pung');
-    if (canKong(player, state.lastDiscard)) actions.push('kong');
-    if (canQuint(player, state.lastDiscard)) actions.push('quint');
-    
-    // Check if adding the discard to hand makes it a winning hand
-    const tempPlayer = {
-      ...player,
-      hand: [...player.hand, state.lastDiscard]
-    };
-    if (checkWin(tempPlayer)) {
-      actions.push('mahjong');
-    }
-    
-    // Only show pass if the player has at least one active claim action
-    if (actions.length > 0) {
-      actions.push('pass');
-    }
+  // Already answered this claim window — wait for resolution
+  if (state.claimWindow?.claims.has(player.id)) return [];
+
+  // ---- Claim window: only claim/pass, never draw ----
+  if (isClaimWindowOpen(state)) {
+    if (state.lastDiscardBy === player.id) return [];
+    const claims = getClaimOptions(state, playerIndex);
+    if (claims.length === 0) return [];
+    return [...claims, 'pass'];
   }
 
-  // Current player's turn actions
+  // ---- Normal turn ----
+  const actions: ActionType[] = [];
+  const isCurrentPlayer = playerIndex === state.currentPlayerIndex;
+
   if (isCurrentPlayer) {
     if (!state.hasDrawn) {
       actions.push('draw');
     } else {
       actions.push('discard');
-      // Can declare mahjong after drawing if hand is winning
       if (checkWin(player)) {
         actions.push('mahjong');
       }
@@ -116,4 +141,16 @@ export function claimPriority(action: ActionType): number {
     case 'pass': return 0;
     default: return 0;
   }
+}
+
+/** True if every seat that could claim has recorded a response */
+export function allEligibleClaimsResolved(state: GameState): boolean {
+  if (!isClaimWindowOpen(state)) return true;
+  for (let i = 0; i < 4; i++) {
+    const p = state.players[i]!;
+    if (p.id === state.lastDiscardBy) continue;
+    if (state.claimWindow!.claims.has(p.id)) continue;
+    if (getClaimOptions(state, i).length > 0) return false;
+  }
+  return true;
 }

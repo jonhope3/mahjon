@@ -330,16 +330,36 @@
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
   scroll-snap-type: x proximity;
-  padding: 12px 4px 18px;
+  padding: 14px 4px 18px;
   scrollbar-width: thin;
 }
 
+/*
+  Hand tile width — derived from published CSS viewports (not DevTools emulation).
+
+  Sources: Apple points (ios-resolution / useyourloaf), Pixel 10 Pro = 1280÷3.125 → 410,
+  screensizechecker Android/iPhone charts (2026).
+
+  Phone shell (≤699): bottom-bar pad 12+12, hand pad 4+4 → avail = W − 32
+    fit14 = (avail − 13×6) / 14 = (W − 110) / 14
+      iPhone 14        390×844  safe 47/34  → fit14=20.0  → floor 48 (scroll 392)
+      iPhone 14 Pro    393×852  safe 59/34  → fit14=20.2  → floor 48
+      Pixel 10 Pro     410×914  DPR 3.125   → fit14=21.4  → floor 48
+      iPhone 14 Plus   428×926              → fit14=22.7  → floor 48
+      iPhone 14 Pro Max 430×932 safe 59/34  → fit14=22.9  → floor 48
+    14×48 + 13×6 = 750px row; every phone scrolls. Never crush below 48.
+
+  Tablet table (≥700): iPad mini 744 … Pro 13" 1032 — prefer fit up to --tile-hand-w.
+*/
 .mobile-player-hand .tile,
 .charleston-hand-row .tile,
 .player-hand .tile {
-  width: min(
-    var(--tile-hand-w),
-    calc((100vw - 48px - (var(--hand-size, 14) - 1) * 4px) / max(var(--hand-size, 14), 1))
+  width: max(
+    48px,
+    min(
+      var(--tile-hand-w),
+      calc((100% - (var(--hand-size, 14) - 1) * 6px) / max(var(--hand-size, 14), 1))
+    )
   ) !important;
   height: auto !important;
   aspect-ratio: 56 / 76;
@@ -350,42 +370,36 @@
   max-width: var(--tile-hand-w);
 }
 
-/* Charleston: prefer tappable tiles + scroll over tiny fit-all */
+/* Charleston: same floor, slightly taller tap area */
 .charleston-hand-row .tile {
-  width: max(
-    48px,
-    min(
-      var(--tile-hand-w),
-      calc((100vw - 48px - (var(--hand-size, 14) - 1) * 4px) / max(var(--hand-size, 14), 1))
-    )
-  ) !important;
   min-height: 64px;
 }
 
 .mobile-player-hand .tile .tile-emoji,
 .charleston-hand-row .tile .tile-emoji,
 .player-hand .tile .tile-emoji {
-  font-size: 28px;
+  /* Readable on 48px phone tiles; grows on tablet hands */
+  font-size: clamp(18px, 4.6vw, 28px);
 }
 
 .mobile-player-hand .tile .tile-rank,
 .charleston-hand-row .tile .tile-rank,
 .player-hand .tile .tile-rank {
-  font-size: 18px;
+  font-size: clamp(13px, 3.4vw, 18px);
   font-weight: 800;
 }
 
 .mobile-player-hand .tile .tile-suit-label,
 .charleston-hand-row .tile .tile-suit-label,
 .player-hand .tile .tile-suit-label {
-  font-size: 9px;
+  font-size: clamp(7px, 1.9vw, 9px);
   display: block !important;
 }
 
 .mobile-player-hand .tile.selected,
 .charleston-hand-row .tile.selected,
 .player-hand .tile.selected {
-  transform: translateY(-14px) scale(1.04);
+  transform: translateY(-10px) scale(1.04);
   z-index: 15;
   box-shadow:
     0 10px 22px rgba(0, 0, 0, 0.35),
@@ -419,12 +433,27 @@
   z-index: 1;
 }
 
-/* Narrow phones: still large enough to read */
+/* ≤400 covers iPhone 14 / 14 Pro (390–393); keep preferred cap near floor */
 @media (max-width: 400px) {
   :root {
-    --tile-hand-w: 50px;
-    --tile-hand-h: 68px;
+    --tile-hand-w: 52px;
+    --tile-hand-h: 70px;
     --tile-w: 46px;
     --tile-h: 62px;
   }
 }
+
+/*
+  Tablet / iPad (CSS points):
+  mini 744×1133 | Air 11" 820×1180 | Pro 11" 834×1210 |
+  Pro 12.9" 1024×1366 | Pro 13" M4 1032×1376
+*/
+@media (min-width: 700px) and (max-width: 1400px) {
+  :root {
+    --tile-hand-w: 60px;
+    --tile-hand-h: 82px;
+    --tile-mini-w: 40px;
+    --tile-mini-h: 54px;
+  }
+}
+

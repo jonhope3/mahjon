@@ -21,6 +21,7 @@ import {
   showTurnCoaching,
   turnHint,
 } from '../teach';
+import { shareOrCopyInvite } from '../mp-session';
 
 interface GameBoardProps {
   state: GameState;
@@ -34,6 +35,8 @@ interface GameBoardProps {
   /** Shown during MP so a disconnected player can rejoin */
   resumeKey?: string;
   roomCode?: string;
+  /** Host can tap Share invite from the table chip */
+  isHost?: boolean;
   /** Host (or solo) can start the next round */
   canStartNextRound?: boolean;
 }
@@ -49,18 +52,21 @@ export function GameBoard({
   teachMode = 'guided',
   resumeKey,
   roomCode,
+  isHost = false,
   canStartNextRound = true,
 }: GameBoardProps) {
   const [showHandCard, setShowHandCard] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showJokerTip, setShowJokerTip] = useState(false);
   const [showRecent, setShowRecent] = useState(false);
+  const [inviteFlash, setInviteFlash] = useState<string | null>(null);
+  // Phones only (CSS W ≤699). iPad mini starts at 744 points.
   const [isMobile, setIsMobile] = useState(() =>
-    window.matchMedia('(max-width: 1024px), ((hover: none) and (pointer: coarse))').matches,
+    window.matchMedia('(max-width: 699px)').matches,
   );
 
   useEffect(() => {
-    const mq = window.matchMedia('(max-width: 1024px), ((hover: none) and (pointer: coarse))');
+    const mq = window.matchMedia('(max-width: 699px)');
     const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
     mq.addEventListener('change', handler);
     return () => mq.removeEventListener('change', handler);
@@ -69,7 +75,15 @@ export function GameBoard({
   const humanPlayer = state.players[humanPlayerIndex]!;
   const validActions = getValidActions(state, humanPlayerIndex);
   const isMyTurn = state.currentPlayerIndex === humanPlayerIndex;
+  const claimPending = !!(
+    state.lastDiscard &&
+    state.claimWindow &&
+    !state.claimWindow.resolved &&
+    state.lastDiscardBy !== humanPlayer.id
+  );
   const isClaimWindow = validActions.includes('pass');
+  const waitingOnClaims =
+    claimPending && state.claimWindow!.claims.has(humanPlayer.id);
   const discarder = state.lastDiscardBy
     ? state.players.find(p => p.id === state.lastDiscardBy)
     : undefined;
@@ -108,6 +122,39 @@ export function GameBoard({
     onAction('discard', [selectedTile]);
     onSelectTile(null);
   }, [selectedTile, onAction, onSelectTile]);
+
+  const handleShareInvite = useCallback(async () => {
+    if (!roomCode) return;
+    const result = await shareOrCopyInvite(
+      roomCode,
+      humanPlayer.name,
+      isHost ? undefined : resumeKey,
+    );
+    if (result === 'copied') {
+      setInviteFlash('Invite copied');
+      window.setTimeout(() => setInviteFlash(null), 2000);
+    } else if (result === 'shared') {
+      setInviteFlash('Shared!');
+      window.setTimeout(() => setInviteFlash(null), 2000);
+    }
+  }, [roomCode, humanPlayer.name, isHost, resumeKey]);
+
+  const tableChip =
+    roomCode && resumeKey ? (
+      <div className="resume-chip" title="Keep this if anyone drops offline">
+        <span className="resume-chip-main">
+          Room <strong>{roomCode}</strong>
+          <span className="resume-chip-sep">·</span>
+          Seat <strong>{resumeKey}</strong>
+        </span>
+        {isHost && (
+          <button type="button" className="resume-chip-share" onClick={handleShareInvite}>
+            {inviteFlash || 'Share invite'}
+          </button>
+        )}
+        {!isHost && inviteFlash && <span className="resume-chip-flash">{inviteFlash}</span>}
+      </div>
+    ) : null;
 
   const handleExposedJokerClick = useCallback((jokerTile: Tile) => {
     if (isMyTurn && state.hasDrawn && selectedTile) {
@@ -157,7 +204,7 @@ export function GameBoard({
     const tickerMessage = latestLog ? latestLog.message : 'Game started. Pass or draw to begin.';
 
     return (
-      <div className={`game-board mobile${isClaimWindow ? ' claim-active' : ''}`}>
+      <div className={`game-board mobile${claimPending ? ' claim-active' : ''}`}>
         {rotatePrompt}
         <div className="mobile-top-bar">
           <div className="status-pill round">
@@ -195,14 +242,15 @@ export function GameBoard({
                       <div key={sIdx} className="opp-set-mini">
                         {set.tiles.map(tile => {
                           const isJok = tile.kind.type === 'joker';
+                          const canSwap = isJok && canSwapJoker;
                           return (
                             <TileComponent
                               key={tile.id}
                               tile={tile}
                               size="tiny"
                               faceUp
-                              clickable={isJok}
-                              onClick={isJok ? () => handleExposedJokerClick(tile) : undefined}
+                              clickable={canSwap}
+                              onClick={canSwap ? () => handleExposedJokerClick(tile) : undefined}
                             />
                           );
                         })}
@@ -250,14 +298,9 @@ export function GameBoard({
             </button>
           </div>
         )}
-        {roomCode && resumeKey && (
-          <div className="resume-chip" title="Share if you drop offline">
-            Room {roomCode} · Seat key {resumeKey}
-          </div>
-        )}
+        {tableChip}
 
-        <div className="mobile-discard-pool">
-          {allDiscards.length === 0 && <span className="discard-pool-label">Discards</span>}
+        <div className="mobile-discard-pool">          {allDiscards.length === 0 && <span className="discard-pool-label">Discards</span>}
           <div className="discard-grid">
             {allDiscards.map(tile => (
               <TileComponent
@@ -344,7 +387,7 @@ export function GameBoard({
               ))}
             </div>
 
-            {isClaimWindow && state.lastDiscard && (
+            {isClaimWindow && state.lastDiscard && teachMode !== 'expert' && (
               <ClaimCoach
                 discard={state.lastDiscard}
                 discarderName={discarder?.name}
@@ -359,11 +402,15 @@ export function GameBoard({
               validActions.includes('draw') ? ' draw-ready' : ''
             }`}
           >
-            {hint && (
+            {waitingOnClaims ? (
+              <div className="mobile-action-hint" role="status">
+                Waiting for other claims…
+              </div>
+            ) : hint ? (
               <div className="mobile-action-hint" role="status">
                 {hint}
               </div>
-            )}
+            ) : null}
             <div className="mobile-action-buttons">
               <ActionButtons
                 validActions={validActions}
@@ -372,7 +419,7 @@ export function GameBoard({
                 onDiscard={handleDiscard}
               />
             </div>
-            {!hint && (
+            {!hint && !waitingOnClaims && (
               <span className="mobile-turn-indicator">
                 {isClaimWindow
                   ? 'Choose a claim, or Pass'
@@ -427,6 +474,7 @@ export function GameBoard({
           isActive={state.currentPlayerIndex === opponentIndices[0]}
           position="top"
           onJokerClick={handleExposedJokerClick}
+          canSwapJoker={canSwapJoker}
         />
         <div className="game-info">
           {state.players.map((p, i) => (
@@ -445,6 +493,7 @@ export function GameBoard({
             isActive={state.currentPlayerIndex === opponentIndices[2]}
             position="left"
             onJokerClick={handleExposedJokerClick}
+            canSwapJoker={canSwapJoker}
           />
         </div>
         <div className="discard-pool">
@@ -464,6 +513,7 @@ export function GameBoard({
             isActive={state.currentPlayerIndex === opponentIndices[1]}
             position="right"
             onJokerClick={handleExposedJokerClick}
+            canSwapJoker={canSwapJoker}
           />
         </div>
         <div className="wall-counter">
@@ -492,13 +542,8 @@ export function GameBoard({
             </button>
           </div>
         )}
-        {roomCode && resumeKey && (
-          <div className="resume-chip" title="Share if you drop offline">
-            Room {roomCode} · Seat key {resumeKey}
-          </div>
-        )}
-        <div className="player-info-bar">
-          <span className="player-name">{humanPlayer.name}</span>
+        {tableChip}
+        <div className="player-info-bar">          <span className="player-name">{humanPlayer.name}</span>
           <span className="player-wind">{humanPlayer.seatWind}</span>
           <span className="player-score">Score: {humanPlayer.score}</span>
         </div>
@@ -540,7 +585,7 @@ export function GameBoard({
         </div>
 
         <div className="action-bar-wrap">
-          {isClaimWindow && state.lastDiscard && (
+          {isClaimWindow && state.lastDiscard && teachMode !== 'expert' && (
             <ClaimCoach
               discard={state.lastDiscard}
               discarderName={discarder?.name}
@@ -555,12 +600,14 @@ export function GameBoard({
             }`}
           >
             <span className={`turn-indicator${isMyTurn ? ' your-turn' : ''}`}>
-              {hint ??
-                (isClaimWindow
-                  ? 'Claim or Pass'
-                  : isMyTurn
-                    ? 'Your Turn'
-                    : `${state.players[state.currentPlayerIndex]?.name}'s turn`)}
+              {waitingOnClaims
+                ? 'Waiting for other claims…'
+                : (hint ??
+                  (isClaimWindow
+                    ? 'Claim or Pass'
+                    : isMyTurn
+                      ? 'Your Turn'
+                      : `${state.players[state.currentPlayerIndex]?.name}'s turn`))}
             </span>
             <ActionButtons
               validActions={validActions}
@@ -588,11 +635,13 @@ function OpponentDisplay({
   isActive,
   position,
   onJokerClick,
+  canSwapJoker,
 }: {
   player: Player;
   isActive: boolean;
   position: 'top' | 'left' | 'right';
   onJokerClick?: (tile: Tile) => void;
+  canSwapJoker?: boolean;
 }) {
   const tileCount = player.hand.length;
   const maxShow = position === 'top' ? 14 : 8;
@@ -613,14 +662,15 @@ function OpponentDisplay({
             <div key={i} className="opponent-exposed-set">
               {set.tiles.map(tile => {
                 const isJok = tile.kind.type === 'joker';
+                const canSwap = !!(isJok && canSwapJoker);
                 return (
                   <TileComponent
                     key={tile.id}
                     tile={tile}
                     size="tiny"
                     faceUp
-                    clickable={isJok}
-                    onClick={isJok ? () => onJokerClick?.(tile) : undefined}
+                    clickable={canSwap}
+                    onClick={canSwap ? () => onJokerClick?.(tile) : undefined}
                   />
                 );
               })}

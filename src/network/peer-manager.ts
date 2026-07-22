@@ -6,10 +6,11 @@ import Peer, { DataConnection } from 'peerjs';
 import {
   NetworkMessage, LobbyState, LobbySlot,
   generateRoomCode, createLobby, generateResumeKey,
-  serializeGameState, deserializeGameState,
+  serializeGameStateForViewer,
+  deserializeGameState,
   SerializableGameState,
 } from './protocol';
-import { GameState } from '../engine/types';
+import { GameState, Difficulty } from '../engine/types';
 
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 
@@ -20,11 +21,15 @@ export interface PeerManagerCallbacks {
   onGameStateSync: (state: GameState) => void;
   /** Fired when a player reclaims a seat mid-game */
   onPlayerRejoined?: (playerIndex: number, playerName: string) => void;
-  /** Fired when a human disconnects mid-game (host should AI-drive the seat) */
+  /** Fired when a human disconnects mid-game (host may AI-drive after a grace period) */
   onPlayerDisconnected?: (playerIndex: number) => void;
-  onGameAction: (action: NetworkMessage & { type: 'game_action' }) => void;
+  /** Host only — playerIndex is the authenticated seat for this connection */
+  onGameAction: (
+    action: NetworkMessage & { type: 'game_action' },
+    playerIndex: number,
+  ) => void;
   onCharlestonTiles: (playerIndex: number, tileIds: number[]) => void;
-  onCharlestonControl?: (kind: 'skip_pass' | 'skip_rest') => void;
+  onCharlestonControl?: (kind: 'skip_pass' | 'skip_rest', playerIndex: number) => void;
   onChat: (playerName: string, message: string) => void;
   onError: (error: string) => void;
 }
@@ -134,7 +139,10 @@ export class PeerManager {
           if (msg.type === 'join_accepted') {
             settle(() => resolve());
           } else if (msg.type === 'join_rejected') {
-            settle(() => reject(new Error(msg.payload.reason)));
+            settle(() => {
+              this.disconnect();
+              reject(new Error(msg.payload.reason));
+            });
           }
         });
 
@@ -179,14 +187,13 @@ export class PeerManager {
         const slot = this.lobby.slots.find(s => s.peerId === conn.peer);
         if (slot) {
           slot.connected = false;
-          if (this.gameInProgress && slot.type === 'human') {
-            // Keep seat + resumeKey so they can rejoin; host drives seat with AI until then
+          if (slot.type === 'human') {
+            // Keep the seat (and name) so family can reconnect or host can sit AI
             this.broadcastLobbyUpdate();
-            this.callbacks.onPlayerDisconnected?.(slot.index);
+            if (this.gameInProgress) {
+              this.callbacks.onPlayerDisconnected?.(slot.index);
+            }
           } else {
-            slot.type = 'ai';
-            slot.playerName = `AI (was ${slot.playerName})`;
-            slot.resumeKey = undefined;
             this.broadcastLobbyUpdate();
           }
         }
@@ -235,17 +242,27 @@ export class PeerManager {
         );
         break;
 
-      case 'game_action':
-        this.callbacks.onGameAction(msg);
+      case 'game_action': {
+        const seat = this.seatIndexForPeer(conn.peer);
+        if (seat === null) break;
+        this.callbacks.onGameAction(msg, seat);
         break;
+      }
 
-      case 'charleston_tiles':
-        this.callbacks.onCharlestonTiles(msg.payload.playerIndex, msg.payload.tileIds);
+      case 'charleston_tiles': {
+        const seat = this.seatIndexForPeer(conn.peer);
+        if (seat === null) break;
+        // Ignore client-supplied playerIndex — seat comes from the connection
+        this.callbacks.onCharlestonTiles(seat, msg.payload.tileIds);
         break;
+      }
 
-      case 'charleston_control':
-        this.callbacks.onCharlestonControl?.(msg.payload.kind);
+      case 'charleston_control': {
+        const seat = this.seatIndexForPeer(conn.peer);
+        if (seat === null) break;
+        this.callbacks.onCharlestonControl?.(msg.payload.kind, seat);
         break;
+      }
 
       case 'chat':
         this.callbacks.onChat(msg.payload.playerName, msg.payload.message);
@@ -261,23 +278,30 @@ export class PeerManager {
   private handleJoinRequest(playerName: string, conn: DataConnection, resumeKey?: string) {
     if (!this.lobby || !this._isHost) return;
 
-    // Mid-game rejoin: match seat key or disconnected name
+    // Mid-game rejoin: seat key preferred; unique name match as family-friendly fallback
     if (this.gameInProgress) {
       const key = resumeKey?.trim().toUpperCase();
-      const reclaim =
-        this.lobby.slots.find(
+      const name = playerName.trim().toLowerCase();
+
+      let reclaim = key
+        ? this.lobby.slots.find(
+            s =>
+              s.type === 'human' &&
+              !s.connected &&
+              s.resumeKey?.toUpperCase() === key,
+          )
+        : undefined;
+
+      if (!reclaim && name) {
+        const nameMatches = this.lobby.slots.filter(
           s =>
             s.type === 'human' &&
             !s.connected &&
-            key &&
-            s.resumeKey?.toUpperCase() === key,
-        ) ||
-        this.lobby.slots.find(
-          s =>
-            s.type === 'human' &&
-            !s.connected &&
-            s.playerName.toLowerCase() === playerName.trim().toLowerCase(),
+            s.playerName.trim().toLowerCase() === name,
         );
+        // Only auto-match when the name uniquely identifies one dropped seat
+        if (nameMatches.length === 1) reclaim = nameMatches[0];
+      }
 
       if (reclaim) {
         reclaim.connected = true;
@@ -293,13 +317,14 @@ export class PeerManager {
         });
         this.broadcastLobbyUpdate();
         if (this.lastGameState) {
+          const view = serializeGameStateForViewer(this.lastGameState, reclaim.index);
           this.send(conn, {
             type: 'game_state_sync',
-            payload: { gameState: serializeGameState(this.lastGameState) },
+            payload: { gameState: view },
           });
           this.send(conn, {
             type: 'game_start',
-            payload: { gameState: serializeGameState(this.lastGameState) },
+            payload: { gameState: view },
           });
         }
         this.callbacks.onPlayerRejoined?.(reclaim.index, reclaim.playerName);
@@ -309,19 +334,64 @@ export class PeerManager {
       this.send(conn, {
         type: 'join_rejected',
         payload: {
-          reason:
-            'Game already in progress. Use your Room code + Seat key from Settings to rejoin your hand.',
+          reason: key
+            ? 'Could not find that seat. Check the room code and seat key, or ask the host.'
+            : 'Game already started. Enter the same name you used, or your seat key from the board / Settings.',
         },
       });
       return;
     }
 
+    // Lobby rejoin: reclaim a dropped human seat before taking an AI seat
+    {
+      const key = resumeKey?.trim().toUpperCase();
+      const name = playerName.trim().toLowerCase();
+      let reclaim = key
+        ? this.lobby.slots.find(
+            s =>
+              s.type === 'human' &&
+              !s.connected &&
+              s.resumeKey?.toUpperCase() === key,
+          )
+        : undefined;
+      if (!reclaim && name) {
+        const nameMatches = this.lobby.slots.filter(
+          s =>
+            s.type === 'human' &&
+            !s.connected &&
+            s.playerName.trim().toLowerCase() === name,
+        );
+        if (nameMatches.length === 1) reclaim = nameMatches[0];
+      }
+      if (reclaim) {
+        reclaim.connected = true;
+        reclaim.peerId = conn.peer;
+        if (playerName.trim()) reclaim.playerName = playerName.trim();
+        if (!reclaim.resumeKey) reclaim.resumeKey = generateResumeKey();
+        this.send(conn, {
+          type: 'join_accepted',
+          payload: {
+            playerIndex: reclaim.index,
+            lobbyState: this.lobby,
+            resumeKey: reclaim.resumeKey,
+          },
+        });
+        this.broadcastLobbyUpdate();
+        return;
+      }
+    }
+
     // Find first AI slot to replace
     const aiSlot = this.lobby.slots.find(s => s.type === 'ai');
     if (!aiSlot) {
+      const waiting = this.lobby.slots.some(s => s.type === 'human' && !s.connected);
       this.send(conn, {
         type: 'join_rejected',
-        payload: { reason: 'Room is full' },
+        payload: {
+          reason: waiting
+            ? 'Table is full, but someone is reconnecting. Use the same name you used before, or ask the host.'
+            : 'Room is full — ask the host to free a seat.',
+        },
       });
       return;
     }
@@ -355,6 +425,24 @@ export class PeerManager {
     }
   }
 
+  /**
+   * Host: turn an offline / open seat into AI so the family can start.
+   */
+  fillSeatWithAI(index: number, difficulty: Difficulty = 'medium') {
+    if (!this.lobby || !this._isHost) return;
+    const slot = this.lobby.slots[index];
+    if (!slot || slot.index === 0) return;
+    const prior = slot.playerName?.trim() || `Player ${index + 1}`;
+    slot.type = 'ai';
+    slot.difficulty = difficulty;
+    slot.connected = true;
+    slot.ready = true;
+    slot.peerId = undefined;
+    slot.resumeKey = undefined;
+    slot.playerName = prior.toLowerCase().startsWith('ai') ? prior : `AI for ${prior}`;
+    this.broadcastLobbyUpdate();
+  }
+
   /** Broadcast lobby state to all peers */
   private broadcastLobbyUpdate() {
     if (!this.lobby) return;
@@ -376,37 +464,51 @@ export class PeerManager {
       this._resumeKey = this.lobby.slots[this._playerIndex]?.resumeKey ?? this._resumeKey;
       this.broadcastLobbyUpdate();
     }
-    const serialized = serializeGameState(gameState);
-    this.broadcast({
-      type: 'game_start',
-      payload: { gameState: serialized },
-    });
+    this.sendViewToAll(gameState, 'game_start');
   }
 
-  /** Table-wide Charleston skip (optional phases) */
+  /** Table-wide Charleston skip (optional phases) — host applies after auth */
   sendCharlestonControl(kind: 'skip_pass' | 'skip_rest') {
     const msg: NetworkMessage = { type: 'charleston_control', payload: { kind } };
     if (this._isHost) {
-      this.callbacks.onCharlestonControl?.(kind);
+      this.callbacks.onCharlestonControl?.(kind, this._playerIndex);
     } else if (this.hostConnection) {
       this.send(this.hostConnection, msg);
     }
   }
 
-  /** Sync game state to all clients (host only) */
+  /** Sync game state to all clients (host only) — per-seat fog of war */
   syncGameState(gameState: GameState) {
     if (!this._isHost) return;
     this.lastGameState = gameState;
-    this.broadcast({
-      type: 'game_state_sync',
-      payload: { gameState: serializeGameState(gameState) },
-    });
+    this.sendViewToAll(gameState, 'game_state_sync');
   }
 
-  /** Send a game action (client → host, or host broadcasts) */
+  private sendViewToAll(gameState: GameState, type: 'game_start' | 'game_state_sync') {
+    // Host keeps full state locally; each peer gets a filtered view
+    if (this.lobby) {
+      for (const slot of this.lobby.slots) {
+        if (slot.type !== 'human' || !slot.peerId || !slot.connected) continue;
+        if (slot.index === this._playerIndex) continue; // host is local
+        const conn = this.connections.get(slot.peerId);
+        if (!conn) continue;
+        const view = serializeGameStateForViewer(gameState, slot.index);
+        this.send(conn, { type, payload: { gameState: view } });
+      }
+    }
+  }
+
+  /** Seat index for a peer connection (host only) */
+  seatIndexForPeer(peerId: string): number | null {
+    if (!this.lobby) return null;
+    const slot = this.lobby.slots.find(s => s.peerId === peerId && s.connected);
+    return slot ? slot.index : null;
+  }
+
+  /** Send a game action (client → host, or host local) */
   sendAction(action: NetworkMessage & { type: 'game_action' }) {
     if (this._isHost) {
-      this.broadcast(action);
+      // Host actions are handled locally in App — no broadcast of raw actions
     } else if (this.hostConnection) {
       this.send(this.hostConnection, action);
     }
@@ -419,7 +521,7 @@ export class PeerManager {
       payload: { playerIndex, tileIds },
     };
     if (this._isHost) {
-      this.broadcast(msg);
+      this.callbacks.onCharlestonTiles(playerIndex, tileIds);
     } else if (this.hostConnection) {
       this.send(this.hostConnection, msg);
     }

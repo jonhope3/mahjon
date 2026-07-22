@@ -81,12 +81,25 @@ export function CharlestonDialog({
 
   return (
     <>
-      <div className="modal-overlay charleston-overlay">
-        <div className="modal-content charleston-modal">
+      <div className="modal-overlay charleston-overlay" role="presentation">
+        <div
+          className="modal-content charleston-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="charleston-title"
+          tabIndex={-1}
+          ref={panel => {
+            if (panel && document.activeElement === document.body) {
+              panel.focus();
+            }
+          }}
+        >
           <div className="charleston-panel">
             <header className="charleston-header">
               <p className="charleston-kicker">{roundLabel} Charleston</p>
-              <h2 className="charleston-title">Pass {direction}</h2>
+              <h2 className="charleston-title" id="charleston-title">
+                Pass {direction}
+              </h2>
             </header>
 
             {showIntro && showTurnCoaching(teachMode) ? (

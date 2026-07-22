@@ -2,7 +2,7 @@
 // Network Protocol — Message types for WebRTC communication
 // ============================================================
 
-import { GameState, GameAction, PlayerType, Difficulty } from '../engine/types';
+import { GameState, GameAction, PlayerType, Difficulty, Tile } from '../engine/types';
 
 /** All message types exchanged between peers */
 export type NetworkMessage =
@@ -67,13 +67,45 @@ export function serializeGameState(state: GameState): SerializableGameState {
   };
 }
 
+/**
+ * Client-safe view: hide other players' concealed tiles and the live wall.
+ * Exposed sets, discards, scores, and the viewer's own hand stay visible.
+ */
+export function serializeGameStateForViewer(
+  state: GameState,
+  viewerPlayerIndex: number,
+): SerializableGameState {
+  const full = serializeGameState(state);
+  const hiddenTile = (id: number): Tile => ({
+    id: -100000 - id,
+    kind: { type: 'suited', suit: 'dot', rank: 1 },
+    label: '?',
+  });
+
+  return {
+    ...full,
+    wall: {
+      ...full.wall,
+      tiles: full.wall.tiles.map((_, i) => hiddenTile(i)),
+      deadWallTiles: full.wall.deadWallTiles.map((_, i) => hiddenTile(1000 + i)),
+    },
+    players: full.players.map((p, i) => {
+      if (i === viewerPlayerIndex) return p;
+      return {
+        ...p,
+        hand: p.hand.map((_, hi) => hiddenTile(i * 100 + hi)),
+      };
+    }),
+  };
+}
+
 /** Convert serializable form back to GameState */
 export function deserializeGameState(data: SerializableGameState): GameState {
   return {
     ...data,
     claimWindow: data.claimWindow ? {
       ...data.claimWindow,
-      claims: new Map(Object.entries(data.claimWindow.claims)),
+      claims: new Map(Object.entries(data.claimWindow.claims) as [string, import('../engine/types').ActionType][]),
     } : null,
   } as GameState;
 }

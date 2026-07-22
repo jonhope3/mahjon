@@ -25,9 +25,15 @@ export function RoundEndOverlay({
     : null;
 
   return (
-    <div className="round-end-overlay">
-      <div className="round-end-content">
-        <h2>{winner ? `${winner} Wins!` : 'Draw Game'}</h2>
+    <div className="round-end-overlay" role="presentation">
+      <div
+        className="round-end-content"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="round-end-title"
+        tabIndex={-1}
+      >
+        <h2 id="round-end-title">{winner ? `${winner} Wins!` : 'Draw Game'}</h2>
         {state.winningHand && (
           <p className="winning-pattern">
             {state.winningHand.description}

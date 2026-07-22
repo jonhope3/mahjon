@@ -153,6 +153,11 @@ export function MainMenu({
               id="quick-start-btn"
             >
               Quick Start vs AI
+              <span className="btn-sublabel">Best way to learn</span>
+            </button>
+            <button className="btn btn-secondary" onClick={onStartTutorial} id="tutorial-btn">
+              How to Play
+              <span className="btn-sublabel">New to Mahjong? Start here</span>
             </button>
             <button
               className="btn btn-secondary"
@@ -166,14 +171,13 @@ export function MainMenu({
               onClick={onPlayMultiplayer}
               id="multiplayer-btn"
             >
-              Online Multiplayer
-            </button>
-            <button className="btn btn-secondary" onClick={onStartTutorial} id="tutorial-btn">
-              How to Play
+              Play with Group
+              <span className="btn-sublabel">2–4 people online</span>
             </button>
           </div>
           <p className="menu-footnote">
-            Learn as you play · Long-press any tile · Teaching mode in Settings
+            American Mahjong is always 4 seats. New? Open How to Play, then practice with Quick Start.
+            When friends are ready, Play with Group (2–4 people; AI fills empty seats).
           </p>
           <InstallNudge />
           <p className="menu-refresh-hint">Pull down to hard refresh</p>
@@ -184,7 +188,9 @@ export function MainMenu({
           <div className="game-setup">
             {players.map((player, i) => (
               <div key={i} className="setup-player">
-                <span className="seat-label">{SEAT_LABELS[i]}</span>
+                <label className="seat-label" htmlFor={`player-name-${i}`}>
+                  {SEAT_LABELS[i]}
+                </label>
                 <input
                   type="text"
                   value={player.name}
@@ -192,6 +198,7 @@ export function MainMenu({
                   placeholder="Player name"
                   id={`player-name-${i}`}
                   autoComplete="off"
+                  aria-label={`${SEAT_LABELS[i]} name`}
                 />
                 <select
                   value={player.type}
@@ -201,6 +208,7 @@ export function MainMenu({
                   }}
                   id={`player-type-${i}`}
                   disabled={i === 0}
+                  aria-label={`${SEAT_LABELS[i]} player type`}
                 >
                   {i === 0 ? (
                     <option value="human">You</option>

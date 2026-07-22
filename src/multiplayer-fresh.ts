@@ -54,6 +54,14 @@ export function shouldOpenMultiplayerLobby(): boolean {
   }
 }
 
+export function markOpenMultiplayerLobby(): void {
+  try {
+    sessionStorage.setItem(OPEN_KEY, '1');
+  } catch {
+    /* ignore */
+  }
+}
+
 export function clearMultiplayerLobbyIntent(): void {
   try {
     sessionStorage.removeItem(OPEN_KEY);
@@ -63,24 +71,33 @@ export function clearMultiplayerLobbyIntent(): void {
 }
 
 /**
- * Ensure this device is on the latest cached build before multiplayer.
- * Reloads once per APP_VERSION (reopens lobby via ?mp=1).
+ * Ensure this device is on a recent build before multiplayer.
+ * Prefer a quiet SW update; only hard-reload when a waiting worker
+ * must activate (avoids surprising grandparents every time).
  */
 export async function ensureFreshForMultiplayer(): Promise<'ready' | 'reloading'> {
   if (isMultiplayerFresh()) return 'ready';
 
+  let needsHardReload = false;
   if ('serviceWorker' in navigator) {
     try {
       const reg = await navigator.serviceWorker.getRegistration();
       if (reg) {
         await reg.update();
         if (reg.waiting) {
+          needsHardReload = true;
           reg.waiting.postMessage({ type: 'SKIP_WAITING' });
         }
       }
     } catch {
       /* continue */
     }
+  }
+
+  // First visit this session: mark fresh without forcing a reload unless SW is waiting
+  if (!needsHardReload) {
+    markMultiplayerFresh();
+    return 'ready';
   }
 
   await clearCacheAndReload({ mp: '1' });

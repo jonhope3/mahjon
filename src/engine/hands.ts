@@ -9,6 +9,8 @@
 //   'any' = any suit
 //   Numbers = rank for suited tiles
 //   For "year" hands, 0 is represented by Pearl Dragon (Oyster)
+//   Dragon 'any' inherits color from the nearest suited group
+//     (red↔crak, green↔bam, white↔dot); optional 3rd arg locks a suit letter
 //
 // concealed = true means hand marked with "C" on card
 // value = the multiplier shown (e.g., X25 = 25, C30 = 30 concealed)
@@ -25,9 +27,18 @@ function f(count: number) {
   return { type: 'flower' as const, count };
 }
 
-/** Dragon group - 'any' means any dragon matching suit color */
-function d(count: number, dragon: 'any' | 'red' | 'green' | 'white' = 'any') {
-  return { type: 'dragon' as const, count, dragon };
+/** Dragon group - 'any' inherits suit-color from neighboring number groups */
+function d(
+  count: number,
+  dragon: 'any' | 'red' | 'green' | 'white' = 'any',
+  suit?: 'a' | 'b' | 'c' | 'any',
+) {
+  return {
+    type: 'dragon' as const,
+    count,
+    dragon,
+    ...(suit ? { suitConstraint: suit } : {}),
+  };
 }
 
 /** Wind group */
@@ -82,13 +93,6 @@ const cat2468: HandPattern[] = [
     id: '2468-1',
     category: '2468',
     description: '222 444 6666 8888 (two suits)',
-    groups: [s(2, 3, 'a'), s(4, 3, 'b'), s(6, 4, 'a'), s(8, 4, 'b')],
-    value: 25, concealed: false,
-  },
-  {
-    id: '2468-2',
-    category: '2468',
-    description: '222 444 6666 8888 (two suits, alt)',
     groups: [s(2, 3, 'a'), s(4, 3, 'b'), s(6, 4, 'a'), s(8, 4, 'b')],
     value: 25, concealed: false,
   },
@@ -223,13 +227,6 @@ const catConsecutive: HandPattern[] = [
     value: 25, concealed: false,
   },
   {
-    id: 'con-4',
-    category: 'Consecutive Run',
-    description: 'FFF 1111 234 5555 (alt)',
-    groups: [f(3), s(1, 4, 'a'), s(2, 1, 'a'), s(3, 1, 'a'), s(4, 1, 'a'), s(5, 4, 'a')],
-    value: 25, concealed: false,
-  },
-  {
     id: 'con-5',
     category: 'Consecutive Run',
     description: '11 22 111 222 3333',
@@ -244,23 +241,9 @@ const catConsecutive: HandPattern[] = [
     value: 25, concealed: false,
   },
   {
-    id: 'con-7',
-    category: 'Consecutive Run',
-    description: '111 222 3333 4444 (alt)',
-    groups: [s(1, 3, 'a'), s(2, 3, 'a'), s(3, 4, 'a'), s(4, 4, 'a')],
-    value: 25, concealed: false,
-  },
-  {
     id: 'con-8',
     category: 'Consecutive Run',
     description: 'FFF 11 22 333 DDDD',
-    groups: [f(3), s(1, 2, 'a'), s(2, 2, 'a'), s(3, 3, 'a'), d(4, 'any')],
-    value: 25, concealed: false,
-  },
-  {
-    id: 'con-9',
-    category: 'Consecutive Run',
-    description: 'FFF 11 22 333 DDDD (alt)',
     groups: [f(3), s(1, 2, 'a'), s(2, 2, 'a'), s(3, 3, 'a'), d(4, 'any')],
     value: 25, concealed: false,
   },
@@ -316,13 +299,6 @@ const cat13579: HandPattern[] = [
     id: '13579-1',
     category: '13579',
     description: '11 333 55 777 9999',
-    groups: [s(1, 2, 'a'), s(3, 3, 'a'), s(5, 2, 'a'), s(7, 3, 'a'), s(9, 4, 'a')],
-    value: 25, concealed: false,
-  },
-  {
-    id: '13579-2',
-    category: '13579',
-    description: '11 333 55 777 9999 (alt)',
     groups: [s(1, 2, 'a'), s(3, 3, 'a'), s(5, 2, 'a'), s(7, 3, 'a'), s(9, 4, 'a')],
     value: 25, concealed: false,
   },
@@ -512,13 +488,6 @@ const cat369: HandPattern[] = [
     value: 25, concealed: false,
   },
   {
-    id: '369-2',
-    category: '369',
-    description: '333 666 6666 9999 (alt)',
-    groups: [s(3, 3, 'a'), s(6, 3, 'b'), s(6, 4, 'a'), s(9, 4, 'b')],
-    value: 25, concealed: false,
-  },
-  {
     id: '369-3',
     category: '369',
     description: '33 66 333 666 9999',
@@ -529,13 +498,6 @@ const cat369: HandPattern[] = [
     id: '369-4',
     category: '369',
     description: 'FFF 33 666 99 DDDD',
-    groups: [f(3), s(3, 2, 'a'), s(6, 3, 'a'), s(9, 2, 'a'), d(4, 'any')],
-    value: 25, concealed: false,
-  },
-  {
-    id: '369-5',
-    category: '369',
-    description: 'FFF 33 666 99 DDDD (alt)',
     groups: [f(3), s(3, 2, 'a'), s(6, 3, 'a'), s(9, 2, 'a'), d(4, 'any')],
     value: 25, concealed: false,
   },

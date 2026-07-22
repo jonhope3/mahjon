@@ -25,10 +25,11 @@ import { useAIGameLoop } from './hooks/useAIGameLoop';
 import {
   clearMultiplayerLobbyIntent,
   ensureFreshForMultiplayer,
+  markOpenMultiplayerLobby,
   noteMultiplayerReturnFromUrl,
   shouldOpenMultiplayerLobby,
 } from './multiplayer-fresh';
-
+import { noteMpDeepLinkFromUrl, saveMpLastTable } from './mp-session';
 import './styles/index.css';
 import './styles/menu.css';
 import './styles/game.css';
@@ -62,6 +63,21 @@ export default function App() {
   const peerManagerRef = useRef(peerManager);
   peerManagerRef.current = peerManager;
   const charlestonSelectionsRef = useRef(new Map<number, number[]>());
+  const disconnectGraceRef = useRef(new Map<number, ReturnType<typeof setTimeout>>());
+
+  // Family tables: give people time to unlock a phone / switch Wi‑Fi before AI takes over
+  const DISCONNECT_GRACE_MS = 60000;
+
+  const clearDisconnectGrace = useCallback((playerIndex?: number) => {
+    if (playerIndex !== undefined) {
+      const t = disconnectGraceRef.current.get(playerIndex);
+      if (t) clearTimeout(t);
+      disconnectGraceRef.current.delete(playerIndex);
+      return;
+    }
+    for (const t of disconnectGraceRef.current.values()) clearTimeout(t);
+    disconnectGraceRef.current.clear();
+  }, []);
 
   const { clearTimers } = useAIGameLoop(
     gameState,
@@ -78,7 +94,13 @@ export default function App() {
     };
   }, [screen]);
 
-  useEffect(() => () => peerManagerRef.current?.disconnect(), []);
+  useEffect(
+    () => () => {
+      peerManagerRef.current?.disconnect();
+      clearDisconnectGrace();
+    },
+    [clearDisconnectGrace],
+  );
 
   const finishHostCharleston = useCallback((state: GameState, selections: Map<number, number[]>) => {
     const pm = peerManagerRef.current;
@@ -105,21 +127,55 @@ export default function App() {
       onGameStart: (state, playerIndex) => enterPlaying(state, playerIndex),
       onGameStateSync: setGameState,
       onPlayerDisconnected: playerIndex => {
+        clearDisconnectGrace(playerIndex);
+        const timer = setTimeout(() => {
+          disconnectGraceRef.current.delete(playerIndex);
+          setGameState(current => {
+            if (!current) return null;
+            const seat = current.players[playerIndex];
+            if (!seat || seat.type === 'ai') return current;
+            const next = {
+              ...current,
+              players: current.players.map((p, i) =>
+                i === playerIndex
+                  ? { ...p, type: 'ai' as const, difficulty: p.difficulty ?? 'medium' }
+                  : p,
+              ),
+              log: [
+                ...current.log,
+                {
+                  timestamp: Date.now(),
+                  playerId: 'system',
+                  action: 'pass' as const,
+                  message: `${seat.name} disconnected — AI is playing their seat until they rejoin.`,
+                },
+              ],
+            };
+            peerManagerRef.current?.syncGameState(next);
+            return next;
+          });
+        }, DISCONNECT_GRACE_MS);
+        disconnectGraceRef.current.set(playerIndex, timer);
         setGameState(current => {
           if (!current) return null;
-          const next = {
+          const seat = current.players[playerIndex];
+          if (!seat) return current;
+          return {
             ...current,
-            players: current.players.map((p, i) =>
-              i === playerIndex
-                ? { ...p, type: 'ai' as const, difficulty: p.difficulty ?? 'medium' }
-                : p,
-            ),
+            log: [
+              ...current.log,
+              {
+                timestamp: Date.now(),
+                playerId: 'system',
+                action: 'pass' as const,
+                message: `${seat.name} lost connection — waiting briefly before AI takes over…`,
+              },
+            ],
           };
-          peerManagerRef.current?.syncGameState(next);
-          return next;
         });
       },
       onPlayerRejoined: playerIndex => {
+        clearDisconnectGrace(playerIndex);
         setGameState(current => {
           if (!current) return null;
           const next = {
@@ -127,24 +183,36 @@ export default function App() {
             players: current.players.map((p, i) =>
               i === playerIndex ? { ...p, type: 'human' as const } : p,
             ),
+            log: [
+              ...current.log,
+              {
+                timestamp: Date.now(),
+                playerId: 'system',
+                action: 'pass' as const,
+                message: `${current.players[playerIndex]?.name ?? 'Player'} rejoined.`,
+              },
+            ],
           };
           peerManagerRef.current?.syncGameState(next);
           return next;
         });
       },
-      onGameAction: msg => {
+      onGameAction: (msg, playerIndex) => {
         if (!peerManagerRef.current?.isHost) return;
         const serializableAction = msg.payload.action;
         setGameState(current => {
           if (!current) return null;
+          const seatPlayer = current.players[playerIndex];
+          if (!seatPlayer || seatPlayer.type !== 'human') return current;
           const targetTile =
             serializableAction.targetTileId !== undefined &&
             current.lastDiscard?.id === serializableAction.targetTileId
               ? current.lastDiscard
               : undefined;
+          // Authenticated seat — ignore client-supplied playerId
           const newState = processAction(current, {
             type: serializableAction.type,
-            playerId: serializableAction.playerId,
+            playerId: seatPlayer.id,
             tiles: serializableAction.tiles,
             targetTile,
           });
@@ -154,14 +222,18 @@ export default function App() {
       },
       onCharlestonTiles: (playerIdx, tileIds) => {
         if (!peerManagerRef.current?.isHost) return;
+        if (new Set(tileIds).size !== 3) return;
         charlestonSelectionsRef.current.set(playerIdx, tileIds);
         const current = gameStateRef.current;
         if (current) finishHostCharleston(current, charlestonSelectionsRef.current);
       },
-      onCharlestonControl: kind => {
+      onCharlestonControl: (kind, _playerIndex) => {
         if (!peerManagerRef.current?.isHost) return;
         const current = gameStateRef.current;
         if (!current || !current.phase.startsWith('charleston')) return;
+        const round = getCharlestonRound(current.phase);
+        if (round === 'first') return;
+        if (kind === 'skip_rest' && round !== 'second' && round !== 'courtesy') return;
         const next =
           kind === 'skip_rest'
             ? skipCharleston(current)
@@ -176,16 +248,18 @@ export default function App() {
     });
     setPeerManager(pm);
     goScreen(setScreen, 'lobby');
-  }, [enterPlaying, finishHostCharleston]);
+  }, [enterPlaying, finishHostCharleston, clearDisconnectGrace]);
 
-  // After a multiplayer-bound cache reload (?mp=1), open the lobby automatically
+  // After a multiplayer-bound cache reload (?mp=1), or a ?room= invite link, open the lobby
   useEffect(() => {
     noteMultiplayerReturnFromUrl();
+    if (noteMpDeepLinkFromUrl()) markOpenMultiplayerLobby();
   }, []);
 
   useEffect(() => {
     if (screen !== 'menu') return;
     if (!shouldOpenMultiplayerLobby()) return;
+    clearMultiplayerLobbyIntent();
     handlePlayMultiplayer();
   }, [screen, handlePlayMultiplayer]);
 
@@ -198,9 +272,21 @@ export default function App() {
 
   const handleStartGame = useCallback((config: GameConfig) => {
     const dealt = dealTiles(createGame(config));
-    if (peerManagerRef.current?.isHost) {
+    const pm = peerManagerRef.current;
+    if (pm?.roomCode && pm.resumeKey) {
+      const seatName =
+        config.players[pm.playerIndex]?.name ||
+        config.players[0]?.name ||
+        'Player';
+      saveMpLastTable({
+        roomCode: pm.roomCode,
+        seatKey: pm.resumeKey,
+        playerName: seatName,
+      });
+    }
+    if (pm?.isHost) {
       enterPlaying(dealt, 0);
-      peerManagerRef.current.startGame(dealt);
+      pm.startGame(dealt);
       return;
     }
     enterPlaying(dealt, 0);
@@ -263,6 +349,7 @@ export default function App() {
   const handleSkipPass = useCallback(() => {
     const state = gameStateRef.current;
     if (!state) return;
+    if (getCharlestonRound(state.phase) === 'first') return;
     if (peerManager && !peerManager.isHost) {
       setCharlestonWaiting(true);
       peerManager.sendCharlestonControl('skip_pass');
@@ -278,6 +365,8 @@ export default function App() {
   const handleSkipRest = useCallback(() => {
     const state = gameStateRef.current;
     if (!state) return;
+    const round = getCharlestonRound(state.phase);
+    if (round !== 'second' && round !== 'courtesy') return;
     if (peerManager && !peerManager.isHost) {
       setCharlestonWaiting(true);
       peerManager.sendCharlestonControl('skip_rest');
@@ -301,12 +390,14 @@ export default function App() {
 
   const handleQuitToMenu = useCallback(() => {
     clearTimers();
+    clearDisconnectGrace();
+    clearMultiplayerLobbyIntent();
     peerManagerRef.current?.disconnect();
     setPeerManager(null);
     setGameState(null);
     setSelectedTile(null);
     goScreen(setScreen, 'menu');
-  }, [clearTimers]);
+  }, [clearTimers, clearDisconnectGrace]);
 
   const handleNewGameFromSettings = useCallback(() => {
     if (peerManagerRef.current && !peerManagerRef.current.isHost) return;
@@ -322,14 +413,33 @@ export default function App() {
     });
   }, [prefs, handleStartGame]);
 
+  const applyLiveNames = useCallback((names: string[]) => {
+    setGameState(prev => {
+      if (!prev) return prev;
+      const next = {
+        ...prev,
+        players: prev.players.map((p, i) => ({
+          ...p,
+          name: names[i] ?? p.name,
+        })),
+      };
+      if (peerManagerRef.current?.isHost) {
+        peerManagerRef.current.syncGameState(next);
+      }
+      return next;
+    });
+  }, []);
+
   const showCharleston =
     !!gameState &&
     gameState.phase.startsWith('charleston') &&
     gameState.phase !== 'playing';
 
+  const inGame = screen === 'playing' && !!gameState;
+
   return (
     <>
-      <UpdateBanner />
+      <UpdateBanner inGame={inGame} />
       {screen === 'menu' && (
         <MainMenu
           onStartGame={handleStartGame}
@@ -383,6 +493,7 @@ export default function App() {
             teachMode={prefs.teachMode}
             roomCode={peerManager?.roomCode || undefined}
             resumeKey={peerManager?.resumeKey || undefined}
+            isHost={!!peerManager?.isHost}
             canStartNextRound={!peerManager || peerManager.isHost}
           />
           {showCharleston && (
@@ -413,22 +524,13 @@ export default function App() {
           prefs={prefs}
           onPrefsChange={handlePrefsChange}
           onClose={() => setShowSettings(false)}
-          inGame={screen === 'playing' && !!gameState}
+          inGame={inGame}
           players={gameState?.players}
           roomCode={peerManager?.roomCode || undefined}
           resumeKey={peerManager?.resumeKey || undefined}
-          onApplyLiveNames={(names: string[]) => {
-            setGameState(prev => {
-              if (!prev) return prev;
-              return {
-                ...prev,
-                players: prev.players.map((p, i) => ({
-                  ...p,
-                  name: names[i] ?? p.name,
-                })),
-              };
-            });
-          }}
+          onApplyLiveNames={
+            !peerManager || peerManager.isHost ? applyLiveNames : undefined
+          }
           onNewGame={
             !peerManager || peerManager.isHost ? handleNewGameFromSettings : undefined
           }

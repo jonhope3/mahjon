@@ -3,12 +3,21 @@
 // ============================================================
 
 import {
-  GameState, Player, Tile, GameAction, GameLogEntry,
-  SeatWind, PlayerType, Difficulty, GamePhase, ExposedSet,
+  GameState, Player, Tile, GameAction, ActionType,
+  SeatWind, PlayerType, Difficulty, ExposedSet,
 } from './types';
-import { createTileSet, shuffleTiles, buildWall, drawFromWall, sortTiles, isJoker } from './tiles';
+import { createTileSet, shuffleTiles, buildWall, drawFromWall, sortTiles, isJoker, tilesMatch } from './tiles';
 import { checkWin, calculateScore } from './scoring';
-import { nextCharlestonPhase } from './charleston';
+import { nextCharlestonPhase, getCharlestonRound } from './charleston';
+import {
+  canKong,
+  canPung,
+  canQuint,
+  claimPriority,
+  countPlayerJokers,
+  getClaimOptions,
+  isClaimWindowOpen,
+} from './actions';
 
 const SEAT_WINDS: SeatWind[] = ['east', 'south', 'west', 'north'];
 
@@ -120,8 +129,10 @@ export function startNextRound(prev: GameState): GameState {
   return dealt;
 }
 
-/** Skip charleston and go straight to playing */
+/** Skip charleston and go straight to playing (optional 2nd / courtesy only) */
 export function skipCharleston(state: GameState): GameState {
+  const round = getCharlestonRound(state.phase);
+  if (round !== 'second' && round !== 'courtesy') return state;
   return {
     ...state,
     phase: 'playing',
@@ -131,6 +142,8 @@ export function skipCharleston(state: GameState): GameState {
 
 /** Advance one Charleston step with no tile exchange (optional pass skip) */
 export function advanceCharlestonWithoutPass(state: GameState): GameState {
+  const round = getCharlestonRound(state.phase);
+  if (round !== 'second' && round !== 'courtesy') return state;
   const nextPhase = nextCharlestonPhase(state.phase);
   if (nextPhase === 'playing') return skipCharleston(state);
   return { ...state, phase: nextPhase };
@@ -161,6 +174,8 @@ export function processAction(state: GameState, action: GameAction): GameState {
 }
 
 function handleDraw(state: GameState, action: GameAction): GameState {
+  if (state.phase !== 'playing') return state;
+  if (isClaimWindowOpen(state)) return state;
   const playerIdx = state.players.findIndex(p => p.id === action.playerId);
   if (playerIdx !== state.currentPlayerIndex) return state;
   if (state.hasDrawn) return state;
@@ -186,6 +201,8 @@ function handleDraw(state: GameState, action: GameAction): GameState {
 }
 
 function handleDiscard(state: GameState, action: GameAction): GameState {
+  if (state.phase !== 'playing') return state;
+  if (isClaimWindowOpen(state)) return state;
   const playerIdx = state.players.findIndex(p => p.id === action.playerId);
   if (playerIdx !== state.currentPlayerIndex) return state;
   if (!state.hasDrawn) return state;
@@ -218,100 +235,72 @@ function handleDiscard(state: GameState, action: GameAction): GameState {
   return state;
 }
 
+/** Record a claim intent; applied later by resolveClaimWindow */
 function handleClaim(state: GameState, action: GameAction): GameState {
+  if (state.phase !== 'playing') return state;
+  if (!isClaimWindowOpen(state) || !state.lastDiscard) return state;
+  if (isJoker(state.lastDiscard)) return state;
+  if (action.playerId === state.lastDiscardBy) return state;
+  if (state.claimWindow!.claims.has(action.playerId)) return state;
+
   const playerIdx = state.players.findIndex(p => p.id === action.playerId);
+  if (playerIdx === -1) return state;
   const player = state.players[playerIdx]!;
 
-  if (!state.lastDiscard) return state;
+  const ok =
+    (action.type === 'pung' && canPung(player, state.lastDiscard)) ||
+    (action.type === 'kong' && canKong(player, state.lastDiscard)) ||
+    (action.type === 'quint' && canQuint(player, state.lastDiscard));
+  if (!ok) return state;
 
-  const claimedTile = state.lastDiscard;
-  const setSize = action.type === 'pung' ? 3 : action.type === 'kong' ? 4 : 5;
-
-  // Find matching tiles in hand (including jokers)
-  const matching: Tile[] = [];
-  const jokers: Tile[] = [];
-
-  for (const t of player.hand) {
-    if (isJoker(t)) {
-      jokers.push(t);
-    } else if (
-      t.kind.type === claimedTile.kind.type &&
-      (t.kind.type !== 'suited' || (
-        (t.kind as any).suit === (claimedTile.kind as any).suit &&
-        (t.kind as any).rank === (claimedTile.kind as any).rank
-      )) &&
-      (t.kind.type !== 'wind' || (t.kind as any).wind === (claimedTile.kind as any).wind) &&
-      (t.kind.type !== 'dragon' || (t.kind as any).dragon === (claimedTile.kind as any).dragon)
-    ) {
-      matching.push(t);
-    }
-  }
-
-  // Need setSize - 1 tiles (the claimed tile is the last one)
-  const needed = setSize - 1;
-  const fromMatching = Math.min(matching.length, needed);
-  const fromJokers = Math.min(needed - fromMatching, jokers.length);
-
-  if (fromMatching + fromJokers < needed) return state;
-
-  // Build the exposed set
-  const setTiles: Tile[] = [];
-  for (let i = 0; i < fromMatching; i++) setTiles.push(matching[i]!);
-  for (let i = 0; i < fromJokers; i++) setTiles.push(jokers[i]!);
-  setTiles.push(claimedTile);
-
-  // Remove used tiles from hand
-  const usedIds = new Set(setTiles.map(t => t.id));
-  usedIds.delete(claimedTile.id); // discard wasn't in hand
-  player.hand = player.hand.filter(t => !usedIds.has(t.id));
-
-  // Add exposed set
-  player.exposedSets.push({
-    tiles: setTiles,
-    setType: action.type === 'pung' ? 'pung' : action.type === 'kong' ? 'kong' : 'quint',
-    claimedTile,
-  });
-
-  // Remove discard from the discarder's discard pile
-  const discarderIdx = state.players.findIndex(p => p.id === state.lastDiscardBy);
-  if (discarderIdx !== -1) {
-    const discards = state.players[discarderIdx]!.discards;
-    const discardIdx = discards.findIndex(t => t.id === claimedTile.id);
-    if (discardIdx !== -1) discards.splice(discardIdx, 1);
-  }
-
-  state.lastDiscard = null;
-  state.lastDiscardBy = null;
-  state.claimWindow = null;
-  state.currentPlayerIndex = playerIdx;
-  state.hasDrawn = true; // claiming counts as "drawing"
-
-  addLog(state, action.playerId, action.type, `Claimed ${claimedTile.label} for a ${action.type}.`);
-
+  state.claimWindow!.claims.set(action.playerId, action.type);
+  addLog(state, action.playerId, action.type, `Called ${action.type} on ${state.lastDiscard.label}.`);
   return state;
 }
 
 function handleMahjong(state: GameState, action: GameAction): GameState {
+  if (state.phase !== 'playing') return state;
   const playerIdx = state.players.findIndex(p => p.id === action.playerId);
+  if (playerIdx === -1) return state;
   const player = state.players[playerIdx]!;
 
-  // If claiming from discard, add it to hand temporarily for checking
-  if (state.lastDiscard && state.lastDiscardBy !== player.id) {
+  // Claim-window mahjong: record intent for arbitration
+  if (isClaimWindowOpen(state) && state.lastDiscard && state.lastDiscardBy !== player.id) {
+    if (state.claimWindow!.claims.has(action.playerId)) return state;
+    if (!getClaimOptions(state, playerIdx).includes('mahjong')) return state;
+    state.claimWindow!.claims.set(action.playerId, 'mahjong');
+    addLog(state, action.playerId, 'mahjong', `Called Mahjong on ${state.lastDiscard.label}.`);
+    return state;
+  }
+
+  // Self-drawn mahjong (not during a claim window)
+  if (isClaimWindowOpen(state)) return state;
+  if (playerIdx !== state.currentPlayerIndex || !state.hasDrawn) return state;
+
+  return declareMahjongWin(state, playerIdx, /*claimedFromDiscard*/ false);
+}
+
+function declareMahjongWin(
+  state: GameState,
+  playerIdx: number,
+  claimedFromDiscard: boolean,
+): GameState {
+  const player = state.players[playerIdx]!;
+
+  if (claimedFromDiscard && state.lastDiscard && state.lastDiscardBy !== player.id) {
     player.hand.push(state.lastDiscard);
   }
 
   const winPattern = checkWin(player);
   if (!winPattern) {
-    // Invalid mahjong declaration — remove the discard if we added it
-    if (state.lastDiscard && state.lastDiscardBy !== player.id) {
+    if (claimedFromDiscard && state.lastDiscard && state.lastDiscardBy !== player.id) {
       player.hand.pop();
     }
     return state;
   }
 
-  const claimedFromDiscard = !!(state.lastDiscard && state.lastDiscardBy !== player.id);
   const selfDrawn = !claimedFromDiscard;
-  const jokerCount = player.hand.filter(t => isJoker(t)).length;
+  const jokerCount = countPlayerJokers(player);
   const score = calculateScore(winPattern, selfDrawn, jokerCount);
 
   if (claimedFromDiscard && state.lastDiscard && state.lastDiscardBy) {
@@ -331,18 +320,158 @@ function handleMahjong(state: GameState, action: GameAction): GameState {
   state.lastDiscard = null;
   state.lastDiscardBy = null;
 
-  addLog(state, action.playerId, 'mahjong',
+  addLog(state, player.id, 'mahjong',
     `Mahjong! ${winPattern.description} (${winPattern.category}) for ${score} points!`);
 
   return state;
 }
 
 function handlePass(state: GameState, action: GameAction): GameState {
-  // Record pass — turn advances only after the claim window fully resolves (AI loop / host)
-  if (state.claimWindow) {
-    state.claimWindow.claims.set(action.playerId, 'pass');
-  }
+  if (state.phase !== 'playing') return state;
+  if (!isClaimWindowOpen(state)) return state;
+  if (action.playerId === state.lastDiscardBy) return state;
+  if (state.claimWindow!.claims.has(action.playerId)) return state;
+
+  const playerIdx = state.players.findIndex(p => p.id === action.playerId);
+  if (playerIdx === -1) return state;
+  // Only seats that could claim are allowed to pass (keeps window resolution clean)
+  if (getClaimOptions(state, playerIdx).length === 0) return state;
+
+  state.claimWindow!.claims.set(action.playerId, 'pass');
   addLog(state, action.playerId, 'pass', 'Passed on the discard.');
+  return state;
+}
+
+/**
+ * After all eligible seats respond, award the highest-priority claim
+ * (Mahjong > Quint > Kong > Pung). Ties break by seat order after the discarder.
+ */
+export function resolveClaimWindow(state: GameState): GameState {
+  const newState = deepCopyState(state);
+  if (!isClaimWindowOpen(newState) || !newState.lastDiscard || !newState.lastDiscardBy) {
+    return advanceTurn(newState);
+  }
+
+  const discarderIdx = newState.players.findIndex(p => p.id === newState.lastDiscardBy);
+  type Candidate = { playerIdx: number; action: ActionType; priority: number; seatDist: number };
+  const candidates: Candidate[] = [];
+
+  for (const [playerId, actionType] of newState.claimWindow!.claims) {
+    if (actionType === 'pass') continue;
+    if (!['pung', 'kong', 'quint', 'mahjong'].includes(actionType)) continue;
+    const playerIdx = newState.players.findIndex(p => p.id === playerId);
+    if (playerIdx === -1) continue;
+    const rawDist = (playerIdx - discarderIdx + 4) % 4;
+    candidates.push({
+      playerIdx,
+      action: actionType,
+      priority: claimPriority(actionType),
+      seatDist: rawDist === 0 ? 4 : rawDist,
+    });
+  }
+
+  if (candidates.length === 0) {
+    return advanceTurn(newState);
+  }
+
+  candidates.sort((a, b) => {
+    if (b.priority !== a.priority) return b.priority - a.priority;
+    return a.seatDist - b.seatDist;
+  });
+
+  const winner = candidates[0]!;
+  const winnerName = newState.players[winner.playerIdx]!.name;
+  const claimLabel =
+    winner.action === 'mahjong'
+      ? 'Mahjong'
+      : winner.action[0]!.toUpperCase() + winner.action.slice(1);
+
+  const beaten = candidates.slice(1).filter(c => c.priority < winner.priority);
+  if (beaten.length > 0) {
+    const beatenBits = beaten.map(c => {
+      const name = newState.players[c.playerIdx]!.name;
+      const label = c.action === 'mahjong' ? 'Mahjong' : c.action;
+      return `${name}'s ${label}`;
+    });
+    addLog(
+      newState,
+      newState.players[winner.playerIdx]!.id,
+      winner.action,
+      `${winnerName}'s ${claimLabel} takes the discard (${beatenBits.join(', ')} yield to higher priority).`,
+    );
+  } else if (candidates.length > 1) {
+    addLog(
+      newState,
+      newState.players[winner.playerIdx]!.id,
+      winner.action,
+      `${winnerName}'s ${claimLabel} wins the tie (next seat after the discard).`,
+    );
+  }
+
+  if (winner.action === 'mahjong') {
+    return declareMahjongWin(newState, winner.playerIdx, true);
+  }
+  return applyExposedClaim(newState, winner.playerIdx, winner.action);
+}
+
+/** Apply a winning pung/kong/quint after claim arbitration */
+function applyExposedClaim(
+  state: GameState,
+  playerIdx: number,
+  actionType: ActionType,
+): GameState {
+  const player = state.players[playerIdx]!;
+  const claimedTile = state.lastDiscard!;
+  const setSize = actionType === 'pung' ? 3 : actionType === 'kong' ? 4 : 5;
+
+  const matching: Tile[] = [];
+  const jokers: Tile[] = [];
+
+  for (const t of player.hand) {
+    if (isJoker(t)) {
+      jokers.push(t);
+    } else if (tilesMatch(t.kind, claimedTile.kind)) {
+      matching.push(t);
+    }
+  }
+
+  const needed = setSize - 1;
+  const fromMatching = Math.min(matching.length, needed);
+  const fromJokers = Math.min(needed - fromMatching, jokers.length);
+  if (fromMatching + fromJokers < needed) {
+    // Claim became illegal somehow — treat as pass for the table
+    return advanceTurn(state);
+  }
+
+  const setTiles: Tile[] = [];
+  for (let i = 0; i < fromMatching; i++) setTiles.push(matching[i]!);
+  for (let i = 0; i < fromJokers; i++) setTiles.push(jokers[i]!);
+  setTiles.push(claimedTile);
+
+  const usedIds = new Set(setTiles.map(t => t.id));
+  usedIds.delete(claimedTile.id);
+  player.hand = player.hand.filter(t => !usedIds.has(t.id));
+
+  player.exposedSets.push({
+    tiles: setTiles,
+    setType: actionType === 'pung' ? 'pung' : actionType === 'kong' ? 'kong' : 'quint',
+    claimedTile,
+  });
+
+  const discarderIdx = state.players.findIndex(p => p.id === state.lastDiscardBy);
+  if (discarderIdx !== -1) {
+    const discards = state.players[discarderIdx]!.discards;
+    const discardIdx = discards.findIndex(t => t.id === claimedTile.id);
+    if (discardIdx !== -1) discards.splice(discardIdx, 1);
+  }
+
+  state.lastDiscard = null;
+  state.lastDiscardBy = null;
+  state.claimWindow = null;
+  state.currentPlayerIndex = playerIdx;
+  state.hasDrawn = true;
+
+  addLog(state, player.id, actionType, `Claimed ${claimedTile.label} for a ${actionType}.`);
   return state;
 }
 
@@ -385,6 +514,8 @@ function deepCopyState(state: GameState): GameState {
 }
 
 function handleSwapJoker(state: GameState, action: GameAction): GameState {
+  if (state.phase !== 'playing') return state;
+  if (isClaimWindowOpen(state)) return state;
   const playerIdx = state.players.findIndex(p => p.id === action.playerId);
   if (playerIdx !== state.currentPlayerIndex) return state;
   if (!state.hasDrawn) return state;
@@ -417,30 +548,23 @@ function handleSwapJoker(state: GameState, action: GameAction): GameState {
 
   if (!targetSet || !targetPlayer) return state;
 
-  // 3. Verify jokerTile is actually a joker
-  if (!isJoker(jokerTile)) return state;
+  // 3. Verify the exposed tile is actually a joker (not the client payload)
+  const jokerSetIdx = targetSet.tiles.findIndex(t => t.id === jokerTile.id);
+  if (jokerSetIdx === -1) return state;
+  const exposedJoker = targetSet.tiles[jokerSetIdx]!;
+  if (!isJoker(exposedJoker)) return state;
 
   // 4. Verify handTile matches the natural tiles of targetSet
   const naturalTile = targetSet.tiles.find(t => !isJoker(t));
   if (!naturalTile) return state; // Can't swap if set contains only jokers
 
   // Verify match: same type, and details
-  const match = (
-    handTile.kind.type === naturalTile.kind.type &&
-    (handTile.kind.type !== 'suited' || (
-      (handTile.kind as any).suit === (naturalTile.kind as any).suit &&
-      (handTile.kind as any).rank === (naturalTile.kind as any).rank
-    )) &&
-    (handTile.kind.type !== 'wind' || (handTile.kind as any).wind === (naturalTile.kind as any).wind) &&
-    (handTile.kind.type !== 'dragon' || (handTile.kind as any).dragon === (naturalTile.kind as any).dragon)
-  );
-
-  if (!match) return state;
+  if (!tilesMatch(handTile.kind, naturalTile.kind)) return state;
+  if (isJoker(handTile)) return state;
 
   // 5. Perform the swap!
-  const jokerSetIdx = targetSet.tiles.findIndex(t => t.id === jokerTile.id);
   targetSet.tiles[jokerSetIdx] = handTile;
-  player.hand[handTileIdx] = jokerTile;
+  player.hand[handTileIdx] = exposedJoker;
 
   // Sort player's hand
   player.hand = sortTiles(player.hand);

@@ -303,8 +303,20 @@ export function TileComponent({
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
+        onKeyDown={
+          clickable
+            ? (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleClick();
+                }
+              }
+            : undefined
+        }
         aria-label={identity}
-        role="img"
+        aria-pressed={clickable ? !!selected : undefined}
+        role={clickable ? 'button' : 'img'}
+        tabIndex={clickable ? 0 : undefined}
       >
         {renderTileFace(tile, size)}
       </div>
