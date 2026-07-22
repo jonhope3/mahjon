@@ -6,6 +6,13 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { createPortal } from 'react-dom';
 import { Tile } from '../engine/types';
 import { tileTooltip } from '../engine/tiles';
+import {
+  DRAGON_FACES,
+  FLOWER_FACE,
+  JOKER_FACE,
+  WIND_FACES,
+  suitFace,
+} from '../engine/tile-faces';
 import './TileComponent.css';
 
 interface TileComponentProps {
@@ -21,31 +28,6 @@ interface TileComponentProps {
   className?: string;
   showIdentity?: boolean;
 }
-
-const SHELL_EMOJIS: Record<number, string> = {
-  1: '🐚',
-  2: '🦪',
-  3: '🪸',
-  4: '🦀',
-  5: '🐡',
-  6: '🐙',
-  7: '🐬',
-  8: '🐳',
-  9: '🦈',
-};
-
-const WIND_LABELS: Record<string, string> = {
-  east: 'EAST',
-  south: 'SOUTH',
-  west: 'WEST',
-  north: 'NORTH',
-};
-
-const DRAGON_DISPLAY: Record<string, { char: string; label: string; cls: string }> = {
-  red: { char: '🪸', label: 'Coral', cls: 'dragon-red' },
-  green: { char: '🌊', label: 'Wave', cls: 'dragon-green' },
-  white: { char: '🦪', label: 'Pearl', cls: 'dragon-white' },
-};
 
 const LONG_PRESS_MS = 420;
 const TIP_MARGIN = 10;
@@ -331,22 +313,24 @@ function renderTileFace(tile: Tile, size: string) {
 
   switch (kind.type) {
     case 'suited':
-      return renderSuitedTile(kind.suit, kind.rank, size, showCaption);
-    case 'wind':
+      return renderSuitedTile(kind.suit, kind.rank, showCaption);
+    case 'wind': {
+      const w = WIND_FACES[kind.wind];
       return (
         <>
-          <span className="tile-emoji wind">🧭</span>
+          <span className="tile-emoji wind">{w.icon}</span>
           {showCaption && (
-            <span className="tile-suit-label wind">{WIND_LABELS[kind.wind]}</span>
+            <span className="tile-suit-label wind">{w.label}</span>
           )}
         </>
       );
+    }
     case 'dragon': {
-      const d = DRAGON_DISPLAY[kind.dragon]!;
+      const d = DRAGON_FACES[kind.dragon];
       return (
         <>
-          <span className={`tile-emoji ${d.cls}`}>{d.char}</span>
-          {showCaption && size === 'normal' && (
+          <span className={`tile-emoji ${d.cls}`}>{d.icon}</span>
+          {showCaption && (
             <span className={`tile-suit-label ${d.cls}`}>{d.label}</span>
           )}
         </>
@@ -355,56 +339,39 @@ function renderTileFace(tile: Tile, size: string) {
     case 'flower':
       return (
         <>
-          <span className="tile-emoji flower">🪸</span>
-          {showCaption && size === 'normal' && (
-            <span className="tile-suit-label anemone">Anemone</span>
+          <span className="tile-emoji flower" aria-hidden="true">
+            {FLOWER_FACE.icon}
+          </span>
+          {showCaption && (
+            <span className="tile-suit-label anemone">{FLOWER_FACE.label}</span>
           )}
         </>
       );
     case 'joker':
       return (
         <>
-          <span className="tile-emoji joker">🪼</span>
-          {showCaption && size === 'normal' && (
-            <span className="tile-suit-label joker">Wild</span>
+          <span className="tile-emoji joker" aria-hidden="true">
+            {JOKER_FACE.icon}
+          </span>
+          {showCaption && (
+            <span className="tile-suit-label joker">{JOKER_FACE.label}</span>
           )}
         </>
       );
   }
 }
 
-function renderSuitedTile(suit: string, rank: number, size: string, showCaption: boolean) {
-  switch (suit) {
-    case 'crak':
-      return (
-        <>
-          <span className="tile-emoji">{SHELL_EMOJIS[rank]}</span>
-          {showCaption && size === 'normal' && (
-            <span className="tile-suit-label crak">{rank}</span>
-          )}
-        </>
-      );
-    case 'dot':
-      return (
-        <>
-          <span className="tile-emoji dot" aria-hidden="true">
-            🫧
-          </span>
-          {showCaption && (
-            <span className="tile-suit-label dot">{rank}</span>
-          )}
-        </>
-      );
-    case 'bam':
-      return (
-        <>
-          <span className="tile-emoji">🌿</span>
-          {showCaption && size === 'normal' && (
-            <span className="tile-suit-label bam">{rank}</span>
-          )}
-        </>
-      );
-    default:
-      return <span className="tile-rank">{rank}</span>;
-  }
+function renderSuitedTile(suit: string, rank: number, showCaption: boolean) {
+  const face = suitFace(suit as 'crak' | 'bam' | 'dot');
+  return (
+    <>
+      <span className={`tile-rank ${face.cls}`}>{rank}</span>
+      <span className={`tile-emoji tile-emoji--suit ${face.cls}`} aria-hidden="true">
+        {face.icon}
+      </span>
+      {showCaption && (
+        <span className={`tile-suit-label ${face.cls}`}>{face.name}</span>
+      )}
+    </>
+  );
 }

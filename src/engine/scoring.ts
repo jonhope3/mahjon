@@ -50,16 +50,38 @@ function matchesPlayerToPattern(player: Player, pattern: HandPattern): boolean {
   const totalNeeded = pattern.groups.reduce((sum, g) => sum + g.count, 0);
   if (totalNeeded !== 14) return false;
 
-  const suits: Suit[] = ['bam', 'crak', 'dot'];
-  for (const perm of generateSuitPermutations(suits)) {
-    const suitMap: Record<string, Suit> = {
-      a: perm[0]!,
-      b: perm[1]!,
-      c: perm[2]!,
-    };
-    if (tryMatchPlayer(player, pattern, suitMap)) return true;
+  const maxShift = pattern.runShiftMax ?? 0;
+  for (let shift = 0; shift <= maxShift; shift++) {
+    const shifted = shift === 0 ? pattern : shiftPatternRanks(pattern, shift);
+    if (!shifted) continue;
+
+    const suits: Suit[] = ['bam', 'crak', 'dot'];
+    for (const perm of generateSuitPermutations(suits)) {
+      const suitMap: Record<string, Suit> = {
+        a: perm[0]!,
+        b: perm[1]!,
+        c: perm[2]!,
+      };
+      if (tryMatchPlayer(player, shifted, suitMap)) return true;
+    }
   }
   return false;
+}
+
+/** Add `shift` to every suited rank; return null if any rank leaves 1–9. */
+function shiftPatternRanks(pattern: HandPattern, shift: number): HandPattern | null {
+  if (shift === 0) return pattern;
+  const groups: PatternGroup[] = [];
+  for (const g of pattern.groups) {
+    if (g.type === 'suited' && g.rank != null) {
+      const rank = g.rank + shift;
+      if (rank < 1 || rank > 9) return null;
+      groups.push({ ...g, rank });
+    } else {
+      groups.push(g);
+    }
+  }
+  return { ...pattern, groups };
 }
 
 /** Generate all permutations of 3 suits */
@@ -78,21 +100,17 @@ function generateSuitPermutations(suits: Suit[]): Suit[][] {
 }
 
 /**
- * Prefer an explicit dragon color; otherwise inherit from the nearest
- * suited group (card reading: D next to numbers takes that suit's dragon).
+ * Matching suit color for a dragon group (red↔crak, green↔bam, white↔dot).
  */
-function resolveDragonColor(
+function matchingDragonForGroup(
   pattern: HandPattern,
   groupIndex: number,
   suitMap: Record<string, Suit>,
-): Dragon | 'any' {
+): Dragon | null {
   const group = pattern.groups[groupIndex]!;
-  if (group.dragon && group.dragon !== 'any') return group.dragon;
-
   if (group.suitConstraint && group.suitConstraint !== 'any') {
     return SUIT_TO_DRAGON[suitMap[group.suitConstraint]!];
   }
-
   for (let i = groupIndex - 1; i >= 0; i--) {
     const g = pattern.groups[i]!;
     if (g.type === 'suited' && g.suitConstraint && g.suitConstraint !== 'any') {
@@ -105,7 +123,39 @@ function resolveDragonColor(
       return SUIT_TO_DRAGON[suitMap[g.suitConstraint]!];
     }
   }
-  return 'any';
+  return null;
+}
+
+/**
+ * Prefer an explicit dragon color; otherwise inherit matching suit color.
+ * `opposite` means any dragon except the matching suit color.
+ */
+function resolveDragonColor(
+  pattern: HandPattern,
+  groupIndex: number,
+  suitMap: Record<string, Suit>,
+): Dragon | 'any' | 'opposite' {
+  const group = pattern.groups[groupIndex]!;
+  if (group.dragon === 'red' || group.dragon === 'green' || group.dragon === 'white') {
+    return group.dragon;
+  }
+  if (group.dragon === 'opposite') return 'opposite';
+  return matchingDragonForGroup(pattern, groupIndex, suitMap) ?? 'any';
+}
+
+function dragonTileOk(
+  tileDragon: Dragon,
+  want: Dragon | 'any' | 'opposite',
+  pattern: HandPattern,
+  groupIndex: number,
+  suitMap: Record<string, Suit>,
+): boolean {
+  if (want === 'any') return true;
+  if (want === 'opposite') {
+    const match = matchingDragonForGroup(pattern, groupIndex, suitMap);
+    return match != null && tileDragon !== match;
+  }
+  return tileDragon === want;
 }
 
 function tileFitsGroup(
@@ -128,7 +178,7 @@ function tileFitsGroup(
     case 'dragon': {
       if (tile.kind.type !== 'dragon') return false;
       const want = resolveDragonColor(pattern, groupIndex, suitMap);
-      return want === 'any' || tile.kind.dragon === want;
+      return dragonTileOk(tile.kind.dragon, want, pattern, groupIndex, suitMap);
     }
     case 'suited': {
       if (tile.kind.type !== 'suited') return false;
@@ -260,7 +310,10 @@ function tryMatchConcealed(
       if (!tileFitsGroup(tile, group, gi, pattern, suitMap)) continue;
 
       if (group.type === 'dragon' && tile.kind.type === 'dragon') {
-        if (wantDragon !== 'any' && wantDragon !== null && tile.kind.dragon !== wantDragon) {
+        if (
+          wantDragon !== null &&
+          !dragonTileOk(tile.kind.dragon, wantDragon, pattern, gi, suitMap)
+        ) {
           continue;
         }
         if (lockedDragon && tile.kind.dragon !== lockedDragon) continue;
@@ -323,15 +376,20 @@ export function evaluateHandDistance(player: Player): { pattern: HandPattern; di
 function calculateDistance(player: Player, pattern: HandPattern): number {
   const suits: Suit[] = ['bam', 'crak', 'dot'];
   let minDistance = Infinity;
+  const maxShift = pattern.runShiftMax ?? 0;
 
-  for (const perm of generateSuitPermutations(suits)) {
-    const suitMap: Record<string, Suit> = {
-      a: perm[0]!,
-      b: perm[1]!,
-      c: perm[2]!,
-    };
-    const dist = calculateDistanceForMapping(player, pattern, suitMap);
-    minDistance = Math.min(minDistance, dist);
+  for (let shift = 0; shift <= maxShift; shift++) {
+    const shifted = shift === 0 ? pattern : shiftPatternRanks(pattern, shift);
+    if (!shifted) continue;
+    for (const perm of generateSuitPermutations(suits)) {
+      const suitMap: Record<string, Suit> = {
+        a: perm[0]!,
+        b: perm[1]!,
+        c: perm[2]!,
+      };
+      const dist = calculateDistanceForMapping(player, shifted, suitMap);
+      minDistance = Math.min(minDistance, dist);
+    }
   }
 
   return minDistance;
@@ -400,7 +458,10 @@ function calculateDistanceForMapping(
       if (used.has(tile.id)) continue;
       if (!tileFitsGroup(tile, group, gi, pattern, suitMap)) continue;
       if (group.type === 'dragon' && tile.kind.type === 'dragon') {
-        if (wantDragon !== 'any' && wantDragon !== null && tile.kind.dragon !== wantDragon) {
+        if (
+          wantDragon !== null &&
+          !dragonTileOk(tile.kind.dragon, wantDragon, pattern, gi, suitMap)
+        ) {
           continue;
         }
         if (lockedDragon && tile.kind.dragon !== lockedDragon) continue;

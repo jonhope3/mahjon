@@ -35,8 +35,8 @@ export const TEACH_LABEL: Record<TeachMode, string> = {
 };
 
 export const TEACH_HINT: Record<TeachMode, string> = {
-  expert: 'No turn coaches or hand hints — full table feel',
-  guided: 'Turn tips and one-time coaches (recommended)',
+  expert: 'Full table feel — no coaches. Stricter norms still apply (no Charleston jokers, real courtesy).',
+  guided: 'Turn tips and one-time coaches (recommended for learning)',
   coach: 'Guided plus gentle “closest hands” hints',
 };
 

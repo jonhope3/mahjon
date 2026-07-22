@@ -71,10 +71,25 @@
 }
 
 .tile-rank {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 800;
   line-height: 1;
   font-family: var(--font-tile);
+}
+
+.tile-emoji--suit {
+  font-size: 16px;
+  margin-top: 0;
+  line-height: 1;
+}
+
+.tile.mini .tile-emoji--suit {
+  font-size: 11px;
+  margin-top: 0;
+}
+
+.tile.tiny .tile-emoji--suit {
+  font-size: 9px;
 }
 
 .tile-suit-label {
@@ -121,11 +136,17 @@
   font-size: 8px;
   letter-spacing: 0.01em;
   color: #d81b60;
+  font-weight: 800;
+}
+
+.tile-emoji.flower {
+  color: #d81b60;
+  filter: drop-shadow(0 1px 1px rgba(216, 27, 96, 0.25));
 }
 
 .tile-emoji.joker {
   font-size: 28px;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15));
+  filter: drop-shadow(0 1px 2px rgba(33, 150, 243, 0.35));
 }
 
 .tile.mini .tile-emoji.joker {
@@ -144,6 +165,18 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.tile.mini .tile-suit-label.dragon-red,
+.tile.mini .tile-suit-label.dragon-green,
+.tile.mini .tile-suit-label.dragon-white,
+.tile.mini .tile-suit-label.anemone,
+.tile.mini .tile-suit-label.joker {
+  font-size: 7px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: nowrap;
 }
 
 .dot-grid {
@@ -175,10 +208,6 @@
   align-items: center;
   justify-content: center;
   margin-top: -6px;
-}
-
-.tile-emoji.flower {
-  color: #d81b60;
 }
 
 .tile.mini .tile-cjk,

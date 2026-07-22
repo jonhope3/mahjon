@@ -100,8 +100,8 @@ export function Tutorial({ onBack, onStartPlaying }: TutorialProps) {
           <div className="tutorial-section">
             <h4 className="suit-shell">Shells</h4>
             <p>
-              Red suited tiles (traditionally <strong>Crak</strong>). Each rank has its own ocean
-              creature — hover or long-press to read the name.
+              Red suited tiles (traditionally <strong>Crak</strong>). Same shell icon on every rank —
+              the <strong>number</strong> is what changes (1–9).
             </p>
             <SuitRow suit="crak" fromId={800} />
           </div>
@@ -109,7 +109,8 @@ export function Tutorial({ onBack, onStartPlaying }: TutorialProps) {
           <div className="tutorial-section">
             <h4 className="suit-kelp">Kelp</h4>
             <p>
-              Green numbered tiles (traditionally <strong>Bam</strong>) with kelp / seaweed markings.
+              Green numbered tiles (traditionally <strong>Bam</strong>). Same kelp icon; read the
+              number.
             </p>
             <SuitRow suit="bam" fromId={810} />
           </div>
@@ -117,7 +118,8 @@ export function Tutorial({ onBack, onStartPlaying }: TutorialProps) {
           <div className="tutorial-section">
             <h4 className="suit-pearl">Pearls</h4>
             <p>
-              Blue numbered tiles (traditionally <strong>Dot</strong>) with circular pearl bubbles.
+              Blue numbered tiles (traditionally <strong>Dot</strong>). Same pearl-bubble icon; read
+              the number.
             </p>
             <SuitRow suit="dot" fromId={820} />
           </div>
@@ -130,7 +132,9 @@ export function Tutorial({ onBack, onStartPlaying }: TutorialProps) {
         <div className="tutorial-text">
           <div className="tutorial-section tutorial-section--first">
             <h4>Winds (16 tiles)</h4>
-            <p>North, East, South, West — used in wind/dragon hands and mixed patterns.</p>
+            <p>
+              East 🌅, South ☀️, West 🌇, North ❄️ — used in wind/dragon hands and mixed patterns.
+            </p>
             <div className="tutorial-tiles-demo">
               <TileComponent tile={SAMPLE_TILES.north} size="mini" />
               <TileComponent tile={SAMPLE_TILES.east} size="mini" />
@@ -155,8 +159,9 @@ export function Tutorial({ onBack, onStartPlaying }: TutorialProps) {
           <div className="tutorial-section">
             <h4>Anemones &amp; Jokers (8 each)</h4>
             <p>
-              <strong>Sea Anemones</strong> (Flowers) appear in many patterns.{' '}
-              <strong>Jokers</strong> are wild in groups of 3+, but never in pairs or singles.
+              <strong>Sea Anemones</strong> (🌺 Flowers) appear in many patterns.{' '}
+              <strong>Jokers</strong> (🪼 jellyfish) are wild in groups of 3+, but never in pairs or
+              singles. Do not confuse anemones with the Coral Dragon (🪸).
             </p>
             <div className="tutorial-tiles-demo">
               <TileComponent tile={SAMPLE_TILES.flower} size="mini" />

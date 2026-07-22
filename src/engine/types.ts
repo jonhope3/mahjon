@@ -155,8 +155,8 @@ export interface PatternGroup {
   suitConstraint?: SuitConstraint;
   /** For winds: which specific wind, or 'any' */
   wind?: Wind | 'any';
-  /** For dragons: which specific dragon, or 'any' */
-  dragon?: Dragon | 'any';
+  /** For dragons: which specific dragon, or 'any' / 'opposite' (vs matching suit color) */
+  dragon?: Dragon | 'any' | 'opposite';
 }
 
 /** A complete winning hand pattern from the card */
@@ -170,6 +170,16 @@ export interface HandPattern {
   concealed: boolean;
   /** Human-readable description */
   description: string;
+  /**
+   * For “any consecutive” card lines: try adding 0..runShiftMax to every suited rank.
+   * Skips shifts that push any rank outside 1–9.
+   */
+  runShiftMax?: number;
+  /**
+   * Dragon resolution: matching = suit color; opposite = not suit color; any = unrestricted.
+   * Stored on dragon groups via PatternGroup.dragon === 'any' plus this flag on the pattern,
+   * or per-group via dragonOpposite.
+   */
 }
 
 /** Category on the hand card */

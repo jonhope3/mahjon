@@ -4,6 +4,7 @@
 // ============================================================
 
 import { Tile, TileKind, Suit, Wind, Dragon, Wall } from './types';
+import { SUIT_FACES } from './tile-faces';
 
 const SUITS: Suit[] = ['bam', 'crak', 'dot'];
 const WINDS: Wind[] = ['east', 'south', 'west', 'north'];
@@ -25,19 +26,6 @@ export function tileLabel(kind: TileKind): string {
   }
 }
 
-const SHELL_CREATURES: Record<number, string> = {
-  1: 'Conch',
-  2: 'Oyster',
-  3: 'Coral',
-  4: 'Crab',
-  5: 'Pufferfish',
-  6: 'Octopus',
-  7: 'Dolphin',
-  8: 'Whale',
-  9: 'Shark',
-};
-
-const SEA_SUIT = { bam: 'Kelp', crak: 'Shell', dot: 'Pearl' } as const;
 const TRAD_SUIT = { bam: 'Bam', crak: 'Crak', dot: 'Dot' } as const;
 
 /**
@@ -47,16 +35,9 @@ const TRAD_SUIT = { bam: 'Bam', crak: 'Crak', dot: 'Dot' } as const;
 export function tileTooltip(kind: TileKind): string {
   switch (kind.type) {
     case 'suited': {
-      const sea = SEA_SUIT[kind.suit];
+      const sea = SUIT_FACES[kind.suit].name;
       const trad = TRAD_SUIT[kind.suit];
-      if (kind.suit === 'crak') {
-        const creature = SHELL_CREATURES[kind.rank] ?? 'Shell';
-        return `${kind.rank} ${sea} — ${creature} (traditionally ${trad})`;
-      }
-      if (kind.suit === 'bam') {
-        return `${kind.rank} ${sea} — seaweed suit (traditionally ${trad})`;
-      }
-      return `${kind.rank} ${sea} — pearl bubbles (traditionally ${trad})`;
+      return `${kind.rank} ${sea} (traditionally ${trad} ${kind.rank})`;
     }
     case 'wind':
       return `${kind.wind.charAt(0).toUpperCase() + kind.wind.slice(1)} Wind`;

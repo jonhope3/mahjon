@@ -13,8 +13,11 @@ import {
   canKong,
   canPung,
   canQuint,
+  canSelfKong,
   claimPriority,
   countPlayerJokers,
+  findConcealedKongTiles,
+  findPungPromotion,
   getClaimOptions,
   isClaimWindowOpen,
 } from './actions';
@@ -159,9 +162,11 @@ export function processAction(state: GameState, action: GameAction): GameState {
     case 'discard':
       return handleDiscard(newState, action);
     case 'pung':
-    case 'kong':
     case 'quint':
       return handleClaim(newState, action);
+    case 'kong':
+      if (isClaimWindowOpen(newState)) return handleClaim(newState, action);
+      return handleSelfKong(newState, action);
     case 'mahjong':
       return handleMahjong(newState, action);
     case 'pass':
@@ -255,6 +260,43 @@ function handleClaim(state: GameState, action: GameAction): GameState {
 
   state.claimWindow!.claims.set(action.playerId, action.type);
   addLog(state, action.playerId, action.type, `Called ${action.type} on ${state.lastDiscard.label}.`);
+  return state;
+}
+
+/**
+ * Self-kong on your turn after drawing (American card play: expose, then discard).
+ * No replacement tile from the wall — hand stays at card size.
+ */
+function handleSelfKong(state: GameState, action: GameAction): GameState {
+  if (state.phase !== 'playing') return state;
+  if (isClaimWindowOpen(state)) return state;
+  const playerIdx = state.players.findIndex(p => p.id === action.playerId);
+  if (playerIdx === -1 || playerIdx !== state.currentPlayerIndex) return state;
+  if (!state.hasDrawn) return state;
+  const player = state.players[playerIdx]!;
+  if (!canSelfKong(player)) return state;
+
+  const promote = findPungPromotion(player);
+  if (promote) {
+    const set = player.exposedSets[promote.setIndex]!;
+    const fromHand = promote.tilesFromHand;
+    const ids = new Set(fromHand.map(t => t.id));
+    player.hand = player.hand.filter(t => !ids.has(t.id));
+    set.tiles.push(...fromHand);
+    set.setType = 'kong';
+    addLog(state, player.id, 'kong', `Promoted pung to kong.`);
+    return state;
+  }
+
+  const concealed = findConcealedKongTiles(player);
+  if (!concealed) return state;
+  const ids = new Set(concealed.map(t => t.id));
+  player.hand = player.hand.filter(t => !ids.has(t.id));
+  player.exposedSets.push({
+    tiles: concealed,
+    setType: 'kong',
+  });
+  addLog(state, player.id, 'kong', `Declared a kong.`);
   return state;
 }
 

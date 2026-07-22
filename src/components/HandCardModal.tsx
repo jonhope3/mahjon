@@ -54,16 +54,22 @@ export function HandCardModal({ onClose }: HandCardModalProps) {
 
         <div className="hand-card-legend">
           <div>
-            <strong>F</strong> = Anemone (Flower) 🪸
+            <strong>Shell 🐚</strong> = Crak (number 1–9)
           </div>
           <div>
-            <strong>D</strong> = Dragon (🪸 / 🌊 / 🦪)
+            <strong>Kelp 🌿</strong> = Bam (number 1–9)
           </div>
           <div>
-            <strong>E/S/W/N</strong> = Winds 🧭
+            <strong>Pearl 🫧</strong> = Dot (number 1–9)
           </div>
           <div>
-            <strong>Suits</strong> = Shell 🐚 / Kelp 🌿 / Pearl
+            <strong>D</strong> = Dragon 🪸 / 🌊 / 🦪
+          </div>
+          <div>
+            <strong>F</strong> = Anemone 🌺 · <strong>Joker</strong> = 🪼
+          </div>
+          <div>
+            <strong>E/S/W/N</strong> = 🌅 / ☀️ / 🌇 / ❄️
           </div>
         </div>
         {categories.length === 0 ? (

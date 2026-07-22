@@ -63,6 +63,59 @@ export function canQuint(player: Player, discard: Tile): boolean {
   return matching + jokers >= 4;
 }
 
+/**
+ * Check if a player can declare a Kong on their own turn (after drawing):
+ * - 4 of a kind in hand (jokers OK), or
+ * - promote an exposed pung with one more matching tile from hand
+ */
+export function canSelfKong(player: Player): boolean {
+  if (findConcealedKongTiles(player)) return true;
+  if (findPungPromotion(player)) return true;
+  return false;
+}
+
+/** Tiles in hand that form a concealed kong (4), or null */
+export function findConcealedKongTiles(player: Player): Tile[] | null {
+  const groups = new Map<string, Tile[]>();
+  const jokers = player.hand.filter(t => isJoker(t));
+  for (const t of player.hand) {
+    if (isJoker(t)) continue;
+    const key = t.label;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(t);
+  }
+  for (const tiles of groups.values()) {
+    const need = 4 - tiles.length;
+    if (need <= 0) return tiles.slice(0, 4);
+    if (need <= jokers.length) return [...tiles, ...jokers.slice(0, need)];
+  }
+  // All-joker kong is legal as a 3+ wild group
+  if (jokers.length >= 4) return jokers.slice(0, 4);
+  return null;
+}
+
+/** Exposed pung index + hand tile(s) to promote to kong, or null */
+export function findPungPromotion(
+  player: Player,
+): { setIndex: number; tilesFromHand: Tile[] } | null {
+  for (let i = 0; i < player.exposedSets.length; i++) {
+    const set = player.exposedSets[i]!;
+    if (set.setType !== 'pung') continue;
+    const natural = set.tiles.find(t => !isJoker(t));
+    if (!natural) {
+      // All-joker pung: any tile? Prefer a joker from hand
+      const jok = player.hand.find(t => isJoker(t));
+      if (jok) return { setIndex: i, tilesFromHand: [jok] };
+      continue;
+    }
+    const match = player.hand.find(t => !isJoker(t) && tilesMatch(t.kind, natural.kind));
+    if (match) return { setIndex: i, tilesFromHand: [match] };
+    const jok = player.hand.find(t => isJoker(t));
+    if (jok) return { setIndex: i, tilesFromHand: [jok] };
+  }
+  return null;
+}
+
 /** True while a discard is waiting for claim responses */
 export function isClaimWindowOpen(state: GameState): boolean {
   return !!(state.lastDiscard && state.claimWindow && !state.claimWindow.resolved);
@@ -119,6 +172,7 @@ export function getValidActions(state: GameState, playerIndex: number): ActionTy
       actions.push('draw');
     } else {
       actions.push('discard');
+      if (canSelfKong(player)) actions.push('kong');
       if (checkWin(player)) {
         actions.push('mahjong');
       }

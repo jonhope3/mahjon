@@ -222,10 +222,18 @@ export default function App() {
       },
       onCharlestonTiles: (playerIdx, tileIds) => {
         if (!peerManagerRef.current?.isHost) return;
-        if (new Set(tileIds).size !== 3) return;
-        charlestonSelectionsRef.current.set(playerIdx, tileIds);
         const current = gameStateRef.current;
-        if (current) finishHostCharleston(current, charlestonSelectionsRef.current);
+        if (!current) return;
+        const round = getCharlestonRound(current.phase);
+        const unique = new Set(tileIds);
+        if (unique.size !== tileIds.length) return;
+        if (round === 'courtesy') {
+          if (tileIds.length > 3) return;
+        } else if (tileIds.length !== 3) {
+          return;
+        }
+        charlestonSelectionsRef.current.set(playerIdx, tileIds);
+        finishHostCharleston(current, charlestonSelectionsRef.current);
       },
       onCharlestonControl: (kind, _playerIndex) => {
         if (!peerManagerRef.current?.isHost) return;

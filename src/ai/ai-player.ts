@@ -61,6 +61,11 @@ export function getAIAction(state: GameState, playerIndex: number): GameAction |
       return { type: 'draw', playerId: player.id };
     }
 
+    // Self-kong when available (helps quint/kong hands)
+    if (validActions.includes('kong')) {
+      return { type: 'kong', playerId: player.id };
+    }
+
     // Discard
     const discard = chooseDiscard(player, difficulty);
     return {
@@ -232,10 +237,11 @@ function getCharlestonAction(
 /**
  * Get AI's selected tiles for Charleston (used by the game loop).
  */
-export function getAICharlestonTiles(player: Player): Tile[] {
+export function getAICharlestonTiles(player: Player, count = 3): Tile[] {
+  if (count <= 0) return [];
   const evals = evaluateHand(player)
     .filter(e => !isJoker(e.tile))
     .sort((a, b) => a.usefulness - b.usefulness);
 
-  return evals.slice(0, 3).map(e => e.tile);
+  return evals.slice(0, count).map(e => e.tile);
 }

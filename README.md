@@ -1,8 +1,10 @@
 # Mahjon 🌊 — American Mahjong PWA
 
-A premium, statically-hosted American Mahjong (2026 rules) web app. Play against smart AI opponents locally or connect with friends in real-time via serverless WebRTC. Designed with a clean, relaxing ocean/beach theme and fully optimized as a Progressive Web App (PWA) for complete offline play (ideal for airplanes and travel).
+A premium, statically-hosted American Mahjong (2026 card) web app. Play against smart AI opponents locally or connect with friends in real-time via serverless WebRTC. Designed with a clean, relaxing ocean/beach theme and fully optimized as a Progressive Web App (PWA) for complete offline play (ideal for airplanes and travel).
 
-**Product goal:** Mahjon should feel calm and readable on a phone first — large tiles, clear actions, nothing clipped off-screen — while teaching the game *as you play*. Learning is not a one-time tutorial; help is available at every step.
+**Product goal:** Mahjon should feel calm and readable on a phone first — large tiles, clear actions, nothing clipped off-screen — while teaching the game *as you play*. Learning is not a one-time tutorial; help is available at every step. Scoring is for fun (no cash settlements).
+
+The digitized **2026 hand card** lives in [`docs/2026-hand-card.md`](docs/2026-hand-card.md).
 
 ---
 

@@ -5,6 +5,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Tile, GamePhase } from '../engine/types';
 import { getCharlestonDirection, getCharlestonRound } from '../engine/charleston';
+import { isJoker } from '../engine/tiles';
 import { TileComponent } from './TileComponent';
 import { sortTiles } from '../engine/tiles';
 import { HandCardModal } from './HandCardModal';
@@ -41,9 +42,12 @@ export function CharlestonDialog({
   const [showHelp, setShowHelp] = useState(false);
   const [showHandCard, setShowHandCard] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const direction = getCharlestonDirection(phase);
   const round = getCharlestonRound(phase);
+  const courtesy = round === 'courtesy';
+  const maxPass = 3;
 
   useEffect(() => {
     if (round === 'first' && shouldShowCharlestonIntro(teachMode)) {
@@ -51,18 +55,38 @@ export function CharlestonDialog({
     }
   }, [round, teachMode]);
 
-  const handleTileClick = useCallback((tile: Tile) => {
-    setSelectedTiles(prev => {
-      const idx = prev.findIndex(t => t.id === tile.id);
-      if (idx !== -1) {
-        return prev.filter(t => t.id !== tile.id);
+  useEffect(() => {
+    setSelectedTiles([]);
+    setError(null);
+  }, [phase]);
+
+  const handleTileClick = useCallback(
+    (tile: Tile) => {
+      setError(null);
+      if (isJoker(tile)) {
+        setError('Jokers stay with you — you can’t pass them in Charleston.');
+        return;
       }
-      if (prev.length >= 3) return prev;
-      return [...prev, tile];
-    });
-  }, []);
+      setSelectedTiles(prev => {
+        const idx = prev.findIndex(t => t.id === tile.id);
+        if (idx !== -1) return prev.filter(t => t.id !== tile.id);
+        if (prev.length >= maxPass) return prev;
+        return [...prev, tile];
+      });
+    },
+    [maxPass],
+  );
 
   const handleConfirm = () => {
+    if (selectedTiles.some(isJoker)) {
+      setError('Jokers stay with you — you can’t pass them in Charleston.');
+      return;
+    }
+    if (courtesy) {
+      onConfirm(selectedTiles);
+      setSelectedTiles([]);
+      return;
+    }
     if (selectedTiles.length === 3) {
       onConfirm(selectedTiles);
       setSelectedTiles([]);
@@ -74,7 +98,7 @@ export function CharlestonDialog({
     setShowIntro(false);
   };
 
-  const isReady = selectedTiles.length === 3;
+  const isReady = courtesy ? true : selectedTiles.length === 3;
   const roundLabel = round === 'first' ? 'First' : round === 'second' ? 'Second' : 'Courtesy';
   const help = CHARLESTON_HELP[round ?? 'first'];
   const canSkipRest = round === 'second' || round === 'courtesy';
@@ -106,7 +130,7 @@ export function CharlestonDialog({
               <div className="charleston-intro">
                 <p>
                   Pass <strong>3 tiles</strong> you don’t need — right, across, then left. Keep
-                  jokers.
+                  jokers — they never leave your hand in Charleston.
                 </p>
                 <p className="charleston-hint">
                   Tap tiles to select them. Long-press any tile to see what it is.
@@ -127,16 +151,26 @@ export function CharlestonDialog({
             ) : (
               <>
                 <p className="charleston-hint">
-                  {round === 'courtesy'
-                    ? 'Optional — pass 3 across, or skip.'
+                  {courtesy
+                    ? 'Courtesy: offer 0–3 tiles across. You and the player across pass the smaller number.'
                     : round === 'second'
-                      ? 'Optional — pass, skip this pass, or skip the rest.'
-                      : 'Tap 3 tiles to pass. Long-press a tile to identify it.'}
+                      ? 'Optional — pass 3 (no jokers), skip this pass, or skip the rest.'
+                      : 'Tap 3 tiles to pass. Jokers cannot be passed.'}
                 </p>
 
-                <div className={`charleston-selected ${isReady ? 'ready' : ''} charleston-selected-row`}>
+                {error && (
+                  <p className="charleston-error" role="alert">
+                    {error}
+                  </p>
+                )}
+
+                <div
+                  className={`charleston-selected ${isReady && selectedTiles.length > 0 ? 'ready' : ''} charleston-selected-row`}
+                >
                   {selectedTiles.length === 0 && (
-                    <span className="charleston-placeholder">Select 3 tiles</span>
+                    <span className="charleston-placeholder">
+                      {courtesy ? 'Offer 0–3 tiles (or pass none)' : 'Select 3 tiles'}
+                    </span>
                   )}
                   {selectedTiles.map(tile => (
                     <TileComponent
@@ -158,10 +192,11 @@ export function CharlestonDialog({
                     <TileComponent
                       key={tile.id}
                       tile={tile}
-                      clickable
+                      clickable={!isJoker(tile) || selectedTiles.some(t => t.id === tile.id)}
                       selected={selectedTiles.some(t => t.id === tile.id)}
                       onClick={handleTileClick}
                       size="normal"
+                      className={isJoker(tile) ? 'tile-no-pass' : undefined}
                     />
                   ))}
                 </div>
@@ -173,16 +208,15 @@ export function CharlestonDialog({
                     disabled={!isReady}
                     id="confirm-charleston-btn"
                   >
-                    Pass ({selectedTiles.length}/3)
+                    {courtesy
+                      ? selectedTiles.length === 0
+                        ? 'Pass nothing'
+                        : `Offer ${selectedTiles.length} tile${selectedTiles.length === 1 ? '' : 's'}`
+                      : `Pass (${selectedTiles.length}/3)`}
                   </button>
                   {round === 'second' && onSkip && (
                     <button className="btn btn-secondary" onClick={onSkip} id="skip-charleston-btn">
                       Skip this pass
-                    </button>
-                  )}
-                  {round === 'courtesy' && onSkip && (
-                    <button className="btn btn-secondary" onClick={onSkip} id="skip-courtesy-btn">
-                      Skip courtesy
                     </button>
                   )}
                   {canSkipRest && onSkipRest && (

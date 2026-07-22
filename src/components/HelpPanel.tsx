@@ -76,11 +76,12 @@ export const CHARLESTON_HELP = {
       <>
         <p>
           After both Charlestons, you may optionally exchange tiles with the player sitting across
-          from you.
+          from you — <strong>0 to 3 tiles</strong>. You each offer a number; you pass the{' '}
+          <strong>smaller</strong> count (real-table courtesy).
         </p>
         <p>
-          In this app: pass <strong>3 tiles</strong> across, or tap <strong>Skip courtesy</strong>.
-          You can also <strong>Skip rest → play</strong> to start the hand immediately.
+          Jokers never pass. You can also <strong>Skip rest → play</strong> to start the hand
+          immediately.
         </p>
       </>
     ),
@@ -104,8 +105,12 @@ export const PLAY_HELP = (
       play continue. You do not select tiles from your hand for a normal pung/kong claim.
     </p>
     <p>
-      <strong>Hand Card:</strong> Open the Card anytime to see legal winning patterns. Your 14
-      tiles must match one exactly.
+      <strong>Hand Card:</strong> Open the Card anytime to see the 2026 winning patterns (72 hands on
+      the official-style card). Your 14 tiles must match one exactly.
+    </p>
+    <p>
+      <strong>Kong on your turn:</strong> After you draw, you may declare a kong from your hand or
+      promote an exposed pung — then discard as usual.
     </p>
     <p>
       <strong>Jokers:</strong> Wild in groups of 3+. Never in pairs or singles. You can swap a
