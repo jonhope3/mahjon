@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mahjon-cache-v35';
+const CACHE_NAME = 'mahjon-cache-v36';
 
 
 const PRECACHE_ASSETS = [

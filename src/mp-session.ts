@@ -47,53 +47,74 @@ export function clearMpLastTable(): void {
   }
 }
 
-function inviteUrl(roomCode: string, seatKey?: string): string {
-  try {
-    const url = new URL(window.location.href);
-    url.search = '';
-    url.hash = '';
-    url.searchParams.set('room', roomCode);
-    if (seatKey) url.searchParams.set('seat', seatKey);
-    return url.toString();
-  } catch {
-    return '';
-  }
+/**
+ * Canonical app URL for GitHub Pages (`/mahjon/`) and local (`/`).
+ * Always uses a trailing slash so GH Pages doesn’t drop ?room= on redirect.
+ */
+export function appHomeUrl(): URL {
+  const origin = window.location.origin;
+  let base = import.meta.env.BASE_URL || '/';
+  if (!base.endsWith('/')) base += '/';
+  return new URL(base, origin);
 }
 
-/** Friendly share / copy text for texting grandparents */
-export function buildInviteMessage(roomCode: string, playerName?: string, seatKey?: string): string {
+export type InviteKind = 'table' | 'resume';
+
+/**
+ * Build a deep link.
+ * - table:  ?room=CODE          (for inviting other people — never include seat)
+ * - resume: ?room=CODE&seat=KEY (for reclaiming YOUR seat after a drop)
+ */
+export function inviteUrl(roomCode: string, kind: InviteKind = 'table', seatKey?: string): string {
+  const url = appHomeUrl();
+  url.searchParams.set('room', roomCode.trim().toUpperCase());
+  if (kind === 'resume' && seatKey?.trim()) {
+    url.searchParams.set('seat', seatKey.trim().toUpperCase());
+  }
+  return url.toString();
+}
+
+/** Friendly share / copy text for texting the group (room only — no seat key). */
+export function buildInviteMessage(roomCode: string, playerName?: string): string {
   const who = playerName?.trim() ? `${playerName.trim()} is` : 'We are';
-  const link = inviteUrl(roomCode, seatKey);
-  const lines = [
+  const link = inviteUrl(roomCode, 'table');
+  return [
     `${who} hosting Mahjon (American Mahjong).`,
-    link
-      ? `Tap this link, or open the app → Play with Group → Join`
-      : `Open the app → Play with Group → Join`,
-    `Room code: ${roomCode}`,
-  ];
-  if (link) lines.push(link);
-  lines.push(`(2–4 people. Same Wi‑Fi or internet is fine — no accounts needed.)`);
-  return lines.join('\n');
+    `Join here: ${link}`,
+    `Or open the app → Play with Group → Join with code: ${roomCode}`,
+    `(2–4 people. Same Wi‑Fi or internet is fine — no accounts needed.)`,
+  ].join('\n');
+}
+
+/** Personal rejoin link — includes your seat key. Don’t send this as the group invite. */
+export function buildResumeMessage(roomCode: string, seatKey: string, playerName?: string): string {
+  const link = inviteUrl(roomCode, 'resume', seatKey);
+  const who = playerName?.trim() || 'Your';
+  return [
+    `${who} Mahjon seat backup`,
+    `Room ${roomCode} · Seat ${seatKey}`,
+    link,
+    `(Only for you — use this if you get disconnected.)`,
+  ].join('\n');
 }
 
 export async function shareOrCopyInvite(
   roomCode: string,
   playerName?: string,
-  seatKey?: string,
 ): Promise<'shared' | 'copied' | 'failed'> {
-  const text = buildInviteMessage(roomCode, playerName, seatKey);
-  const link = inviteUrl(roomCode, seatKey);
+  const link = inviteUrl(roomCode, 'table');
+  const text = buildInviteMessage(roomCode, playerName);
   try {
     if (typeof navigator.share === 'function') {
+      // Pass url separately; keep text free of a second copy of the same link on iOS
       await navigator.share({
         title: 'Mahjon — join our table',
-        text,
-        ...(link ? { url: link } : {}),
+        text: `${playerName?.trim() ? `${playerName.trim()} is` : 'We are'} hosting Mahjon. Room code: ${roomCode.trim().toUpperCase()}`,
+        url: link,
       });
       return 'shared';
     }
   } catch (err) {
-    // User canceled share sheet — not a failure for copy fallback
     if (err instanceof DOMException && err.name === 'AbortError') return 'failed';
   }
   try {
@@ -101,10 +122,15 @@ export async function shareOrCopyInvite(
     return 'copied';
   } catch {
     try {
-      await navigator.clipboard.writeText(roomCode);
+      await navigator.clipboard.writeText(link);
       return 'copied';
     } catch {
-      return 'failed';
+      try {
+        await navigator.clipboard.writeText(roomCode);
+        return 'copied';
+      } catch {
+        return 'failed';
+      }
     }
   }
 }
@@ -122,23 +148,23 @@ export function noteMpDeepLinkFromUrl(): boolean {
     sessionStorage.setItem(DEEP_KEY, JSON.stringify({ room, seat }));
     url.searchParams.delete('room');
     url.searchParams.delete('seat');
-    window.history.replaceState(
-      null,
-      '',
-      url.pathname + (url.searchParams.toString() ? `?${url.searchParams}` : '') + url.hash,
-    );
+    // Prefer canonical base path when rewriting (keeps /mahjon/)
+    const clean = appHomeUrl();
+    for (const [k, v] of url.searchParams.entries()) {
+      clean.searchParams.set(k, v);
+    }
+    window.history.replaceState(null, '', clean.pathname + clean.search + clean.hash);
     return !!room;
   } catch {
     return false;
   }
 }
 
-/** Consume a one-shot deep link (from URL capture). */
-export function readMpDeepLink(): { room?: string; seat?: string } {
+/** Peek without consuming (safe for Strict Mode / remounts). */
+export function peekMpDeepLink(): { room?: string; seat?: string } {
   try {
     const raw = sessionStorage.getItem(DEEP_KEY);
     if (!raw) return {};
-    sessionStorage.removeItem(DEEP_KEY);
     const parsed = JSON.parse(raw) as { room?: string; seat?: string };
     return {
       room: parsed.room?.trim().toUpperCase() || undefined,
@@ -147,4 +173,15 @@ export function readMpDeepLink(): { room?: string; seat?: string } {
   } catch {
     return {};
   }
+}
+
+/** Consume a one-shot deep link (from URL capture). */
+export function readMpDeepLink(): { room?: string; seat?: string } {
+  const parsed = peekMpDeepLink();
+  try {
+    sessionStorage.removeItem(DEEP_KEY);
+  } catch {
+    /* ignore */
+  }
+  return parsed;
 }

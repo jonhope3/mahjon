@@ -7,8 +7,8 @@ import { PeerManager, ConnectionStatus } from '../network/peer-manager';
 import { LobbyState, LobbySlot } from '../network/protocol';
 import { GameConfig } from '../engine/game';
 import {
-  buildInviteMessage,
   loadMpLastTable,
+  peekMpDeepLink,
   readMpDeepLink,
   saveMpLastTable,
   shareOrCopyInvite,
@@ -32,7 +32,11 @@ export function LobbyScreen({
   onOpenSettings,
   defaultName = 'Player',
 }: LobbyScreenProps) {
-  const deep = readMpDeepLink();
+  const deep = useState(() => {
+    const peeked = peekMpDeepLink();
+    if (peeked.room || peeked.seat) return readMpDeepLink();
+    return {};
+  })[0];
   const remembered = loadMpLastTable();
 
   const [mode, setMode] = useState<'choose' | 'host' | 'join'>('choose');
@@ -213,9 +217,44 @@ export function LobbyScreen({
   const shareInvite = async () => {
     const code = lobby?.roomCode || peerManager.roomCode;
     if (!code) return;
-    const result = await shareOrCopyInvite(code, playerName, seatKey || undefined);
+    // Group invite is room-only — never attach your personal seat key
+    const result = await shareOrCopyInvite(code, playerName);
     if (result === 'copied') flashCopied('invite');
   };
+
+  // Deep link / invite: auto-join once when we arrived with ?room=
+  useEffect(() => {
+    if (!deep.room) return;
+    let cancelled = false;
+    (async () => {
+      setError(null);
+      setBusy(true);
+      try {
+        await peerManager.joinRoom(
+          deep.room!,
+          playerName.trim() || 'Guest',
+          deep.seat || undefined,
+        );
+        if (!cancelled) setMode('join');
+      } catch (err) {
+        if (!cancelled) {
+          setMode('choose');
+          setError(
+            err instanceof Error
+              ? err.message
+              : 'Could not join from invite — check that the host still has the table open.',
+          );
+        }
+      } finally {
+        if (!cancelled) setBusy(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // Intentionally once on mount for this deep link
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="main-menu">

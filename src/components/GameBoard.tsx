@@ -125,11 +125,8 @@ export function GameBoard({
 
   const handleShareInvite = useCallback(async () => {
     if (!roomCode) return;
-    const result = await shareOrCopyInvite(
-      roomCode,
-      humanPlayer.name,
-      isHost ? undefined : resumeKey,
-    );
+    // Always room-only — seat keys are personal, not for group invites
+    const result = await shareOrCopyInvite(roomCode, humanPlayer.name);
     if (result === 'copied') {
       setInviteFlash('Invite copied');
       window.setTimeout(() => setInviteFlash(null), 2000);
@@ -137,7 +134,7 @@ export function GameBoard({
       setInviteFlash('Shared!');
       window.setTimeout(() => setInviteFlash(null), 2000);
     }
-  }, [roomCode, humanPlayer.name, isHost, resumeKey]);
+  }, [roomCode, humanPlayer.name]);
 
   const tableChip =
     roomCode && resumeKey ? (
