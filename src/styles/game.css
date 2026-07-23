@@ -226,8 +226,27 @@
 /* ---- Player Hand ---- */
 .player-hand-container {
   display: flex;
-  align-items: center;
-  gap: var(--space-md);
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-sm);
+  width: 100%;
+  min-width: 0;
+}
+
+.player-hand-container .exposed-sets {
+  display: flex;
+  gap: var(--space-sm);
+  margin-left: 0;
+  flex-wrap: wrap;
+  order: -1; /* melds above the hand so they never sit on top of it */
+  flex-shrink: 0;
+}
+
+.player-hand-container .exposed-set .tile.mini {
+  width: var(--tile-mini-w) !important;
+  height: var(--tile-mini-h) !important;
+  max-width: var(--tile-mini-w) !important;
+  aspect-ratio: auto !important;
 }
 
 .player-hand {
@@ -236,10 +255,12 @@
   gap: 6px;
   align-items: flex-end;
   perspective: 800px;
-  max-width: min(920px, 100%);
+  max-width: 100%;
   overflow-x: auto;
   padding: 8px 4px 16px;
   -webkit-overflow-scrolling: touch;
+  position: relative;
+  z-index: 2;
 }
 
 .exposed-sets {
@@ -917,24 +938,27 @@
   -webkit-backdrop-filter: blur(22px);
   flex-shrink: 0;
   /*
-    Natural bottom ≈ 249px (48px tiles + actions + safe 34).
-    Cap leaves discard ≥140 on 844/852/914 PWA heights.
-    0.46×844=388; 0.46×852=392 — still above natural.
+    Enough room for status + hand + actions.
+    When melds are exposed, grow so they never crush the hand.
   */
-  max-height: min(46dvh, 380px);
+  max-height: min(48dvh, 400px);
   min-height: 0;
+}
+
+.mobile-bottom-bar.has-exposed {
+  max-height: min(56dvh, 460px);
 }
 
 .mobile-bottom-main {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding-top: 18px;
-  padding-bottom: 4px;
+  padding-top: 10px;
+  padding-bottom: 6px;
   flex: 1 1 auto;
 }
 
@@ -947,6 +971,7 @@
   padding-bottom: 8px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 @media (max-width: 430px) {
@@ -964,8 +989,11 @@
 }
 
 .game-board.mobile.claim-active .mobile-bottom-bar {
-  /* Claim + coach ≈ 361; 0.50×852=426 — cap before discard starves */
-  max-height: min(50dvh, 420px);
+  max-height: min(52dvh, 440px);
+}
+
+.game-board.mobile.claim-active .mobile-bottom-bar.has-exposed {
+  max-height: min(58dvh, 480px);
 }
 
 /*
@@ -974,11 +1002,19 @@
 */
 @media (max-height: 860px) {
   .game-board.mobile .mobile-bottom-bar {
-    max-height: min(44dvh, 340px);
+    max-height: min(46dvh, 360px);
+  }
+
+  .game-board.mobile .mobile-bottom-bar.has-exposed {
+    max-height: min(54dvh, 420px);
   }
 
   .game-board.mobile.claim-active .mobile-bottom-bar {
-    max-height: min(48dvh, 380px);
+    max-height: min(50dvh, 400px);
+  }
+
+  .game-board.mobile.claim-active .mobile-bottom-bar.has-exposed {
+    max-height: min(56dvh, 440px);
   }
 
   .game-board.mobile .mobile-discard-pool {
@@ -1008,11 +1044,19 @@
 /* Safari/Chrome tab: even tighter when dvh drops under ~740 */
 @media (max-height: 740px) {
   .game-board.mobile .mobile-bottom-bar {
-    max-height: min(42dvh, 320px);
+    max-height: min(44dvh, 340px);
+  }
+
+  .game-board.mobile .mobile-bottom-bar.has-exposed {
+    max-height: min(52dvh, 400px);
   }
 
   .game-board.mobile.claim-active .mobile-bottom-bar {
-    max-height: min(46dvh, 350px);
+    max-height: min(48dvh, 370px);
+  }
+
+  .game-board.mobile.claim-active .mobile-bottom-bar.has-exposed {
+    max-height: min(54dvh, 420px);
   }
 
   .game-board.mobile .mobile-discard-pool {
@@ -1151,9 +1195,54 @@
 .mobile-player-exposed {
   display: flex;
   gap: 8px;
-  justify-content: center;
+  justify-content: flex-start;
+  align-items: center;
   width: 100%;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-shrink: 0;
+  padding: 6px 2px 8px;
+  margin: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  /* Keep melds above the hand in paint order, but never cover it */
+  position: relative;
+  z-index: 1;
+}
+
+.mobile-exposed-set {
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 183, 77, 0.28);
+  flex-shrink: 0;
+}
+
+/* Exposed melds stay mini — never inherit hand tile sizing */
+.mobile-player-exposed .tile.mini,
+.mobile-exposed-set .tile.mini {
+  width: var(--tile-mini-w) !important;
+  height: var(--tile-mini-h) !important;
+  max-width: var(--tile-mini-w) !important;
+  aspect-ratio: auto !important;
+  flex: 0 0 auto !important;
+  transform: none !important;
+}
+
+.mobile-player-hand {
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+  isolation: isolate;
+  /* Room above so selected tiles lift without hitting melds */
+  margin-top: 4px;
+  padding-top: 16px !important;
+  overflow-x: auto;
+  overflow-y: visible;
 }
 
 .coach-banner {

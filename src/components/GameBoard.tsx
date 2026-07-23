@@ -313,7 +313,11 @@ export function GameBoard({
           </div>
         </div>
 
-        <div className="mobile-bottom-bar">
+        <div
+          className={`mobile-bottom-bar${
+            humanPlayer.exposedSets.length > 0 ? ' has-exposed' : ''
+          }`}
+        >
           <div className="mobile-bottom-main">
             <div className="mobile-player-status">
               <div className="player-avatar-col">
@@ -351,9 +355,9 @@ export function GameBoard({
             </div>
 
             {humanPlayer.exposedSets.length > 0 && (
-              <div className="mobile-player-exposed">
+              <div className="mobile-player-exposed" aria-label="Your exposed sets">
                 {humanPlayer.exposedSets.map((set, i) => (
-                  <div key={i} className="exposed-set">
+                  <div key={i} className="exposed-set mobile-exposed-set">
                     {set.tiles.map(tile => {
                       const isJok = tile.kind.type === 'joker';
                       return (
@@ -548,22 +552,8 @@ export function GameBoard({
           <span className="player-score">Score: {humanPlayer.score}</span>
         </div>
         <div className="player-hand-container">
-          <div
-            className="player-hand"
-            style={{ '--hand-size': humanPlayer.hand.length } as CSSProperties}
-          >
-            {sortTiles(humanPlayer.hand).map(tile => (
-              <TileComponent
-                key={tile.id}
-                tile={tile}
-                clickable={isMyTurn && state.hasDrawn}
-                selected={selectedTile?.id === tile.id}
-                onClick={handleTileClick}
-              />
-            ))}
-          </div>
           {humanPlayer.exposedSets.length > 0 && (
-            <div className="exposed-sets">
+            <div className="exposed-sets" aria-label="Your exposed sets">
               {humanPlayer.exposedSets.map((set, i) => (
                 <div key={i} className="exposed-set">
                   {set.tiles.map(tile => {
@@ -582,6 +572,20 @@ export function GameBoard({
               ))}
             </div>
           )}
+          <div
+            className="player-hand"
+            style={{ '--hand-size': humanPlayer.hand.length } as CSSProperties}
+          >
+            {sortTiles(humanPlayer.hand).map(tile => (
+              <TileComponent
+                key={tile.id}
+                tile={tile}
+                clickable={isMyTurn && state.hasDrawn}
+                selected={selectedTile?.id === tile.id}
+                onClick={handleTileClick}
+              />
+            ))}
+          </div>
         </div>
 
         <div className="action-bar-wrap">

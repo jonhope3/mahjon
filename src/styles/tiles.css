@@ -428,7 +428,7 @@
 .mobile-player-hand .tile.selected,
 .charleston-hand-row .tile.selected,
 .player-hand .tile.selected {
-  transform: translateY(-10px) scale(1.04);
+  transform: translateY(-8px) scale(1.03);
   z-index: 15;
   box-shadow:
     0 10px 22px rgba(0, 0, 0, 0.35),
