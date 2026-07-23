@@ -6,12 +6,12 @@ import type { Dragon, Suit, Wind } from './types';
 
 /**
  * Suited tiles share one icon per suit; the rank digit is the identity.
- * (Beginners need “this is a Shell 5”, not “shark means 5”.)
+ * Labels use NMJL card names (Crak / Bam / Dot); icons stay ocean-themed.
  */
 export const SUIT_FACES: Record<Suit, { icon: string; name: string; cls: string }> = {
-  crak: { icon: '🐚', name: 'Shell', cls: 'crak' },
-  bam: { icon: '🌿', name: 'Kelp', cls: 'bam' },
-  dot: { icon: '🫧', name: 'Pearl', cls: 'dot' },
+  crak: { icon: '🐚', name: 'Crak', cls: 'crak' },
+  bam: { icon: '🌿', name: 'Bam', cls: 'bam' },
+  dot: { icon: '🫧', name: 'Dot', cls: 'dot' },
 };
 
 /** Winds — four directions, four icons */
@@ -22,18 +22,18 @@ export const WIND_FACES: Record<Wind, { icon: string; label: string }> = {
   north: { icon: '❄️', label: 'NORTH' },
 };
 
-/** Dragons — three kinds */
+/** Dragons — three kinds (icons ocean-themed; labels match the card) */
 export const DRAGON_FACES: Record<Dragon, { icon: string; label: string; cls: string }> = {
-  red: { icon: '🪸', label: 'Coral', cls: 'dragon-red' },
-  green: { icon: '🌊', label: 'Wave', cls: 'dragon-green' },
-  white: { icon: '🦪', label: 'Pearl', cls: 'dragon-white' },
+  red: { icon: '🪸', label: 'Red', cls: 'dragon-red' },
+  green: { icon: '🌊', label: 'Green', cls: 'dragon-green' },
+  white: { icon: '🦪', label: 'Soap', cls: 'dragon-white' },
 };
 
 /**
  * American Mahjong “like colors”: dragon ↔ matching suit for many card hands.
- *   Coral (red)  ↔ Shell (Crak)
- *   Wave (green) ↔ Kelp (Bam)
- *   Pearl (white)↔ Pearl (Dot)
+ *   Red  ↔ Crak
+ *   Green ↔ Bam
+ *   Soap / White ↔ Dot
  */
 export const DRAGON_MATCHING_SUIT: Record<Dragon, Suit> = {
   red: 'crak',
@@ -57,8 +57,8 @@ export function suitPairIcon(suit: Suit): string {
   return DRAGON_FACES[SUIT_MATCHING_DRAGON[suit]].icon;
 }
 
-/** Flower / anemone — no sea-anemone emoji in Unicode, so hibiscus */
-export const FLOWER_FACE = { icon: '🌺', label: 'Anemone' } as const;
+/** Flower — card letter F (icon stays ocean anemone) */
+export const FLOWER_FACE = { icon: '🌺', label: 'Flower' } as const;
 
 /** Joker — all eight copies look the same */
 export const JOKER_FACE = { icon: '🪼', label: 'Joker' } as const;

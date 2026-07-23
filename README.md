@@ -11,7 +11,7 @@ The digitized **2026 hand card** lives in [`docs/2026-hand-card.md`](docs/2026-h
 ## Key Features
 
 - 🌊 **Aesthetics**: Premium beach-themed layout featuring sunlit lagoon wave animations, sand driftwood borders, and beautiful sea glass panels.
-- 🧠 **Learn at every step**: Hover or long-press any tile to identify it (Shell/Crak, Kelp/Bam, Pearl/Dot, Winds, Dragons, Anemones, Jokers). Open **Help** and the **Hand Card** from the menu, tutorial, Charleston, and live game. Contextual “What’s this?” explainers cover the Charleston and turn rules without leaving the flow.
+- 🧠 **Learn at every step**: Hover or long-press any tile to identify it (Crak, Bam, Dot, Winds, Dragons, Flowers, Jokers). Open **Help** and the **Hand Card** from the menu, tutorial, Charleston, and live game. Contextual “What’s this?” explainers cover the Charleston and turn rules without leaving the flow.
 - 🌐 **WebRTC Multiplayer**: Real-time peer-to-peer multiplayer with zero servers. Host a room, share a 5-letter room code, and play directly.
 - 🤖 **AI Opponents**: Play against AI players with Easy, Medium, or Hard difficulty levels powered by custom heuristic-based hand evaluators. Adjustable play speed (Slow → Max).
 - ✈️ **Offline Mode (PWA)**: Completely installable as an app on desktop or mobile. Play fully offline against AI while traveling.

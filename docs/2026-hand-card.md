@@ -9,11 +9,11 @@ This is the source of truth for Mahjon’s winning hands.
 
 | Symbol | Meaning |
 |--------|---------|
-| **1–9** | Number tiles (Shell/Crak, Kelp/Bam, Pearl/Dot) |
-| **0** | White Dragon / Soap / Pearl Dragon (year “zero”) |
-| **F** | Flower / Anemone |
+| **1–9** | Number tiles (Crak, Bam, Dot) |
+| **0** | Soap / White Dragon (year “zero”) |
+| **F** | Flower |
 | **N E W S** | Winds |
-| **D** | Dragon (Coral/Red, Wave/Green, Pearl/White) |
+| **D** | Dragon (Red, Green, Soap/White) |
 | **NEWS** | One of each wind (N+E+W+S) |
 | **X##** | May be exposed; point value |
 | **C##** | Must stay concealed (except the winning tile); point value |

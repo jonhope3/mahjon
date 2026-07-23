@@ -26,38 +26,36 @@ export function tileLabel(kind: TileKind): string {
   }
 }
 
-const TRAD_SUIT = { bam: 'Bam', crak: 'Crak', dot: 'Dot' } as const;
 const SUIT_DRAGON_NAME = {
-  crak: 'Coral Dragon',
-  bam: 'Wave Dragon',
-  dot: 'Pearl Dragon',
+  crak: 'Red Dragon',
+  bam: 'Green Dragon',
+  dot: 'Soap (White Dragon)',
 } as const;
 
 /**
  * Full identity string for hover / long-press tooltips.
- * Includes sea theme + traditional mahjong name so learners can map both.
+ * Uses NMJL card names (Crak / Bam / Dot / Flower).
  */
 export function tileTooltip(kind: TileKind): string {
   switch (kind.type) {
     case 'suited': {
-      const sea = SUIT_FACES[kind.suit].name;
-      const trad = TRAD_SUIT[kind.suit];
-      return `${kind.rank} ${sea} (traditionally ${trad} ${kind.rank}) · matches ${SUIT_DRAGON_NAME[kind.suit]}`;
+      const name = SUIT_FACES[kind.suit].name;
+      return `${kind.rank} ${name} · matches ${SUIT_DRAGON_NAME[kind.suit]}`;
     }
     case 'wind':
       return `${kind.wind.charAt(0).toUpperCase() + kind.wind.slice(1)} Wind`;
     case 'dragon': {
       const names = {
-        red: 'Coral Dragon (Red Dragon)',
-        green: 'Wave Dragon (Green Dragon)',
-        white: 'Pearl Dragon (White Dragon / Soap)',
+        red: 'Red Dragon (D)',
+        green: 'Green Dragon (D)',
+        white: 'Soap / White Dragon (0 on year hands)',
       } as const;
       const suitKey = DRAGON_MATCHING_SUIT[kind.dragon];
       const suit = SUIT_FACES[suitKey];
-      return `${names[kind.dragon]} · matches ${suit.name} (${TRAD_SUIT[suitKey]})`;
+      return `${names[kind.dragon]} · matches ${suit.name}`;
     }
     case 'flower':
-      return 'Sea Anemone — Flower tile (F on the card)';
+      return 'Flower (F on the card)';
     case 'joker':
       return 'Joker — wild in groups of 3+, never in pairs or singles';
   }

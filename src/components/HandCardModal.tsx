@@ -54,22 +54,22 @@ export function HandCardModal({ onClose }: HandCardModalProps) {
 
         <div className="hand-card-legend">
           <div>
-            <strong>Shell 🐚</strong> = Crak (number 1–9)
+            <strong>Crak 🐚</strong> — numbers 1–9
           </div>
           <div>
-            <strong>Kelp 🌿</strong> = Bam (number 1–9)
+            <strong>Bam 🌿</strong> — numbers 1–9
           </div>
           <div>
-            <strong>Pearl 🫧</strong> = Dot (number 1–9)
+            <strong>Dot 🫧</strong> — numbers 1–9
           </div>
           <div>
-            <strong>D</strong> = Dragon 🪸 / 🌊 / 🦪
+            <strong>D</strong> — Dragon (Red 🪸 / Green 🌊 / Soap 🦪)
           </div>
           <div>
-            <strong>F</strong> = Anemone 🌺 · <strong>Joker</strong> = 🪼
+            <strong>F</strong> — Flower 🌺 · <strong>Joker</strong> — 🪼
           </div>
           <div>
-            <strong>E/S/W/N</strong> = 🌅 / ☀️ / 🌇 / ❄️
+            <strong>E/S/W/N</strong> — 🌅 / ☀️ / 🌇 / ❄️
           </div>
         </div>
         {categories.length === 0 ? (

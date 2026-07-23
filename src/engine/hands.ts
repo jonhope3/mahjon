@@ -8,7 +8,7 @@
 //   Same letter = same suit. Different letters = different suits.
 //   'any' = any suit
 //   Numbers = rank for suited tiles
-//   For "year" hands, 0 is the White Dragon (Pearl Dragon / Soap) → d(n, 'white')
+//   For "year" hands, 0 is the White Dragon (Soap) → d(n, 'white')
 //   Dragon 'any' inherits color from the nearest suited group (Matching Dragons):
 //     red↔crak, green↔bam, white↔dot
 //   Dragon 'opposite' = NOT the matching color for the neighboring suit

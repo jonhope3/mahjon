@@ -92,7 +92,7 @@ export const PLAY_HELP = (
   <>
     <p>
       <strong>Tiles:</strong> Hover (or long-press on phones) any face-up tile to see whether it is
-      Shell/Crak, Kelp/Bam, Pearl/Dot, a Wind, Dragon, Anemone, or Joker.
+      Crak, Bam, Dot, a Wind, Dragon, Flower, or Joker.
     </p>
     <p>
       <strong>Your turn:</strong> Draw a tile, then discard one. Tap a tile to select it, then

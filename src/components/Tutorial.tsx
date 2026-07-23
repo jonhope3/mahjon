@@ -70,7 +70,7 @@ export function Tutorial({ onBack, onStartPlaying }: TutorialProps) {
           <p>This tutorial covers the tiles, Charleston, gameplay, and how to win.</p>
           <p className="tutorial-tip-callout">
             <strong>Tip:</strong> Hover a tile (or long-press on phones) anytime to see what it is —
-            Shell/Crak, Kelp/Bam, Pearl/Dot, Wind, Dragon, and so on.
+            Crak, Bam, Dot, Wind, Dragon, Flower, and so on.
           </p>
           <div className="tutorial-tiles-demo">
             {[
@@ -98,28 +98,26 @@ export function Tutorial({ onBack, onStartPlaying }: TutorialProps) {
           </p>
 
           <div className="tutorial-section">
-            <h4 className="suit-shell">Shells</h4>
+            <h4 className="suit-shell">Crak</h4>
             <p>
-              Red suited tiles (traditionally <strong>Crak</strong>). Same shell icon on every rank —
-              the <strong>number</strong> is what changes (1–9).
+              Red suited tiles (🐚 shell icon). Same icon on every rank — the{' '}
+              <strong>number</strong> is what changes (1–9).
             </p>
             <SuitRow suit="crak" fromId={800} />
           </div>
 
           <div className="tutorial-section">
-            <h4 className="suit-kelp">Kelp</h4>
+            <h4 className="suit-kelp">Bam</h4>
             <p>
-              Green numbered tiles (traditionally <strong>Bam</strong>). Same kelp icon; read the
-              number.
+              Green numbered tiles (🌿 kelp icon). Same icon; read the number.
             </p>
             <SuitRow suit="bam" fromId={810} />
           </div>
 
           <div className="tutorial-section">
-            <h4 className="suit-pearl">Pearls</h4>
+            <h4 className="suit-pearl">Dot</h4>
             <p>
-              Blue numbered tiles (traditionally <strong>Dot</strong>). Same pearl-bubble icon; read
-              the number.
+              Blue numbered tiles (🫧 pearl-bubble icon). Same icon; read the number.
             </p>
             <SuitRow suit="dot" fromId={820} />
           </div>
@@ -146,8 +144,7 @@ export function Tutorial({ onBack, onStartPlaying }: TutorialProps) {
           <div className="tutorial-section">
             <h4>Dragons (12 tiles)</h4>
             <p>
-              Coral, Wave, and Pearl dragons. Year hands (2026) use the Pearl Dragon as the
-              &quot;0&quot;.
+              Red, Green, and Soap (White) dragons. Year hands (2026) use Soap as the &quot;0&quot;.
             </p>
             <p>
               <strong>Like colors:</strong> each dragon matches one suit — look for the small
@@ -155,13 +152,13 @@ export function Tutorial({ onBack, onStartPlaying }: TutorialProps) {
             </p>
             <ul>
               <li>
-                🪸 Coral (Red) ↔ 🐚 Shell
+                🪸 Red ↔ 🐚 Crak
               </li>
               <li>
-                🌊 Wave (Green) ↔ 🌿 Kelp
+                🌊 Green ↔ 🌿 Bam
               </li>
               <li>
-                🦪 Pearl (White) ↔ 🫧 Pearl / Dot
+                🦪 Soap (White) ↔ 🫧 Dot
               </li>
             </ul>
             <div className="tutorial-tiles-demo">
@@ -172,11 +169,11 @@ export function Tutorial({ onBack, onStartPlaying }: TutorialProps) {
           </div>
 
           <div className="tutorial-section">
-            <h4>Anemones &amp; Jokers (8 each)</h4>
+            <h4>Flowers &amp; Jokers (8 each)</h4>
             <p>
-              <strong>Sea Anemones</strong> (🌺 Flowers) appear in many patterns.{' '}
-              <strong>Jokers</strong> (🪼 jellyfish) are wild in groups of 3+, but never in pairs or
-              singles. Do not confuse anemones with the Coral Dragon (🪸).
+              <strong>Flowers</strong> (🌺) appear in many patterns.{' '}
+              <strong>Jokers</strong> (🪼) are wild in groups of 3+, but never in pairs or singles.
+              Do not confuse Flowers with the Red Dragon (🪸).
             </p>
             <div className="tutorial-tiles-demo">
               <TileComponent tile={SAMPLE_TILES.flower} size="mini" />
@@ -185,7 +182,7 @@ export function Tutorial({ onBack, onStartPlaying }: TutorialProps) {
           </div>
 
           <p className="tutorial-total">
-            Total: <strong>152 tiles</strong> (108 suited + 16 winds + 12 dragons + 8 anemones + 8
+            Total: <strong>152 tiles</strong> (108 suited + 16 winds + 12 dragons + 8 flowers + 8
             jokers)
           </p>
         </div>
