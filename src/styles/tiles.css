@@ -488,6 +488,23 @@
     0 0 18px rgba(255, 183, 77, 0.35);
 }
 
+/* Guide: pick a tile to discard */
+.game-board.discard-pick .mobile-player-hand .tile.clickable,
+.game-board.discard-pick .player-hand .tile.clickable {
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    0 0 0 1.5px rgba(255, 183, 77, 0.45);
+}
+
+/* Guide: tile chosen — discard is next */
+.game-board.discard-ready .mobile-player-hand .tile.selected,
+.game-board.discard-ready .player-hand .tile.selected {
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.35),
+    0 0 0 3px rgba(255, 183, 77, 1),
+    0 0 22px rgba(255, 183, 77, 0.55);
+}
+
 /* Mobile shell: keep selection lift inside the hand slot */
 .mobile-bottom-bar .mobile-player-hand .tile.selected {
   transform: translateY(-6px) scale(1.02);

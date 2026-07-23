@@ -197,6 +197,13 @@ export function GameBoard({
     </div>
   );
 
+  const discardGuide =
+    validActions.includes('discard') && selectedTile
+      ? ' discard-ready'
+      : validActions.includes('discard') && !selectedTile
+        ? ' discard-pick'
+        : '';
+
   if (isMobile) {
     const latestLog = state.log[state.log.length - 1];
     const tickerMessage = latestLog ? latestLog.message : 'Game started. Pass or draw to begin.';
@@ -205,7 +212,7 @@ export function GameBoard({
       <div
         className={`game-board mobile${claimPending ? ' claim-active' : ''}${
           humanPlayer.exposedSets.length > 0 ? ' has-exposed' : ''
-        }`}
+        }${discardGuide}`}
       >
         {rotatePrompt}
         <div className="mobile-top-bar">
@@ -410,7 +417,7 @@ export function GameBoard({
           <div
             className={`mobile-action-bar${isClaimWindow ? ' claim-mode' : ''}${
               validActions.includes('draw') ? ' draw-ready' : ''
-            }`}
+            }${discardGuide}`}
           >
             {waitingOnClaims ? (
               <div className="mobile-action-hint" role="status">
@@ -448,7 +455,7 @@ export function GameBoard({
   }
 
   return (
-    <div className="game-board">
+    <div className={`game-board${discardGuide}`}>
       {rotatePrompt}
       <div className="top-bar">
         <div className="game-info">
@@ -608,7 +615,7 @@ export function GameBoard({
           <div
             className={`action-bar${isClaimWindow ? ' claim-mode' : ''}${
               validActions.includes('draw') ? ' draw-ready' : ''
-            }`}
+            }${discardGuide}`}
           >
             <span className={`turn-indicator${isMyTurn ? ' your-turn' : ''}`}>
               {waitingOnClaims ? (

@@ -302,6 +302,49 @@
   min-width: 140px;
 }
 
+.action-bar.discard-ready .btn-action.discard.is-ready,
+.action-bar .btn-action.discard.is-ready {
+  outline: 2px solid rgba(255, 183, 77, 0.95);
+  outline-offset: 2px;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(255, 183, 77, 0.35),
+    0 0 22px rgba(255, 183, 77, 0.35);
+  animation: discardReadyPulse 1.6s ease-in-out infinite;
+}
+
+.action-bar .btn-action.discard.needs-select {
+  opacity: 0.72;
+  border: 1.5px dashed rgba(255, 183, 77, 0.55);
+  background: rgba(96, 125, 139, 0.35);
+  color: var(--color-accent);
+}
+
+@keyframes discardReadyPulse {
+  0%,
+  100% {
+    box-shadow:
+      0 4px 16px rgba(0, 0, 0, 0.35),
+      0 0 0 1px rgba(255, 183, 77, 0.35),
+      0 0 18px rgba(255, 183, 77, 0.28);
+  }
+  50% {
+    box-shadow:
+      0 4px 18px rgba(0, 0, 0, 0.4),
+      0 0 0 2px rgba(255, 183, 77, 0.7),
+      0 0 28px rgba(255, 183, 77, 0.5);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .action-bar.discard-ready .btn-action.discard.is-ready,
+  .action-bar .btn-action.discard.is-ready,
+  .mobile-action-bar.discard-ready .btn-action.discard.is-ready,
+  .mobile-action-bar .btn-action.discard.is-ready {
+    animation: none;
+  }
+}
+
 .action-bar .turn-indicator {
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
@@ -1564,6 +1607,35 @@ button.linkish {
     0 4px 16px rgba(0, 0, 0, 0.35),
     0 0 24px rgba(76, 175, 80, 0.28);
 }
+
+.mobile-action-bar.discard-ready .btn-action.discard.is-ready,
+.mobile-action-bar .btn-action.discard.is-ready {
+  flex: 1 1 100%;
+  min-height: 58px;
+  font-size: 17px;
+  letter-spacing: 0.06em;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, #78909c 0%, #546e7a 100%);
+  outline: 2px solid rgba(255, 183, 77, 0.95);
+  outline-offset: 2px;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(255, 183, 77, 0.4),
+    0 0 26px rgba(255, 183, 77, 0.4);
+  animation: discardReadyPulse 1.6s ease-in-out infinite;
+}
+
+.mobile-action-bar.discard-pick .btn-action.discard.needs-select,
+.mobile-action-bar .btn-action.discard.needs-select {
+  flex: 1 1 100%;
+  min-height: 52px;
+  opacity: 0.85;
+  border: 1.5px dashed rgba(255, 183, 77, 0.55);
+  background: rgba(69, 90, 100, 0.55);
+  color: var(--color-accent);
+  font-weight: 800;
+}
+
 .mobile-action-bar .btn-action.discard {
   background: linear-gradient(135deg, #607d8b 0%, #455a64 100%);
   color: white;

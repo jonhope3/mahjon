@@ -31,9 +31,15 @@ export function ActionButtons({
           Draw
         </button>
       )}
-      {validActions.includes('discard') && canDiscard && (
-        <button type="button" className="btn btn-action discard" onClick={onDiscard}>
-          Discard
+      {validActions.includes('discard') && (
+        <button
+          type="button"
+          className={`btn btn-action discard${canDiscard ? ' is-ready' : ' needs-select'}`}
+          onClick={onDiscard}
+          disabled={!canDiscard}
+          aria-disabled={!canDiscard}
+        >
+          {canDiscard ? 'Discard' : 'Select a tile'}
         </button>
       )}
       {CLAIM_BTNS.map(b =>
