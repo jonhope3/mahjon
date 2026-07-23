@@ -56,7 +56,12 @@ export function LobbyScreen({
   useEffect(() => {
     peerManager.updateCallbacks({
       onStatusChange: setStatus,
-      onLobbyUpdate: setLobby,
+      onLobbyUpdate: next => {
+        setLobby({
+          ...next,
+          slots: next.slots.map(s => ({ ...s })),
+        });
+      },
       onError: err => {
         setBusy(false);
         setError(err);
@@ -453,12 +458,14 @@ export function LobbyScreen({
             <div className="lobby-actions">
               {mode === 'host' && (
                 <button
-                  className="btn btn-primary"
+                  className="btn btn-primary lobby-start-btn"
                   onClick={handleStartGame}
                   id="start-mp-game-btn"
                   disabled={humanCount < 2}
                 >
-                  {humanCount < 2 ? 'Waiting for a 2nd person…' : `Start game (${humanCount} of 4 people)`}
+                  {humanCount < 2
+                    ? 'Waiting for a 2nd person…'
+                    : `Start game · ${humanCount} people (AI fills the rest)`}
                 </button>
               )}
               {mode === 'join' && (

@@ -76,6 +76,24 @@ export class PeerManager {
   get resumeKey() { return this._resumeKey; }
   get isGameInProgress() { return this.gameInProgress; }
 
+  /** Immutable lobby snapshot so React always sees a new reference */
+  private snapshotLobby(): LobbyState | null {
+    if (!this.lobby) return null;
+    return {
+      roomCode: this.lobby.roomCode,
+      hostName: this.lobby.hostName,
+      maxPlayers: this.lobby.maxPlayers,
+      slots: this.lobby.slots.map(s => ({ ...s })),
+    };
+  }
+
+  /** Replace lobby with a cloned copy after in-place edits */
+  private commitLobby(): LobbyState | null {
+    const snap = this.snapshotLobby();
+    this.lobby = snap;
+    return snap;
+  }
+
   /** Create a new room as host */
   async createRoom(playerName: string): Promise<string> {
     await this.hardReset();
@@ -93,7 +111,7 @@ export class PeerManager {
         this.lobby = createLobby(this._roomCode, playerName);
         this._resumeKey = this.lobby.slots[0]?.resumeKey ?? '';
         this.callbacks.onStatusChange('connected');
-        this.callbacks.onLobbyUpdate(this.lobby);
+        this.callbacks.onLobbyUpdate(this.commitLobby() ?? this.lobby);
         this.startKeepalive();
         return this._roomCode;
       } catch (err) {
@@ -352,7 +370,10 @@ export class PeerManager {
 
       case 'join_accepted':
         this._playerIndex = msg.payload.playerIndex;
-        this.lobby = msg.payload.lobbyState;
+        this.lobby = {
+          ...msg.payload.lobbyState,
+          slots: msg.payload.lobbyState.slots.map(s => ({ ...s })),
+        };
         if (msg.payload.resumeKey) this._resumeKey = msg.payload.resumeKey;
         this.callbacks.onStatusChange('connected');
         this.callbacks.onLobbyUpdate(this.lobby);
@@ -363,7 +384,10 @@ export class PeerManager {
         break;
 
       case 'lobby_update':
-        this.lobby = msg.payload;
+        this.lobby = {
+          ...msg.payload,
+          slots: msg.payload.slots.map(s => ({ ...s })),
+        };
         {
           const mine = this.lobby.slots[this._playerIndex];
           if (mine?.resumeKey) this._resumeKey = mine.resumeKey;
@@ -585,8 +609,10 @@ export class PeerManager {
 
   private broadcastLobbyUpdate() {
     if (!this.lobby) return;
-    this.callbacks.onLobbyUpdate(this.lobby);
-    this.broadcast({ type: 'lobby_update', payload: this.lobby });
+    const snap = this.commitLobby();
+    if (!snap) return;
+    this.callbacks.onLobbyUpdate(snap);
+    this.broadcast({ type: 'lobby_update', payload: snap });
   }
 
   startGame(gameState: GameState) {

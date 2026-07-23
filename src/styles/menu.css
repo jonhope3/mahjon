@@ -1732,14 +1732,31 @@
 
 .lobby-actions {
   display: flex;
+  flex-direction: column;
   gap: var(--space-md);
   align-items: stretch;
+  margin-top: var(--space-lg);
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  padding: 12px 0 calc(8px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(180deg, transparent 0%, rgba(4, 22, 32, 0.92) 28%);
 }
 
 .lobby-actions .btn,
 .lobby-waiting {
-  flex: 1;
+  flex: 0 0 auto;
+  width: 100%;
   min-width: 0;
+}
+
+.lobby-start-btn {
+  min-height: 56px;
+  font-size: 1.05rem;
+}
+
+.lobby-start-btn:disabled {
+  opacity: 0.75;
 }
 
 .lobby-waiting {
