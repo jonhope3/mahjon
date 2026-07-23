@@ -18,6 +18,7 @@ import { LobbyScreen } from './components/LobbyScreen';
 import { Tutorial } from './components/Tutorial';
 import { SettingsPanel } from './components/SettingsPanel';
 import { UpdateBanner } from './components/UpdateBanner';
+import { BusyDots } from './components/BusyDots';
 import { PeerManager } from './network/peer-manager';
 import { serializeAction } from './network/protocol';
 import { AppPrefs, loadPrefs, prefsToGamePlayers, savePrefs } from './game-settings';
@@ -462,7 +463,10 @@ export default function App() {
         <div className="connecting-screen" role="status" aria-live="polite">
           <div className="connecting-card">
             <h1>Mahjon</h1>
-            <p className="connecting-title">Connecting…</p>
+            <p className="connecting-title">
+              Connecting
+              <BusyDots />
+            </p>
             <p className="connecting-hint">Getting the latest version so everyone plays the same build</p>
           </div>
         </div>

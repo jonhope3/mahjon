@@ -3,6 +3,7 @@
 // ============================================================
 
 import type { GameState } from '../engine/types';
+import { BusyDots } from './BusyDots';
 
 interface RoundEndOverlayProps {
   state: GameState;
@@ -70,7 +71,10 @@ export function RoundEndOverlay({
               New Round
             </button>
           ) : (
-            <p className="lobby-waiting">Waiting for host to start the next round…</p>
+            <p className="lobby-waiting">
+              Waiting for host to start the next round
+              <BusyDots />
+            </p>
           )}
           <button type="button" className="btn btn-secondary" onClick={onQuitToMenu}>
             Main Menu

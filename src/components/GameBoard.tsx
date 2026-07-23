@@ -22,6 +22,7 @@ import {
   turnHint,
 } from '../teach';
 import { shareOrCopyInvite } from '../mp-session';
+import { BusyDots } from './BusyDots';
 
 interface GameBoardProps {
   state: GameState;
@@ -413,7 +414,8 @@ export function GameBoard({
           >
             {waitingOnClaims ? (
               <div className="mobile-action-hint" role="status">
-                Waiting for other claims…
+                Waiting for other claims
+                <BusyDots />
               </div>
             ) : hint ? (
               <div className="mobile-action-hint" role="status">
@@ -609,14 +611,19 @@ export function GameBoard({
             }`}
           >
             <span className={`turn-indicator${isMyTurn ? ' your-turn' : ''}`}>
-              {waitingOnClaims
-                ? 'Waiting for other claims…'
-                : (hint ??
-                  (isClaimWindow
-                    ? 'Claim or Pass'
-                    : isMyTurn
-                      ? 'Your Turn'
-                      : `${state.players[state.currentPlayerIndex]?.name}'s turn`))}
+              {waitingOnClaims ? (
+                <>
+                  Waiting for other claims
+                  <BusyDots />
+                </>
+              ) : (
+                hint ??
+                (isClaimWindow
+                  ? 'Claim or Pass'
+                  : isMyTurn
+                    ? 'Your Turn'
+                    : `${state.players[state.currentPlayerIndex]?.name}'s turn`)
+              )}
             </span>
             <ActionButtons
               validActions={validActions}

@@ -16,6 +16,7 @@ import {
   shouldShowCharlestonIntro,
   showTurnCoaching,
 } from '../teach';
+import { BusyDots } from './BusyDots';
 
 interface CharlestonDialogProps {
   phase: GamePhase;
@@ -146,7 +147,8 @@ export function CharlestonDialog({
               </div>
             ) : waitingForOthers ? (
               <p className="charleston-waiting" role="status">
-                Tiles sent — waiting for the other players…
+                Tiles sent — waiting for the other players
+                <BusyDots />
               </p>
             ) : (
               <>

@@ -14,6 +14,7 @@ import {
   shareOrCopyInvite,
   type MpLastTable,
 } from '../mp-session';
+import { BusyDots } from './BusyDots';
 
 interface LobbyScreenProps {
   peerManager: PeerManager;
@@ -313,7 +314,14 @@ export function LobbyScreen({
                 id="create-room-btn"
                 disabled={busy}
               >
-                {busy ? 'Please wait…' : 'Host a table'}
+                {busy ? (
+                  <>
+                    Please wait
+                    <BusyDots />
+                  </>
+                ) : (
+                  'Host a table'
+                )}
               </button>
 
               {lastTable && (
@@ -351,7 +359,14 @@ export function LobbyScreen({
                     disabled={busy || roomCode.trim().length < 3}
                     id="join-room-btn"
                   >
-                    {busy ? 'Joining…' : 'Join'}
+                    {busy ? (
+                      <>
+                        Joining
+                        <BusyDots />
+                      </>
+                    ) : (
+                      'Join'
+                    )}
                   </button>
                 </div>
 
@@ -419,7 +434,10 @@ export function LobbyScreen({
                   <p className="lobby-host-lead">You’re in room</p>
                   <div className="lobby-room-code lobby-room-code--static">{lobby.roomCode}</div>
                   <p className="lobby-room-note">
-                    Waiting for {lobby.hostName || 'the host'} to start. Keep this screen open.
+                    Waiting for {lobby.hostName || 'the host'} to start
+                    <BusyDots />
+                    {' '}
+                    Keep this screen open.
                   </p>
                 </>
               )}
@@ -455,7 +473,15 @@ export function LobbyScreen({
                     <span className="lobby-slot-name">
                       {slot.playerName}
                       {isYou ? ' (you)' : ''}
-                      {offline ? ' — reconnecting…' : ''}
+                      {offline ? (
+                        <>
+                          {' '}
+                          — reconnecting
+                          <BusyDots />
+                        </>
+                      ) : (
+                        ''
+                      )}
                     </span>
                     {mode === 'host' && slot.type === 'ai' && (
                       <select
@@ -502,14 +528,20 @@ export function LobbyScreen({
                   id="start-mp-game-btn"
                   disabled={humanCount < 2}
                 >
-                  {humanCount < 2
-                    ? 'Waiting for a 2nd person…'
-                    : `Start game · ${humanCount} people (AI fills the rest)`}
+                  {humanCount < 2 ? (
+                    <>
+                      Waiting for a 2nd person
+                      <BusyDots />
+                    </>
+                  ) : (
+                    `Start game · ${humanCount} people (AI fills the rest)`
+                  )}
                 </button>
               )}
               {mode === 'join' && (
                 <p className="lobby-waiting" role="status">
-                  Waiting for {lobby.hostName || 'host'} to start…
+                  Waiting for {lobby.hostName || 'host'} to start
+                  <BusyDots />
                 </p>
               )}
               <button
@@ -527,7 +559,12 @@ export function LobbyScreen({
               {status === 'connected'
                 ? `${humanCount} of 4 people · empty seats are AI · group size 2–4`
                 : status === 'connecting'
-                  ? 'Connecting…'
+                  ? (
+                    <>
+                      Connecting
+                      <BusyDots />
+                    </>
+                  )
                   : `Connection: ${status}`}
             </p>
             {mode === 'host' && (

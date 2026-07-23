@@ -15,6 +15,7 @@ import {
 } from '../game-settings';
 import { useFreshReload } from '../hooks/useFreshReload';
 import { InstallNudge } from './InstallNudge';
+import { BusyDots } from './BusyDots';
 
 interface MainMenuProps {
   onStartGame: (config: GameConfig) => void;
@@ -131,7 +132,12 @@ export function MainMenu({
       >
         <span>
           {busy
-            ? 'Refreshing…'
+            ? (
+              <>
+                Refreshing
+                <BusyDots />
+              </>
+            )
             : pullReady
               ? 'Release to clear cache & reload'
               : 'Pull to refresh'}

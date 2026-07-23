@@ -16,6 +16,7 @@ import {
   TEACH_LABEL,
 } from '../game-settings';
 import { Modal } from './Modal';
+import { BusyDots } from './BusyDots';
 import { useFreshReload } from '../hooks/useFreshReload';
 
 interface SettingsPanelProps {
@@ -322,7 +323,14 @@ export function SettingsPanel({
                 }}
                 disabled={busy}
               >
-                {busy ? 'Refreshing…' : 'Hard refresh'}
+                {busy ? (
+                  <>
+                    Refreshing
+                    <BusyDots />
+                  </>
+                ) : (
+                  'Hard refresh'
+                )}
               </button>
               {!confirmFullWipe ? (
                 <button
@@ -340,7 +348,14 @@ export function SettingsPanel({
                   </p>
                   <div className="settings-actions">
                     <button type="button" className="btn btn-danger" onClick={hardReset} disabled={busy}>
-                      {busy ? 'Resetting…' : 'Yes, wipe everything'}
+                      {busy ? (
+                        <>
+                          Resetting
+                          <BusyDots />
+                        </>
+                      ) : (
+                        'Yes, wipe everything'
+                      )}
                     </button>
                     <button
                       type="button"
