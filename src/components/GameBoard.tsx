@@ -242,13 +242,32 @@ export function GameBoard({
                   <div className="opp-avatar">{opp.seatWind[0]?.toUpperCase()}</div>
                   <div className="opp-meta">
                     <span className="opp-name">{opp.name}</span>
-                    <span className="opp-count">Hand: {opp.hand.length}</span>
+                    <span className="opp-count">
+                      Hand: {opp.hand.length}
+                      {opp.exposedSets.length > 0
+                        ? ` · ${opp.exposedSets.length} exposed`
+                        : ''}
+                    </span>
                   </div>
                 </div>
-                {opp.exposedSets.length > 0 && (
-                  <div className="opp-exposed-mini">
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Exposed melds are public — show them readable (not tiny in the seat cards) */}
+        {opponentIndices.some(idx => state.players[idx]!.exposedSets.length > 0) && (
+          <div className="mobile-table-exposed" aria-label="Opponents’ exposed sets">
+            <span className="mobile-table-exposed-label">Table</span>
+            <div className="mobile-table-exposed-scroll">
+              {opponentIndices.map(idx => {
+                const opp = state.players[idx]!;
+                if (opp.exposedSets.length === 0) return null;
+                return (
+                  <div key={idx} className="mobile-table-exposed-player">
+                    <span className="mobile-table-exposed-name">{opp.name}</span>
                     {opp.exposedSets.map((set, sIdx) => (
-                      <div key={sIdx} className="opp-set-mini">
+                      <div key={sIdx} className="mobile-table-exposed-set">
                         {set.tiles.map(tile => {
                           const isJok = tile.kind.type === 'joker';
                           const canSwap = isJok && canSwapJoker;
@@ -256,8 +275,9 @@ export function GameBoard({
                             <TileComponent
                               key={tile.id}
                               tile={tile}
-                              size="tiny"
+                              size="mini"
                               faceUp
+                              showIdentity
                               clickable={canSwap}
                               onClick={canSwap ? () => handleExposedJokerClick(tile) : undefined}
                             />
@@ -266,11 +286,11 @@ export function GameBoard({
                       </div>
                     ))}
                   </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <button
           type="button"
@@ -690,8 +710,9 @@ function OpponentDisplay({
                   <TileComponent
                     key={tile.id}
                     tile={tile}
-                    size="tiny"
+                    size="mini"
                     faceUp
+                    showIdentity
                     clickable={canSwap}
                     onClick={canSwap ? () => onJokerClick?.(tile) : undefined}
                   />
