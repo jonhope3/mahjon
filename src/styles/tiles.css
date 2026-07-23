@@ -108,6 +108,52 @@
   pointer-events: none;
 }
 
+/*
+  Pair badge — corner cue linking dragon ↔ matching suit
+  (Coral↔Shell, Wave↔Kelp, Pearl↔Pearl/Dot)
+*/
+.tile-pair-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  font-size: 12px;
+  line-height: 1;
+  border-radius: 5px;
+  background: rgba(255, 254, 248, 0.96);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.16);
+  pointer-events: none;
+  user-select: none;
+}
+
+.tile-pair-badge--dragon {
+  /* Suit icon on dragon: slightly warmer frame */
+  border-color: rgba(255, 183, 77, 0.45);
+}
+
+.tile-pair-badge--suit {
+  opacity: 0.88;
+}
+
+.tile.mini .tile-pair-badge {
+  top: 1px;
+  right: 1px;
+  width: 12px;
+  height: 12px;
+  font-size: 8px;
+  border-radius: 3px;
+}
+
+.tile.tiny .tile-pair-badge {
+  display: none;
+}
+
 .tile-rank.crak, .tile-suit-label.crak { color: var(--color-crak); }
 .tile-rank.bam, .tile-suit-label.bam { color: var(--color-bam); }
 .tile-rank.dot, .tile-suit-label.dot { color: var(--color-dot); }
@@ -355,12 +401,18 @@
   align-items: flex-end;
   width: 100%;
   overflow-x: auto;
-  overflow-y: visible;
+  overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
   scroll-snap-type: x proximity;
   padding: 14px 4px 18px;
   scrollbar-width: thin;
+}
+
+/* Desktop/table hands can lift selected tiles into open space */
+.player-hand,
+.charleston-hand-row {
+  overflow-y: visible;
 }
 
 /*
@@ -434,6 +486,11 @@
     0 10px 22px rgba(0, 0, 0, 0.35),
     0 0 0 2px rgba(255, 183, 77, 0.85),
     0 0 18px rgba(255, 183, 77, 0.35);
+}
+
+/* Mobile shell: keep selection lift inside the hand slot */
+.mobile-bottom-bar .mobile-player-hand .tile.selected {
+  transform: translateY(-6px) scale(1.02);
 }
 
 .charleston-selected-row {

@@ -135,9 +135,20 @@ select,
   -webkit-touch-callout: default;
 }
 
-/* Home/menu: allow browser pull-to-refresh. Game/tutorial: lock it. */
+/* Home/menu: document scrolls; allow browser pull-to-refresh */
+html.app-screen-menu,
 html.app-screen-menu body {
+  height: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   overscroll-behavior-y: auto;
+}
+
+html.app-screen-menu #root {
+  height: auto;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: visible;
 }
 
 html.app-screen-playing body,

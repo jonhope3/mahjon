@@ -455,6 +455,7 @@ export default function App() {
           onStartTutorial={() => goScreen(setScreen, 'tutorial')}
           onOpenSettings={() => setShowSettings(true)}
           prefs={prefs}
+          onPrefsChange={handlePrefsChange}
         />
       )}
       {screen === 'connecting' && (

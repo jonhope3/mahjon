@@ -8,10 +8,15 @@ import { Tile } from '../engine/types';
 import { tileTooltip } from '../engine/tiles';
 import {
   DRAGON_FACES,
+  DRAGON_MATCHING_SUIT,
   FLOWER_FACE,
   JOKER_FACE,
+  SUIT_FACES,
+  SUIT_MATCHING_DRAGON,
   WIND_FACES,
+  dragonPairIcon,
   suitFace,
+  suitPairIcon,
 } from '../engine/tile-faces';
 import './TileComponent.css';
 
@@ -313,7 +318,7 @@ function renderTileFace(tile: Tile, size: string) {
 
   switch (kind.type) {
     case 'suited':
-      return renderSuitedTile(kind.suit, kind.rank, showCaption);
+      return renderSuitedTile(kind.suit, kind.rank, showCaption, size);
     case 'wind': {
       const w = WIND_FACES[kind.wind];
       return (
@@ -327,8 +332,18 @@ function renderTileFace(tile: Tile, size: string) {
     }
     case 'dragon': {
       const d = DRAGON_FACES[kind.dragon];
+      const pairSuit = SUIT_FACES[DRAGON_MATCHING_SUIT[kind.dragon]];
       return (
         <>
+          {size !== 'tiny' && (
+            <span
+              className={`tile-pair-badge tile-pair-badge--dragon ${pairSuit.cls}`}
+              title={`Matches ${pairSuit.name}`}
+              aria-hidden="true"
+            >
+              {dragonPairIcon(kind.dragon)}
+            </span>
+          )}
           <span className={`tile-emoji ${d.cls}`}>{d.icon}</span>
           {showCaption && (
             <span className={`tile-suit-label ${d.cls}`}>{d.label}</span>
@@ -361,10 +376,20 @@ function renderTileFace(tile: Tile, size: string) {
   }
 }
 
-function renderSuitedTile(suit: string, rank: number, showCaption: boolean) {
+function renderSuitedTile(suit: string, rank: number, showCaption: boolean, size: string) {
   const face = suitFace(suit as 'crak' | 'bam' | 'dot');
+  const pairDragon = DRAGON_FACES[SUIT_MATCHING_DRAGON[suit as 'crak' | 'bam' | 'dot']];
   return (
     <>
+      {size !== 'tiny' && (
+        <span
+          className={`tile-pair-badge tile-pair-badge--suit ${pairDragon.cls}`}
+          title={`Matches ${pairDragon.label} Dragon`}
+          aria-hidden="true"
+        >
+          {suitPairIcon(suit as 'crak' | 'bam' | 'dot')}
+        </span>
+      )}
       <span className={`tile-rank ${face.cls}`}>{rank}</span>
       <span className={`tile-emoji tile-emoji--suit ${face.cls}`} aria-hidden="true">
         {face.icon}

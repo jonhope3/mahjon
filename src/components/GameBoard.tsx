@@ -204,7 +204,11 @@ export function GameBoard({
     const tickerMessage = latestLog ? latestLog.message : 'Game started. Pass or draw to begin.';
 
     return (
-      <div className={`game-board mobile${claimPending ? ' claim-active' : ''}`}>
+      <div
+        className={`game-board mobile${claimPending ? ' claim-active' : ''}${
+          humanPlayer.exposedSets.length > 0 ? ' has-exposed' : ''
+        }`}
+      >
         {rotatePrompt}
         <div className="mobile-top-bar">
           <div className="status-pill round">
@@ -300,7 +304,8 @@ export function GameBoard({
         )}
         {tableChip}
 
-        <div className="mobile-discard-pool">          {allDiscards.length === 0 && <span className="discard-pool-label">Discards</span>}
+        <div className="mobile-discard-pool">
+          {allDiscards.length === 0 && <span className="discard-pool-label">Discards</span>}
           <div className="discard-grid">
             {allDiscards.map(tile => (
               <TileComponent
@@ -318,63 +323,65 @@ export function GameBoard({
             humanPlayer.exposedSets.length > 0 ? ' has-exposed' : ''
           }`}
         >
-          <div className="mobile-bottom-main">
-            <div className="mobile-player-status">
-              <div className="player-avatar-col">
-                <div className="player-avatar" aria-hidden>
-                  {humanPlayer.seatWind[0]?.toUpperCase()}
-                </div>
-                <div className="player-meta">
-                  <span className="player-name">{humanPlayer.name}</span>
-                  <span className="player-score-col">
-                    {humanPlayer.score} pts
-                  </span>
-                </div>
+          {/* Zone 1: identity + tools — never scrolls over the hand */}
+          <div className="mobile-player-status">
+            <div className="player-avatar-col">
+              <div className="player-avatar" aria-hidden>
+                {humanPlayer.seatWind[0]?.toUpperCase()}
               </div>
-              <div className="mobile-utility-btns" role="toolbar" aria-label="Game tools">
-                <button
-                  type="button"
-                  className="btn-tool btn-tool--accent"
-                  onClick={() => setShowHandCard(true)}
-                >
-                  Card
-                </button>
-                <button type="button" className="btn-tool" onClick={openHelp}>
-                  Help
-                </button>
-                <button
-                  type="button"
-                  className="btn-tool"
-                  onClick={onOpenSettings}
-                  aria-label="Settings"
-                  title="Settings"
-                >
-                  ···
-                </button>
+              <div className="player-meta">
+                <span className="player-name">{humanPlayer.name}</span>
+                <span className="player-score-col">{humanPlayer.score} pts</span>
               </div>
             </div>
+            <div className="mobile-utility-btns" role="toolbar" aria-label="Game tools">
+              <button
+                type="button"
+                className="btn-tool btn-tool--accent"
+                onClick={() => setShowHandCard(true)}
+              >
+                Card
+              </button>
+              <button type="button" className="btn-tool" onClick={openHelp}>
+                Help
+              </button>
+              <button
+                type="button"
+                className="btn-tool"
+                onClick={onOpenSettings}
+                aria-label="Settings"
+                title="Settings"
+              >
+                ···
+              </button>
+            </div>
+          </div>
 
-            {humanPlayer.exposedSets.length > 0 && (
-              <div className="mobile-player-exposed" aria-label="Your exposed sets">
-                {humanPlayer.exposedSets.map((set, i) => (
-                  <div key={i} className="exposed-set mobile-exposed-set">
-                    {set.tiles.map(tile => {
-                      const isJok = tile.kind.type === 'joker';
-                      return (
-                        <TileComponent
-                          key={tile.id}
-                          tile={tile}
-                          size="mini"
-                          clickable={isJok && isMyTurn && state.hasDrawn && !!selectedTile}
-                          onClick={isJok ? () => handleExposedJokerClick(tile) : undefined}
-                        />
-                      );
-                    })}
-                  </div>
-                ))}
-              </div>
-            )}
+          {/* Zone 2: exposed melds — own row, compact, cannot cover the hand */}
+          {humanPlayer.exposedSets.length > 0 && (
+            <div className="mobile-player-exposed" aria-label="Your exposed sets">
+              <span className="mobile-exposed-label">Exposed</span>
+              {humanPlayer.exposedSets.map((set, i) => (
+                <div key={i} className="mobile-exposed-set">
+                  {set.tiles.map(tile => {
+                    const isJok = tile.kind.type === 'joker';
+                    return (
+                      <TileComponent
+                        key={tile.id}
+                        tile={tile}
+                        size="mini"
+                        clickable={isJok && isMyTurn && state.hasDrawn && !!selectedTile}
+                        onClick={isJok ? () => handleExposedJokerClick(tile) : undefined}
+                      />
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          )}
 
+          {/* Zone 3: hand — reserved height, horizontal scroll only */}
+          <div className="mobile-hand-slot">
             <div
               className="mobile-player-hand"
               style={{ '--hand-size': humanPlayer.hand.length } as CSSProperties}
@@ -390,17 +397,18 @@ export function GameBoard({
                 />
               ))}
             </div>
-
-            {isClaimWindow && state.lastDiscard && teachMode !== 'expert' && (
-              <ClaimCoach
-                discard={state.lastDiscard}
-                discarderName={discarder?.name}
-                claimActions={claimActions}
-                onHelp={openHelp}
-              />
-            )}
           </div>
 
+          {isClaimWindow && state.lastDiscard && teachMode !== 'expert' && (
+            <ClaimCoach
+              discard={state.lastDiscard}
+              discarderName={discarder?.name}
+              claimActions={claimActions}
+              onHelp={openHelp}
+            />
+          )}
+
+          {/* Zone 4: actions / hints — always below the hand */}
           <div
             className={`mobile-action-bar${isClaimWindow ? ' claim-mode' : ''}${
               validActions.includes('draw') ? ' draw-ready' : ''

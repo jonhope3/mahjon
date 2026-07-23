@@ -899,6 +899,12 @@
   box-shadow: inset 0 2px 14px rgba(0, 0, 0, 0.28);
 }
 
+/* Yield height to the bottom bar when you have exposed melds */
+.game-board.mobile.has-exposed .mobile-discard-pool {
+  min-height: 96px;
+  padding: 10px;
+}
+
 .discard-grid {
   display: flex;
   flex-wrap: wrap;
@@ -921,45 +927,46 @@
   pointer-events: none;
 }
 
+/*
+  Mobile bottom bar — fixed zones (iPhone 14+ / Pixel 10 Pro)
+  ============================================================
+  Zone stack (top → bottom), NO shared scroll of melds+hand:
+    1. status   (flex-shrink: 0)
+    2. exposed  (flex-shrink: 0, compact mini tiles)
+    3. hand     (flex-shrink: 0, reserved min-height, x-scroll only)
+    4. actions  (flex-shrink: 0)
+  Discard pool above flexes away if the bottom needs height.
+*/
 .mobile-bottom-bar {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  padding: 10px 12px 0;
-  background: linear-gradient(180deg, rgba(4, 28, 38, 0.94) 0%, rgba(2, 14, 20, 0.99) 100%);
-  border-top: 1px solid rgba(223, 194, 148, 0.22);
-  border-top-left-radius: 24px;
-  border-top-right-radius: 24px;
   gap: 0;
   width: 100%;
+  padding: 8px 10px 0;
+  background: linear-gradient(180deg, rgba(4, 28, 38, 0.96) 0%, rgba(2, 14, 20, 0.99) 100%);
+  border-top: 1px solid rgba(223, 194, 148, 0.22);
+  border-top-left-radius: 22px;
+  border-top-right-radius: 22px;
   z-index: 10;
   box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(22px);
   -webkit-backdrop-filter: blur(22px);
-  flex-shrink: 0;
-  /*
-    Enough room for status + hand + actions.
-    When melds are exposed, grow so they never crush the hand.
-  */
-  max-height: min(48dvh, 400px);
-  min-height: 0;
-}
-
-.mobile-bottom-bar.has-exposed {
-  max-height: min(56dvh, 460px);
-}
-
-.mobile-bottom-main {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  flex: 0 0 auto;
+  /* Soft cap — discard pool yields first; zones never share a scrollport */
+  /* vh first for iOS 14 (no dvh); dvh overrides on 15.4+ */
+  max-height: min(58vh, 480px);
+  max-height: min(58dvh, 480px);
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding-top: 10px;
-  padding-bottom: 6px;
-  flex: 1 1 auto;
+  overscroll-behavior: contain;
+}
+
+.mobile-bottom-bar.has-exposed {
+  max-height: min(62vh, 520px);
+  max-height: min(62dvh, 520px);
 }
 
 .mobile-player-status {
@@ -968,71 +975,76 @@
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding-bottom: 8px;
+  padding: 2px 2px 8px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   flex-shrink: 0;
 }
 
 @media (max-width: 430px) {
   .mobile-utility-btns {
-    width: 100%;
-    justify-content: center;
-    order: 3;
+    flex-shrink: 0;
+  }
+
+  .btn-tool {
+    padding: 0 10px;
+    min-width: 40px;
+    min-height: 40px;
+    font-size: 11px;
   }
 }
 
 .game-board.mobile.claim-active .mobile-discard-pool {
-  flex: 0 0 auto;
-  min-height: 120px;
-  max-height: 26dvh;
+  flex: 0 1 auto;
+  min-height: 96px;
+  max-height: 22vh;
+  max-height: 22dvh;
 }
 
 .game-board.mobile.claim-active .mobile-bottom-bar {
-  max-height: min(52dvh, 440px);
+  max-height: min(64vh, 540px);
+  max-height: min(64dvh, 540px);
 }
 
 .game-board.mobile.claim-active .mobile-bottom-bar.has-exposed {
-  max-height: min(58dvh, 480px);
+  max-height: min(68vh, 560px);
+  max-height: min(68dvh, 560px);
 }
 
-/*
-  Short visual viewports: Safari tab chrome on iPhone 14 / 14 Pro
-  (~664–760 dvh) and any phone under Pixel 10 Pro height.
-*/
+/* Short phones (Safari chrome / iPhone 14 family in browser) */
 @media (max-height: 860px) {
   .game-board.mobile .mobile-bottom-bar {
-    max-height: min(46dvh, 360px);
+    max-height: min(56vh, 460px);
+    max-height: min(56dvh, 460px);
   }
 
   .game-board.mobile .mobile-bottom-bar.has-exposed {
-    max-height: min(54dvh, 420px);
+    max-height: min(60vh, 500px);
+    max-height: min(60dvh, 500px);
   }
 
   .game-board.mobile.claim-active .mobile-bottom-bar {
-    max-height: min(50dvh, 400px);
-  }
-
-  .game-board.mobile.claim-active .mobile-bottom-bar.has-exposed {
-    max-height: min(56dvh, 440px);
+    max-height: min(62vh, 520px);
+    max-height: min(62dvh, 520px);
   }
 
   .game-board.mobile .mobile-discard-pool {
-    min-height: 120px;
+    min-height: 100px;
   }
 
   .game-board.mobile.claim-active .mobile-discard-pool {
-    min-height: 112px;
-    max-height: 22dvh;
+    min-height: 88px;
+    max-height: 18vh;
+    max-height: 18dvh;
   }
 
   .game-board.mobile .mobile-activity-ticker {
-    padding: 8px 14px;
-    margin-bottom: 6px;
+    padding: 6px 12px;
+    margin-bottom: 4px;
   }
 
   .game-board.mobile .mobile-opponents-row {
-    max-height: 80px;
+    max-height: 72px;
   }
 
   .game-board.mobile .coach-hand-hint,
@@ -1041,28 +1053,140 @@
   }
 }
 
-/* Safari/Chrome tab: even tighter when dvh drops under ~740 */
 @media (max-height: 740px) {
   .game-board.mobile .mobile-bottom-bar {
-    max-height: min(44dvh, 340px);
-  }
-
-  .game-board.mobile .mobile-bottom-bar.has-exposed {
-    max-height: min(52dvh, 400px);
-  }
-
-  .game-board.mobile.claim-active .mobile-bottom-bar {
-    max-height: min(48dvh, 370px);
-  }
-
-  .game-board.mobile.claim-active .mobile-bottom-bar.has-exposed {
+    max-height: min(54vh, 420px);
     max-height: min(54dvh, 420px);
   }
 
-  .game-board.mobile .mobile-discard-pool {
-    min-height: 112px;
-    padding: 10px;
+  .game-board.mobile .mobile-bottom-bar.has-exposed {
+    max-height: min(58vh, 460px);
+    max-height: min(58dvh, 460px);
   }
+
+  .game-board.mobile .mobile-discard-pool {
+    min-height: 88px;
+    padding: 8px;
+  }
+}
+
+.mobile-player-exposed {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-start;
+  align-items: center;
+  width: 100%;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex: 0 0 auto;
+  min-height: 52px;
+  max-height: 56px;
+  padding: 6px 0;
+  margin: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+.mobile-player-exposed::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-exposed-label {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  opacity: 0.85;
+  padding: 0 4px 0 2px;
+}
+
+.mobile-exposed-set {
+  display: flex;
+  gap: 1px;
+  padding: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 183, 77, 0.3);
+  flex-shrink: 0;
+  align-items: center;
+}
+
+/* Force compact exposed tiles — never hand-sized */
+.mobile-player-exposed .tile,
+.mobile-exposed-set .tile {
+  width: 28px !important;
+  height: 38px !important;
+  max-width: 28px !important;
+  aspect-ratio: auto !important;
+  flex: 0 0 auto !important;
+  transform: none !important;
+  padding: 1px !important;
+  border-radius: 4px !important;
+}
+
+.mobile-player-exposed .tile .tile-rank {
+  font-size: 11px !important;
+}
+
+.mobile-player-exposed .tile .tile-emoji,
+.mobile-player-exposed .tile .tile-emoji--suit {
+  font-size: 12px !important;
+  margin: 0 !important;
+}
+
+.mobile-player-exposed .tile .tile-suit-label {
+  display: none !important;
+}
+
+.mobile-player-exposed .tile .tile-pair-badge {
+  display: none !important;
+}
+
+/*
+  Hand slot: reserved band so tiles never share paint space with melds or hints.
+  iPhone 14 / Pixel: 48px floor × 76/56 ≈ 65px tile + padding for selection lift.
+*/
+.mobile-hand-slot {
+  flex: 0 0 auto;
+  width: 100%;
+  min-height: 96px;
+  max-height: 112px;
+  overflow: hidden;
+  position: relative;
+  z-index: 2;
+  isolation: isolate;
+  padding: 4px 0 2px;
+}
+
+.mobile-bottom-bar .mobile-player-hand {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+  min-height: 84px;
+  margin: 0;
+  padding: 10px 2px 8px !important;
+  overflow-x: auto;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+  isolation: isolate;
+}
+
+.mobile-bottom-bar .mobile-player-hand .tile.selected {
+  /* Lift stays inside the hand slot (slot clips overflow-y) */
+  transform: translateY(-6px) scale(1.02);
 }
 
 .player-avatar-col {
@@ -1190,59 +1314,6 @@
   font-size: 12px;
   color: var(--color-text-muted);
   font-weight: 700;
-}
-
-.mobile-player-exposed {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-start;
-  align-items: center;
-  width: 100%;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  overflow-y: hidden;
-  flex-shrink: 0;
-  padding: 6px 2px 8px;
-  margin: 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-x: contain;
-  /* Keep melds above the hand in paint order, but never cover it */
-  position: relative;
-  z-index: 1;
-}
-
-.mobile-exposed-set {
-  display: flex;
-  gap: 2px;
-  padding: 4px;
-  background: rgba(255, 255, 255, 0.07);
-  border-radius: var(--radius-sm);
-  border: 1px solid rgba(255, 183, 77, 0.28);
-  flex-shrink: 0;
-}
-
-/* Exposed melds stay mini — never inherit hand tile sizing */
-.mobile-player-exposed .tile.mini,
-.mobile-exposed-set .tile.mini {
-  width: var(--tile-mini-w) !important;
-  height: var(--tile-mini-h) !important;
-  max-width: var(--tile-mini-w) !important;
-  aspect-ratio: auto !important;
-  flex: 0 0 auto !important;
-  transform: none !important;
-}
-
-.mobile-player-hand {
-  position: relative;
-  z-index: 2;
-  flex-shrink: 0;
-  isolation: isolate;
-  /* Room above so selected tiles lift without hitting melds */
-  margin-top: 4px;
-  padding-top: 16px !important;
-  overflow-x: auto;
-  overflow-y: visible;
 }
 
 .coach-banner {
@@ -1383,10 +1454,13 @@ button.linkish {
   justify-content: center;
   align-items: stretch;
   width: 100%;
-  flex-shrink: 0;
+  flex: 0 0 auto;
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
   padding: 8px 0 calc(12px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(3, 15, 22, 0.96);
+  background: rgba(3, 15, 22, 0.98);
 }
 
 .mobile-action-hint {
@@ -1398,6 +1472,39 @@ button.linkish {
   line-height: 1.35;
   padding: 2px 8px 0;
   letter-spacing: 0.01em;
+  /* Never paint over hand tiles */
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+/* Claim coach sits between hand and actions — compact, never overlaps hand */
+.mobile-bottom-bar > .claim-coach {
+  flex: 0 0 auto;
+  margin: 4px 0 0;
+  padding: 10px 12px;
+  max-height: 96px;
+  overflow: hidden;
+}
+
+@media (max-height: 860px) {
+  .mobile-bottom-bar > .claim-coach {
+    padding: 8px 10px;
+    max-height: 72px;
+  }
+
+  .mobile-bottom-bar > .claim-coach .claim-coach-copy p {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+@media (max-height: 740px) {
+  .mobile-bottom-bar > .claim-coach .claim-coach-copy p {
+    display: none;
+  }
 }
 
 .mobile-action-buttons {

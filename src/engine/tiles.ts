@@ -4,7 +4,7 @@
 // ============================================================
 
 import { Tile, TileKind, Suit, Wind, Dragon, Wall } from './types';
-import { SUIT_FACES } from './tile-faces';
+import { DRAGON_MATCHING_SUIT, SUIT_FACES } from './tile-faces';
 
 const SUITS: Suit[] = ['bam', 'crak', 'dot'];
 const WINDS: Wind[] = ['east', 'south', 'west', 'north'];
@@ -27,6 +27,11 @@ export function tileLabel(kind: TileKind): string {
 }
 
 const TRAD_SUIT = { bam: 'Bam', crak: 'Crak', dot: 'Dot' } as const;
+const SUIT_DRAGON_NAME = {
+  crak: 'Coral Dragon',
+  bam: 'Wave Dragon',
+  dot: 'Pearl Dragon',
+} as const;
 
 /**
  * Full identity string for hover / long-press tooltips.
@@ -37,7 +42,7 @@ export function tileTooltip(kind: TileKind): string {
     case 'suited': {
       const sea = SUIT_FACES[kind.suit].name;
       const trad = TRAD_SUIT[kind.suit];
-      return `${kind.rank} ${sea} (traditionally ${trad} ${kind.rank})`;
+      return `${kind.rank} ${sea} (traditionally ${trad} ${kind.rank}) · matches ${SUIT_DRAGON_NAME[kind.suit]}`;
     }
     case 'wind':
       return `${kind.wind.charAt(0).toUpperCase() + kind.wind.slice(1)} Wind`;
@@ -46,8 +51,10 @@ export function tileTooltip(kind: TileKind): string {
         red: 'Coral Dragon (Red Dragon)',
         green: 'Wave Dragon (Green Dragon)',
         white: 'Pearl Dragon (White Dragon / Soap)',
-      };
-      return names[kind.dragon];
+      } as const;
+      const suitKey = DRAGON_MATCHING_SUIT[kind.dragon];
+      const suit = SUIT_FACES[suitKey];
+      return `${names[kind.dragon]} · matches ${suit.name} (${TRAD_SUIT[suitKey]})`;
     }
     case 'flower':
       return 'Sea Anemone — Flower tile (F on the card)';

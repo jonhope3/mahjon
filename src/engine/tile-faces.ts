@@ -29,6 +29,34 @@ export const DRAGON_FACES: Record<Dragon, { icon: string; label: string; cls: st
   white: { icon: '🦪', label: 'Pearl', cls: 'dragon-white' },
 };
 
+/**
+ * American Mahjong “like colors”: dragon ↔ matching suit for many card hands.
+ *   Coral (red)  ↔ Shell (Crak)
+ *   Wave (green) ↔ Kelp (Bam)
+ *   Pearl (white)↔ Pearl (Dot)
+ */
+export const DRAGON_MATCHING_SUIT: Record<Dragon, Suit> = {
+  red: 'crak',
+  green: 'bam',
+  white: 'dot',
+};
+
+export const SUIT_MATCHING_DRAGON: Record<Suit, Dragon> = {
+  crak: 'red',
+  bam: 'green',
+  dot: 'white',
+};
+
+/** Suit icon shown in the corner of a dragon tile */
+export function dragonPairIcon(dragon: Dragon): string {
+  return SUIT_FACES[DRAGON_MATCHING_SUIT[dragon]].icon;
+}
+
+/** Dragon icon shown in the corner of a suited tile */
+export function suitPairIcon(suit: Suit): string {
+  return DRAGON_FACES[SUIT_MATCHING_DRAGON[suit]].icon;
+}
+
 /** Flower / anemone — no sea-anemone emoji in Unicode, so hibiscus */
 export const FLOWER_FACE = { icon: '🌺', label: 'Anemone' } as const;
 

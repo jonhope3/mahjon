@@ -5,7 +5,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { PlayerType, Difficulty } from '../engine/types';
 import { GameConfig } from '../engine/game';
-import { AppPrefs, prefsToGamePlayers } from '../game-settings';
+import {
+  AppPrefs,
+  DIFFICULTY_HINT,
+  DIFFICULTY_LABEL,
+  prefsToGamePlayers,
+  sharedBotDifficulty,
+  withBotsDifficulty,
+} from '../game-settings';
 import { useFreshReload } from '../hooks/useFreshReload';
 import { InstallNudge } from './InstallNudge';
 
@@ -15,6 +22,7 @@ interface MainMenuProps {
   onStartTutorial: () => void;
   onOpenSettings: () => void;
   prefs: AppPrefs;
+  onPrefsChange: (prefs: AppPrefs) => void;
 }
 
 interface PlayerSetup {
@@ -32,6 +40,7 @@ function prefsToSetup(prefs: AppPrefs): PlayerSetup[] {
 }
 
 const SEAT_LABELS = ['East', 'South', 'West', 'North'];
+const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard'];
 const PULL_THRESHOLD = 72;
 
 export function MainMenu({
@@ -40,6 +49,7 @@ export function MainMenu({
   onStartTutorial,
   onOpenSettings,
   prefs,
+  onPrefsChange,
 }: MainMenuProps) {
   const [players, setPlayers] = useState<PlayerSetup[]>(() => prefsToSetup(prefs));
   const [showSetup, setShowSetup] = useState(false);
@@ -47,6 +57,8 @@ export function MainMenu({
   const menuRef = useRef<HTMLDivElement>(null);
   const startY = useRef<number | null>(null);
   const { busy, clearCacheAndReload } = useFreshReload();
+
+  const aiDifficulty = sharedBotDifficulty(prefs);
 
   useEffect(() => {
     if (!showSetup) setPlayers(prefsToSetup(prefs));
@@ -104,6 +116,10 @@ export function MainMenu({
     setPlayers(prev => prev.map((p, i) => (i === index ? { ...p, ...updates } : p)));
   };
 
+  const setAiDifficulty = (difficulty: Difficulty) => {
+    onPrefsChange(withBotsDifficulty(prefs, difficulty));
+  };
+
   const pullReady = pullY >= PULL_THRESHOLD;
 
   return (
@@ -146,6 +162,25 @@ export function MainMenu({
       {!showSetup ? (
         <div className="menu-card">
           <h2 className="menu-card-heading">Play Mahjong</h2>
+
+          <div className="difficulty-picker" role="group" aria-label="AI difficulty">
+            <div className="difficulty-picker-label">AI difficulty</div>
+            <div className="difficulty-chips">
+              {DIFFICULTIES.map(level => (
+                <button
+                  key={level}
+                  type="button"
+                  className={`difficulty-chip${aiDifficulty === level ? ' is-active' : ''}`}
+                  aria-pressed={aiDifficulty === level}
+                  onClick={() => setAiDifficulty(level)}
+                >
+                  {DIFFICULTY_LABEL[level]}
+                </button>
+              ))}
+            </div>
+            <p className="difficulty-hint">{DIFFICULTY_HINT[aiDifficulty]}</p>
+          </div>
+
           <div className="menu-actions">
             <button
               className="btn btn-primary"
@@ -153,7 +188,9 @@ export function MainMenu({
               id="quick-start-btn"
             >
               Quick Start vs AI
-              <span className="btn-sublabel">Best way to learn</span>
+              <span className="btn-sublabel">
+                {DIFFICULTY_LABEL[aiDifficulty]} · best way to learn
+              </span>
             </button>
             <button className="btn btn-secondary" onClick={onStartTutorial} id="tutorial-btn">
               How to Play
@@ -165,6 +202,7 @@ export function MainMenu({
               id="custom-game-btn"
             >
               Custom Game
+              <span className="btn-sublabel">Per-seat names & levels</span>
             </button>
             <button
               className="btn btn-secondary"
@@ -213,23 +251,29 @@ export function MainMenu({
                   {i === 0 ? (
                     <option value="human">You</option>
                   ) : (
-                    <>
-                      <option value="ai">AI</option>
-                    </>
+                    <option value="ai">AI</option>
                   )}
                 </select>
                 {player.type === 'ai' && (
-                  <select
-                    value={player.difficulty}
-                    onChange={e =>
-                      updatePlayer(i, { difficulty: e.target.value as Difficulty })
-                    }
-                    id={`player-difficulty-${i}`}
+                  <div
+                    className="difficulty-chips difficulty-chips--compact"
+                    role="group"
+                    aria-label={`${SEAT_LABELS[i]} AI difficulty`}
                   >
-                    <option value="easy">Easy</option>
-                    <option value="medium">Medium</option>
-                    <option value="hard">Hard</option>
-                  </select>
+                    {DIFFICULTIES.map(level => (
+                      <button
+                        key={level}
+                        type="button"
+                        className={`difficulty-chip${
+                          player.difficulty === level ? ' is-active' : ''
+                        }`}
+                        aria-pressed={player.difficulty === level}
+                        onClick={() => updatePlayer(i, { difficulty: level })}
+                      >
+                        {DIFFICULTY_LABEL[level]}
+                      </button>
+                    ))}
+                  </div>
                 )}
               </div>
             ))}

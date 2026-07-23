@@ -1,5 +1,5 @@
 // ============================================================
-// PeerManager — WebRTC connection management via PeerJS
+// PeerManager — WebRTC via PeerJS (custom transport, no pooling)
 // ============================================================
 
 import Peer, { DataConnection } from 'peerjs';
@@ -8,9 +8,15 @@ import {
   generateRoomCode, createLobby, generateResumeKey,
   serializeGameStateForViewer,
   deserializeGameState,
-  SerializableGameState,
 } from './protocol';
 import { GameState, Difficulty } from '../engine/types';
+import {
+  buildPeerOptions,
+  hostPeerId,
+  peerErrorMessage,
+  peerErrorType,
+  sleep,
+} from './peer-transport';
 
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 
@@ -34,6 +40,12 @@ export interface PeerManagerCallbacks {
   onError: (error: string) => void;
 }
 
+const JOIN_ATTEMPTS = 3;
+const HOST_ID_ATTEMPTS = 5;
+const JOIN_TIMEOUT_MS = 28000;
+const HOST_OPEN_TIMEOUT_MS = 20000;
+const KEEPALIVE_MS = 8000;
+
 export class PeerManager {
   private peer: Peer | null = null;
   private connections: Map<string, DataConnection> = new Map();
@@ -46,6 +58,8 @@ export class PeerManager {
   private hostConnection: DataConnection | null = null;
   private gameInProgress = false;
   private lastGameState: GameState | null = null;
+  private keepaliveTimer: ReturnType<typeof setInterval> | null = null;
+  private generation = 0;
 
   constructor(callbacks: PeerManagerCallbacks) {
     this.callbacks = callbacks;
@@ -64,120 +78,245 @@ export class PeerManager {
 
   /** Create a new room as host */
   async createRoom(playerName: string): Promise<string> {
+    await this.hardReset();
     this._isHost = true;
     this._playerIndex = 0;
     this._roomCode = generateRoomCode();
+    this.callbacks.onStatusChange('connecting');
 
-    // PeerJS peer id = room code prefix for discoverability
-    const peerId = `mahjon-${this._roomCode}`;
+    const peerId = hostPeerId(this._roomCode);
+    let lastErr: unknown;
 
-    return new Promise((resolve, reject) => {
-      this.peer = new Peer(peerId);
-
-      this.peer.on('open', () => {
-        this.callbacks.onStatusChange('connected');
+    for (let attempt = 1; attempt <= HOST_ID_ATTEMPTS; attempt++) {
+      try {
+        await this.openHostPeer(peerId);
         this.lobby = createLobby(this._roomCode, playerName);
         this._resumeKey = this.lobby.slots[0]?.resumeKey ?? '';
+        this.callbacks.onStatusChange('connected');
         this.callbacks.onLobbyUpdate(this.lobby);
-        resolve(this._roomCode);
+        this.startKeepalive();
+        return this._roomCode;
+      } catch (err) {
+        lastErr = err;
+        const type = peerErrorType(err);
+        // PeerJS cloud holds IDs briefly — destroy + wait clears that pool
+        await this.destroyPeerOnly();
+        if (type === 'unavailable-id' || type === 'network' || type === 'server-error') {
+          await sleep(600 * attempt);
+          continue;
+        }
+        break;
+      }
+    }
+
+    this.callbacks.onStatusChange('error');
+    const msg = peerErrorMessage(lastErr) || 'Could not open a table. Try again.';
+    this.callbacks.onError(`Host error: ${msg}`);
+    throw lastErr instanceof Error ? lastErr : new Error(msg);
+  }
+
+  private openHostPeer(peerId: string): Promise<void> {
+    const gen = ++this.generation;
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const settle = (fn: () => void) => {
+        if (settled || gen !== this.generation) return;
+        settled = true;
+        clearTimeout(timer);
+        fn();
+      };
+
+      const timer = setTimeout(() => {
+        settle(() => reject(new Error('Host signaling timed out — check your connection.')));
+      }, HOST_OPEN_TIMEOUT_MS);
+
+      const peer = new Peer(peerId, buildPeerOptions());
+      this.peer = peer;
+
+      peer.on('open', () => {
+        settle(() => resolve());
       });
 
-      this.peer.on('connection', (conn) => {
+      peer.on('connection', conn => {
+        if (gen !== this.generation) {
+          conn.close();
+          return;
+        }
         this.handleIncomingConnection(conn);
       });
 
-      this.peer.on('error', (err) => {
-        this.callbacks.onError(`Host error: ${err.message}`);
-        this.callbacks.onStatusChange('error');
-        reject(err);
+      peer.on('disconnected', () => {
+        // Try to reattach to signaling without dropping data channels
+        if (gen === this.generation && peer && !peer.destroyed) {
+          try {
+            peer.reconnect();
+          } catch {
+            /* ignore */
+          }
+        }
+      });
+
+      peer.on('error', err => {
+        // Only fail createRoom if we never opened; later errors are soft
+        if (!settled) {
+          settle(() => reject(err));
+        } else if (peerErrorType(err) !== 'peer-unavailable') {
+          this.callbacks.onError(`Host warning: ${peerErrorMessage(err)}`);
+        }
       });
     });
   }
 
   /** Join an existing room as client (optional seat key to reclaim a disconnected hand) */
   async joinRoom(roomCode: string, playerName: string, resumeKey?: string): Promise<void> {
+    await this.hardReset();
     this._isHost = false;
-    this._roomCode = roomCode;
+    this._roomCode = roomCode.trim().toUpperCase();
+    this.callbacks.onStatusChange('connecting');
 
-    const hostPeerId = `mahjon-${roomCode}`;
+    let lastErr: unknown;
+    for (let attempt = 1; attempt <= JOIN_ATTEMPTS; attempt++) {
+      try {
+        await this.joinOnce(this._roomCode, playerName, resumeKey);
+        this.startKeepalive();
+        return;
+      } catch (err) {
+        lastErr = err;
+        await this.destroyPeerOnly();
+        // PeerJS holds connection offers ~5s; wait past that pool before retry
+        if (attempt < JOIN_ATTEMPTS) {
+          await sleep(1600 * attempt);
+        }
+      }
+    }
+
+    this.callbacks.onStatusChange('error');
+    const msg =
+      lastErr instanceof Error
+        ? lastErr.message
+        : peerErrorMessage(lastErr) || 'Could not join — check the code and try again.';
+    this.callbacks.onError(msg);
+    throw lastErr instanceof Error ? lastErr : new Error(msg);
+  }
+
+  private joinOnce(
+    roomCode: string,
+    playerName: string,
+    resumeKey?: string,
+  ): Promise<void> {
+    const gen = ++this.generation;
+    const hostId = hostPeerId(roomCode);
 
     return new Promise((resolve, reject) => {
       let settled = false;
       const settle = (fn: () => void) => {
-        if (settled) return;
+        if (settled || gen !== this.generation) return;
         settled = true;
         clearTimeout(timer);
         fn();
       };
+
       const timer = setTimeout(() => {
-        settle(() => reject(new Error('Join timed out — check the room code and try again.')));
-      }, 10000);
+        settle(() =>
+          reject(new Error('Join timed out — check the room code and that the host is still online.')),
+        );
+      }, JOIN_TIMEOUT_MS);
 
-      this.peer = new Peer();
+      const peer = new Peer(buildPeerOptions());
+      this.peer = peer;
 
-      this.peer.on('open', () => {
-        this.callbacks.onStatusChange('connecting');
+      peer.on('open', () => {
+        if (gen !== this.generation) return;
 
-        const conn = this.peer!.connect(hostPeerId, { reliable: true });
+        // Never reuse a pooled DataConnection — always a fresh reliable channel
+        const conn = peer.connect(hostId, {
+          reliable: true,
+          serialization: 'json',
+        });
 
         conn.on('open', () => {
-          this.hostConnection = conn;
-          this.connections.set(hostPeerId, conn);
-
-          this.send(conn, {
-            type: 'join_request',
-            payload: {
-              playerName,
-              resumeKey: resumeKey?.trim().toUpperCase() || undefined,
-            },
-          });
-        });
-
-        conn.on('data', (data) => {
-          const msg = data as NetworkMessage;
-          this.handleMessage(msg, conn);
-          if (msg.type === 'join_accepted') {
-            settle(() => resolve());
-          } else if (msg.type === 'join_rejected') {
-            settle(() => {
-              this.disconnect();
-              reject(new Error(msg.payload.reason));
-            });
+          if (gen !== this.generation) {
+            conn.close();
+            return;
           }
+          this.hostConnection = conn;
+          this.connections.set(hostId, conn);
+          this.wireClientConnection(conn, settle, resolve, reject, playerName, resumeKey);
         });
 
-        conn.on('close', () => {
-          this.callbacks.onStatusChange('disconnected');
-          this.callbacks.onError('Connection to host lost');
-          settle(() => reject(new Error('Connection to host lost')));
-        });
-
-        conn.on('error', (err) => {
-          this.callbacks.onError(`Connection error: ${err.message}`);
-          settle(() => reject(err));
+        conn.on('error', err => {
+          settle(() => reject(err instanceof Error ? err : new Error(peerErrorMessage(err))));
         });
       });
 
-      this.peer.on('error', (err) => {
-        if (err.type === 'peer-unavailable') {
-          this.callbacks.onError(`Room "${roomCode}" not found. Check the code and try again.`);
-          settle(() => reject(new Error(`Room "${roomCode}" not found.`)));
-        } else {
-          this.callbacks.onError(`Connection error: ${err.message}`);
-          settle(() => reject(err));
+      peer.on('disconnected', () => {
+        if (gen === this.generation && peer && !peer.destroyed) {
+          try {
+            peer.reconnect();
+          } catch {
+            /* ignore */
+          }
         }
-        this.callbacks.onStatusChange('error');
       });
+
+      peer.on('error', err => {
+        const type = peerErrorType(err);
+        if (type === 'peer-unavailable') {
+          settle(() =>
+            reject(new Error(`Room "${roomCode}" not found. Check the code and try again.`)),
+          );
+        } else if (!settled) {
+          settle(() => reject(err instanceof Error ? err : new Error(peerErrorMessage(err))));
+        }
+      });
+    });
+  }
+
+  private wireClientConnection(
+    conn: DataConnection,
+    settle: (fn: () => void) => void,
+    resolve: () => void,
+    reject: (err: Error) => void,
+    playerName: string,
+    resumeKey?: string,
+  ) {
+    this.send(conn, {
+      type: 'join_request',
+      payload: {
+        playerName,
+        resumeKey: resumeKey?.trim().toUpperCase() || undefined,
+      },
+    });
+
+    conn.on('data', data => {
+      const msg = data as NetworkMessage;
+      this.handleMessage(msg, conn);
+      if (msg.type === 'join_accepted') {
+        settle(() => resolve());
+      } else if (msg.type === 'join_rejected') {
+        settle(() => reject(new Error(msg.payload.reason)));
+      }
+    });
+
+    conn.on('close', () => {
+      this.connections.delete(conn.peer);
+      if (this.hostConnection === conn) this.hostConnection = null;
+      this.callbacks.onStatusChange('disconnected');
+      this.callbacks.onError('Connection to host lost');
+      settle(() => reject(new Error('Connection to host lost')));
     });
   }
 
   /** Handle incoming connection (host only) */
   private handleIncomingConnection(conn: DataConnection) {
+    // Accept immediately — do not wait on PeerJS connection pooling
+    this.connections.set(conn.peer, conn);
+
     conn.on('open', () => {
       this.connections.set(conn.peer, conn);
     });
 
-    conn.on('data', (data) => {
+    conn.on('data', data => {
       this.handleMessage(data as NetworkMessage, conn);
     });
 
@@ -188,7 +327,6 @@ export class PeerManager {
         if (slot) {
           slot.connected = false;
           if (slot.type === 'human') {
-            // Keep the seat (and name) so family can reconnect or host can sit AI
             this.broadcastLobbyUpdate();
             if (this.gameInProgress) {
               this.callbacks.onPlayerDisconnected?.(slot.index);
@@ -198,6 +336,10 @@ export class PeerManager {
           }
         }
       }
+    });
+
+    conn.on('error', () => {
+      /* close handler cleans up */
     });
   }
 
@@ -232,14 +374,12 @@ export class PeerManager {
       case 'game_start':
         this.callbacks.onGameStart(
           deserializeGameState(msg.payload.gameState),
-          this._playerIndex
+          this._playerIndex,
         );
         break;
 
       case 'game_state_sync':
-        this.callbacks.onGameStateSync(
-          deserializeGameState(msg.payload.gameState)
-        );
+        this.callbacks.onGameStateSync(deserializeGameState(msg.payload.gameState));
         break;
 
       case 'game_action': {
@@ -252,7 +392,6 @@ export class PeerManager {
       case 'charleston_tiles': {
         const seat = this.seatIndexForPeer(conn.peer);
         if (seat === null) break;
-        // Ignore client-supplied playerIndex — seat comes from the connection
         this.callbacks.onCharlestonTiles(seat, msg.payload.tileIds);
         break;
       }
@@ -270,6 +409,9 @@ export class PeerManager {
 
       case 'ping':
         this.send(conn, { type: 'pong', payload: {} });
+        break;
+
+      case 'pong':
         break;
     }
   }
@@ -299,7 +441,6 @@ export class PeerManager {
             !s.connected &&
             s.playerName.trim().toLowerCase() === name,
         );
-        // Only auto-match when the name uniquely identifies one dropped seat
         if (nameMatches.length === 1) reclaim = nameMatches[0];
       }
 
@@ -381,7 +522,6 @@ export class PeerManager {
       }
     }
 
-    // Find first AI slot to replace
     const aiSlot = this.lobby.slots.find(s => s.type === 'ai');
     if (!aiSlot) {
       const waiting = this.lobby.slots.some(s => s.type === 'human' && !s.connected);
@@ -443,14 +583,12 @@ export class PeerManager {
     this.broadcastLobbyUpdate();
   }
 
-  /** Broadcast lobby state to all peers */
   private broadcastLobbyUpdate() {
     if (!this.lobby) return;
     this.callbacks.onLobbyUpdate(this.lobby);
     this.broadcast({ type: 'lobby_update', payload: this.lobby });
   }
 
-  /** Start the game (host only) */
   startGame(gameState: GameState) {
     if (!this._isHost) return;
     this.gameInProgress = true;
@@ -467,7 +605,6 @@ export class PeerManager {
     this.sendViewToAll(gameState, 'game_start');
   }
 
-  /** Table-wide Charleston skip (optional phases) — host applies after auth */
   sendCharlestonControl(kind: 'skip_pass' | 'skip_rest') {
     const msg: NetworkMessage = { type: 'charleston_control', payload: { kind } };
     if (this._isHost) {
@@ -477,7 +614,6 @@ export class PeerManager {
     }
   }
 
-  /** Sync game state to all clients (host only) — per-seat fog of war */
   syncGameState(gameState: GameState) {
     if (!this._isHost) return;
     this.lastGameState = gameState;
@@ -485,11 +621,10 @@ export class PeerManager {
   }
 
   private sendViewToAll(gameState: GameState, type: 'game_start' | 'game_state_sync') {
-    // Host keeps full state locally; each peer gets a filtered view
     if (this.lobby) {
       for (const slot of this.lobby.slots) {
         if (slot.type !== 'human' || !slot.peerId || !slot.connected) continue;
-        if (slot.index === this._playerIndex) continue; // host is local
+        if (slot.index === this._playerIndex) continue;
         const conn = this.connections.get(slot.peerId);
         if (!conn) continue;
         const view = serializeGameStateForViewer(gameState, slot.index);
@@ -498,23 +633,20 @@ export class PeerManager {
     }
   }
 
-  /** Seat index for a peer connection (host only) */
   seatIndexForPeer(peerId: string): number | null {
     if (!this.lobby) return null;
     const slot = this.lobby.slots.find(s => s.peerId === peerId && s.connected);
     return slot ? slot.index : null;
   }
 
-  /** Send a game action (client → host, or host local) */
   sendAction(action: NetworkMessage & { type: 'game_action' }) {
     if (this._isHost) {
-      // Host actions are handled locally in App — no broadcast of raw actions
+      // Host actions are handled locally in App
     } else if (this.hostConnection) {
       this.send(this.hostConnection, action);
     }
   }
 
-  /** Send charleston tile selections */
   sendCharlestonTiles(playerIndex: number, tileIds: number[]) {
     const msg: NetworkMessage = {
       type: 'charleston_tiles',
@@ -527,7 +659,6 @@ export class PeerManager {
     }
   }
 
-  /** Send chat message */
   sendChat(playerName: string, message: string) {
     const msg: NetworkMessage = { type: 'chat', payload: { playerName, message } };
     if (this._isHost) {
@@ -538,39 +669,85 @@ export class PeerManager {
     }
   }
 
-  /** Send to a specific connection */
   private send(conn: DataConnection, msg: NetworkMessage) {
     if (conn.open) {
-      conn.send(msg);
+      try {
+        conn.send(msg);
+      } catch {
+        /* channel may be mid-close */
+      }
     }
   }
 
-  /** Broadcast to all connections */
   private broadcast(msg: NetworkMessage) {
     for (const conn of this.connections.values()) {
       this.send(conn, msg);
     }
   }
 
-  /** Disconnect and clean up */
-  disconnect() {
+  private startKeepalive() {
+    this.stopKeepalive();
+    this.keepaliveTimer = setInterval(() => {
+      const ping: NetworkMessage = { type: 'ping', payload: {} };
+      for (const conn of this.connections.values()) {
+        this.send(conn, ping);
+      }
+      if (this.hostConnection) this.send(this.hostConnection, ping);
+    }, KEEPALIVE_MS);
+  }
+
+  private stopKeepalive() {
+    if (this.keepaliveTimer) {
+      clearInterval(this.keepaliveTimer);
+      this.keepaliveTimer = null;
+    }
+  }
+
+  private async destroyPeerOnly() {
+    this.stopKeepalive();
     for (const conn of this.connections.values()) {
-      conn.close();
+      try {
+        conn.close();
+      } catch {
+        /* ignore */
+      }
     }
     this.connections.clear();
-    this.peer?.destroy();
-    this.peer = null;
     this.hostConnection = null;
+    const peer = this.peer;
+    this.peer = null;
+    if (peer) {
+      try {
+        peer.destroy();
+      } catch {
+        /* ignore */
+      }
+      // Let PeerJS cloud release the id / offer slot
+      await sleep(350);
+    }
+  }
+
+  private async hardReset() {
+    this.generation += 1;
+    this.stopKeepalive();
+    await this.destroyPeerOnly();
     this.lobby = null;
     this._isHost = false;
     this._roomCode = '';
     this._resumeKey = '';
+    this._playerIndex = 0;
     this.gameInProgress = false;
     this.lastGameState = null;
+  }
+
+  /** Disconnect and clean up */
+  disconnect() {
+    void this.hardReset().then(() => {
+      this.callbacks.onStatusChange('disconnected');
+    });
     this.callbacks.onStatusChange('disconnected');
   }
 
-  /** Get current lobby */
   getLobby(): LobbyState | null {
     return this.lobby;
   }

@@ -40,6 +40,18 @@ export const TEACH_HINT: Record<TeachMode, string> = {
   coach: 'Guided plus gentle “closest hands” hints',
 };
 
+export const DIFFICULTY_LABEL: Record<Difficulty, string> = {
+  easy: 'Easy',
+  medium: 'Medium',
+  hard: 'Hard',
+};
+
+export const DIFFICULTY_HINT: Record<Difficulty, string> = {
+  easy: 'Forgiving claims & discards — best while learning',
+  medium: 'Solid table play — default for Quick Start',
+  hard: 'Sharper claims and tighter discards',
+};
+
 export interface BotPref {
   name: string;
   difficulty: Difficulty;
@@ -246,4 +258,18 @@ export function prefsToGamePlayers(prefs: AppPrefs) {
       difficulty: b.difficulty,
     })),
   ];
+}
+
+/** Set every Quick Start bot to the same difficulty (saved with prefs). */
+export function withBotsDifficulty(prefs: AppPrefs, difficulty: Difficulty): AppPrefs {
+  return {
+    ...prefs,
+    bots: prefs.bots.map(b => ({ ...b, difficulty })) as AppPrefs['bots'],
+  };
+}
+
+/** Shared level when all bots match; otherwise medium. */
+export function sharedBotDifficulty(prefs: AppPrefs): Difficulty {
+  const first = prefs.bots[0]?.difficulty ?? 'medium';
+  return prefs.bots.every(b => b.difficulty === first) ? first : 'medium';
 }

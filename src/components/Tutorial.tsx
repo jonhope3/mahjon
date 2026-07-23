@@ -149,6 +149,21 @@ export function Tutorial({ onBack, onStartPlaying }: TutorialProps) {
               Coral, Wave, and Pearl dragons. Year hands (2026) use the Pearl Dragon as the
               &quot;0&quot;.
             </p>
+            <p>
+              <strong>Like colors:</strong> each dragon matches one suit — look for the small
+              corner icon:
+            </p>
+            <ul>
+              <li>
+                🪸 Coral (Red) ↔ 🐚 Shell
+              </li>
+              <li>
+                🌊 Wave (Green) ↔ 🌿 Kelp
+              </li>
+              <li>
+                🦪 Pearl (White) ↔ 🫧 Pearl / Dot
+              </li>
+            </ul>
             <div className="tutorial-tiles-demo">
               <TileComponent tile={SAMPLE_TILES.dragonRed} size="mini" />
               <TileComponent tile={SAMPLE_TILES.dragonGreen} size="mini" />

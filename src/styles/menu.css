@@ -6,20 +6,23 @@
 .main-menu {
   min-height: 100vh;
   min-height: 100dvh;
+  height: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
+  /* safe center: when content overflows, align to start so the top stays reachable */
   justify-content: center;
+  justify-content: safe center;
   background:
     radial-gradient(ellipse at 25% 0%, rgba(26, 138, 152, 0.45) 0%, transparent 50%),
     radial-gradient(ellipse at 80% 100%, rgba(255, 183, 77, 0.12) 0%, transparent 45%),
     linear-gradient(165deg, #031018 0%, var(--color-felt-dark) 42%, #041620 100%);
   padding: calc(var(--space-xl) + env(safe-area-inset-top, 0px)) calc(var(--space-lg) + env(safe-area-inset-right, 0px)) calc(var(--space-xl) + env(safe-area-inset-bottom, 0px)) calc(var(--space-lg) + env(safe-area-inset-left, 0px));
   position: relative;
+  /* Desktop/tablet: let the document scroll — do not trap wheel on this node */
   overflow-x: hidden;
-  overflow-y: auto;
+  overflow-y: visible;
   overscroll-behavior-y: auto;
-  -webkit-overflow-scrolling: touch;
 }
 
 .main-menu::before {
@@ -95,6 +98,70 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.difficulty-picker {
+  margin: 0 0 var(--space-lg);
+  padding: 12px 12px 10px;
+  border-radius: var(--radius-md);
+  background: rgba(4, 22, 32, 0.35);
+  border: 1px solid rgba(223, 194, 148, 0.18);
+}
+
+.difficulty-picker-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.difficulty-chips {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.difficulty-chips--compact {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+}
+
+.difficulty-chip {
+  min-height: 44px;
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.difficulty-chip.is-active {
+  background: rgba(255, 183, 77, 0.22);
+  border-color: rgba(255, 183, 77, 0.55);
+  color: var(--color-accent);
+}
+
+.difficulty-chip:active {
+  transform: scale(0.97);
+}
+
+.difficulty-hint {
+  margin: 8px 2px 0;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--color-text-muted);
+  font-weight: 600;
 }
 
 .menu-footnote {
@@ -563,6 +630,7 @@
 
 .setup-player {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-md);
   padding: var(--space-md);
@@ -747,6 +815,18 @@
 /* ============================================================
    Menu & Dialog Responsiveness Media Queries
    ============================================================ */
+
+/* Desktop / large tablet: document is the scroll root */
+@media (min-width: 700px) {
+  .main-menu {
+    height: auto;
+    max-height: none;
+    overflow-x: hidden;
+    overflow-y: visible;
+    justify-content: center;
+    justify-content: safe center;
+  }
+}
 
 /* Phones + large phones + tablets (iPad portrait / compact) */
 @media (max-width: 1024px) {
@@ -968,7 +1048,9 @@
 /* ---- Phone home: full-bleed, no floating card ---- */
 @media (max-width: 699px) {
   .main-menu {
+    min-height: 100vh;
     min-height: 100dvh;
+    height: 100vh;
     height: 100dvh;
     padding:
       calc(12px + env(safe-area-inset-top, 0px))
@@ -976,6 +1058,10 @@
       calc(16px + env(safe-area-inset-bottom, 0px));
     justify-content: flex-start;
     align-items: stretch;
+    /* Phone: scroll inside the shell (pull-to-refresh listens here) */
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .menu-settings-btn {
@@ -1025,6 +1111,17 @@
 
   .menu-card-heading {
     display: none;
+  }
+
+  .difficulty-picker {
+    flex-shrink: 0;
+    margin: 0 0 12px;
+    padding: 10px;
+    background: rgba(4, 22, 32, 0.45);
+  }
+
+  .difficulty-hint {
+    font-size: 11px;
   }
 
   /* Actions sit in the optical middle of remaining space */

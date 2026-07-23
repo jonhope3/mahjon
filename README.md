@@ -77,6 +77,6 @@ Once loaded once, the service worker caches all static assets, allowing you to p
 Because this is a static site with no central database server:
 1. **Hosting**: The Host clicks **Online Multiplayer** -> **Create Room**, and receives a 5-letter Room Code.
 2. **Joining**: Remote players enter the same Room Code and click **Join**.
-3. **Signaling**: Connection signaling is handled dynamically via the public PeerJS cloud. Once connected, all gameplay data synchronizes directly between peer browsers (Peer-to-Peer).
+3. **Signaling**: PeerJS cloud with a custom ICE stack (STUN + TURN, `iceCandidatePoolSize: 0`, retries). Gameplay then syncs peer-to-peer.
 4. **AI Slots**: If you have fewer than 4 human players, the Host can start the game to automatically fill the remaining seats with local AI bots.
 5. **Authority**: The Host processes turn advances and AI moves, then synchronizes state updates to all clients, ensuring absolute synchronization.

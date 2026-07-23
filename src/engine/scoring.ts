@@ -15,11 +15,9 @@ import { Tile, Player, HandPattern, Suit, Dragon, PatternGroup, ExposedSet } fro
 import { ALL_HANDS } from './hands';
 import { isJoker } from './tiles';
 
-const SUIT_TO_DRAGON: Record<Suit, Dragon> = {
-  crak: 'red',
-  bam: 'green',
-  dot: 'white',
-};
+import { SUIT_MATCHING_DRAGON } from './tile-faces';
+
+const SUIT_TO_DRAGON: Record<Suit, Dragon> = SUIT_MATCHING_DRAGON;
 
 /** All tiles a player has (hand + exposed sets) */
 function getAllPlayerTiles(player: Player): Tile[] {
