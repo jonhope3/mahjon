@@ -1,9 +1,10 @@
 // ============================================================
-// HelpPanel — Contextual “what’s going on?” learning overlay
+// HelpPanel - Contextual “what’s going on?” learning overlay
 // ============================================================
 
 import type { ReactNode } from 'react';
 import { Modal } from './Modal';
+import { useInputProfile, type InputProfile } from '../hooks/useInputProfile';
 
 interface HelpPanelProps {
   title: string;
@@ -60,7 +61,7 @@ export const CHARLESTON_HELP = {
     body: (
       <>
         <p>
-          The <strong>Second Charleston</strong> is optional. Same idea — pass 3 tiles — but the
+          The <strong>Second Charleston</strong> is optional. Same idea - pass 3 tiles - but the
           directions reverse: Left → Across → Right.
         </p>
         <p>
@@ -76,7 +77,7 @@ export const CHARLESTON_HELP = {
       <>
         <p>
           After both Charlestons, you may optionally exchange tiles with the player sitting across
-          from you — <strong>0 to 3 tiles</strong>. You each offer a number; you pass the{' '}
+          from you - <strong>0 to 3 tiles</strong>. You each offer a number; you pass the{' '}
           <strong>smaller</strong> count (real-table courtesy).
         </p>
         <p>
@@ -88,33 +89,117 @@ export const CHARLESTON_HELP = {
   },
 } as const;
 
-export const PLAY_HELP = (
-  <>
-    <p>
-      <strong>Tiles:</strong> Hover (or long-press on phones) any face-up tile to see whether it is
-      Crak, Bam, Dot, a Wind, Dragon, Flower, or Joker.
-    </p>
-    <p>
-      <strong>Your turn:</strong> Draw a tile, then discard one. Tap a tile to select it, then
-      Discard.
-    </p>
-    <p>
-      <strong>Claim window (Pung / Pass):</strong> When someone discards, a banner shows that tile.
-      Tap <strong>Pung</strong> (3 of a kind), <strong>Kong</strong> (4), <strong>Quint</strong> (5),
-      or <strong>Mahjong</strong> if it completes a card hand — or tap <strong>Pass</strong> to let
-      play continue. You do not select tiles from your hand for a normal pung/kong claim.
-    </p>
-    <p>
-      <strong>Hand Card:</strong> Open the Card anytime to see the 2026 winning patterns (72 hands on
-      the official-style card). Your 14 tiles must match one exactly.
-    </p>
-    <p>
-      <strong>Kong on your turn:</strong> After you draw, you may declare a kong from your hand or
-      promote an exposed pung — then discard as usual.
-    </p>
-    <p>
-      <strong>Jokers:</strong> Wild in groups of 3+. Never in pairs or singles. You can swap a
-      matching tile for an exposed joker on your turn.
-    </p>
-  </>
-);
+function ControlsHelp({ profile }: { profile: InputProfile }) {
+  if (profile === 'phone') {
+    return (
+      <section className="help-controls">
+        <h3>Controls · Phone</h3>
+        <ul>
+          <li>
+            <strong>Select a tile:</strong> Tap it, then tap <strong>Discard</strong>.
+          </li>
+          <li>
+            <strong>Rearrange your hand:</strong> Press a tile and <em>slide it</em> left or right
+            along the rack - just like sliding tiles on a physical rack. New draws land at the end
+            so your groups stay put. Tap <strong>Sort</strong> anytime to reset to suit order.
+          </li>
+          <li>
+            <strong>Identify a tile:</strong> Long-press any face-up tile for its name (Crak, Bam,
+            Dot, Wind, Dragon, Flower, Joker).
+          </li>
+          <li>
+            <strong>Claims:</strong> When someone discards, use the Pung / Kong / Quint / Mahjong /
+            Pass buttons - you don’t pick tiles from your hand for a normal claim.
+          </li>
+        </ul>
+      </section>
+    );
+  }
+
+  if (profile === 'tablet') {
+    return (
+      <section className="help-controls">
+        <h3>Controls · iPad</h3>
+        <ul>
+          <li>
+            <strong>Select a tile:</strong> Tap it, then tap <strong>Discard</strong>.
+          </li>
+          <li>
+            <strong>Rearrange your hand:</strong> Press a tile and <em>drag it</em> along the rack to
+            group your hand the way you would at a real table. New draws land at the end. Tap{' '}
+            <strong>Sort</strong> to return to suit order.
+          </li>
+          <li>
+            <strong>Identify a tile:</strong> Long-press (or hover with a trackpad) any face-up tile.
+          </li>
+          <li>
+            <strong>Keyboard (Magic Keyboard / Smart Keyboard):</strong>{' '}
+            <kbd>←</kbd> <kbd>→</kbd> move between tiles, <kbd>Shift</kbd> + <kbd>←</kbd>{' '}
+            <kbd>→</kbd> rearrange, <kbd>Enter</kbd> discards. <kbd>D</kbd> draws, <kbd>P</kbd>{' '}
+            passes, <kbd>1</kbd>-<kbd>4</kbd> call Pung / Kong / Quint / Mahjong. <kbd>C</kbd> opens
+            the Hand Card, <kbd>?</kbd> opens Help.
+          </li>
+        </ul>
+      </section>
+    );
+  }
+
+  return (
+    <section className="help-controls">
+      <h3>Controls · Desktop</h3>
+      <ul>
+        <li>
+          <strong>Select a tile:</strong> Click it, then click <strong>Discard</strong> (or press{' '}
+          <kbd>Enter</kbd>).
+        </li>
+        <li>
+          <strong>Rearrange your hand:</strong> Click and <em>drag</em> a tile left or right along
+          your rack to group it. New draws land at the end so your arrangement isn’t scrambled.
+          Click <strong>Sort</strong> to reset to suit order.
+        </li>
+        <li>
+          <strong>Identify a tile:</strong> Hover any face-up tile.
+        </li>
+        <li>
+          <strong>Keyboard:</strong> <kbd>←</kbd> <kbd>→</kbd> move between tiles,{' '}
+          <kbd>Shift</kbd> + <kbd>←</kbd> <kbd>→</kbd> rearrange, <kbd>Enter</kbd> discards.{' '}
+          <kbd>D</kbd> draws, <kbd>P</kbd> passes, <kbd>1</kbd>-<kbd>4</kbd> call Pung / Kong /
+          Quint / Mahjong. <kbd>C</kbd> opens the Hand Card, <kbd>?</kbd> opens Help.
+        </li>
+      </ul>
+    </section>
+  );
+}
+
+/** In-game help: rules + device-specific controls. */
+export function PlayHelp() {
+  const profile = useInputProfile();
+
+  return (
+    <>
+      <ControlsHelp profile={profile} />
+
+      <p>
+        <strong>Your turn:</strong> Draw a tile, then discard one.
+      </p>
+      <p>
+        <strong>Claim window:</strong> When someone discards, a banner shows that tile. Choose{' '}
+        <strong>Pung</strong> (3 of a kind), <strong>Kong</strong> (4), <strong>Quint</strong> (5),
+        or <strong>Mahjong</strong> if it completes a card hand - or <strong>Pass</strong> to let
+        play continue.
+      </p>
+      <p>
+        <strong>Hand Card:</strong> Open the Card anytime to see the 2026 winning patterns. Your 14
+        tiles must match one exactly.
+      </p>
+      <p>
+        <strong>Kong on your turn:</strong> After you draw, you may declare a kong from your hand or
+        promote an exposed pung - then discard as usual.
+      </p>
+      <p>
+        <strong>Jokers:</strong> Wild in groups of 3+. Never in pairs or singles. You can swap a
+        matching tile for an exposed joker on your turn.
+      </p>
+    </>
+  );
+}

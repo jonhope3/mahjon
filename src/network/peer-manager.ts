@@ -1,5 +1,5 @@
 // ============================================================
-// PeerManager — WebRTC via PeerJS (custom transport, no pooling)
+// PeerManager - WebRTC via PeerJS (custom transport, no pooling)
 // ============================================================
 
 import Peer, { DataConnection } from 'peerjs';
@@ -29,7 +29,7 @@ export interface PeerManagerCallbacks {
   onPlayerRejoined?: (playerIndex: number, playerName: string) => void;
   /** Fired when a human disconnects mid-game (host may AI-drive after a grace period) */
   onPlayerDisconnected?: (playerIndex: number) => void;
-  /** Host only — playerIndex is the authenticated seat for this connection */
+  /** Host only - playerIndex is the authenticated seat for this connection */
   onGameAction: (
     action: NetworkMessage & { type: 'game_action' },
     playerIndex: number,
@@ -117,7 +117,7 @@ export class PeerManager {
       } catch (err) {
         lastErr = err;
         const type = peerErrorType(err);
-        // PeerJS cloud holds IDs briefly — destroy + wait clears that pool
+        // PeerJS cloud holds IDs briefly - destroy + wait clears that pool
         await this.destroyPeerOnly();
         if (type === 'unavailable-id' || type === 'network' || type === 'server-error') {
           await sleep(600 * attempt);
@@ -145,7 +145,7 @@ export class PeerManager {
       };
 
       const timer = setTimeout(() => {
-        settle(() => reject(new Error('Host signaling timed out — check your connection.')));
+        settle(() => reject(new Error('Host signaling timed out - check your connection.')));
       }, HOST_OPEN_TIMEOUT_MS);
 
       const peer = new Peer(peerId, buildPeerOptions());
@@ -212,7 +212,7 @@ export class PeerManager {
     const msg =
       lastErr instanceof Error
         ? lastErr.message
-        : peerErrorMessage(lastErr) || 'Could not join — check the code and try again.';
+        : peerErrorMessage(lastErr) || 'Could not join - check the code and try again.';
     this.callbacks.onError(msg);
     throw lastErr instanceof Error ? lastErr : new Error(msg);
   }
@@ -236,7 +236,7 @@ export class PeerManager {
 
       const timer = setTimeout(() => {
         settle(() =>
-          reject(new Error('Join timed out — check the room code and that the host is still online.')),
+          reject(new Error('Join timed out - check the room code and that the host is still online.')),
         );
       }, JOIN_TIMEOUT_MS);
 
@@ -246,7 +246,7 @@ export class PeerManager {
       peer.on('open', () => {
         if (gen !== this.generation) return;
 
-        // Never reuse a pooled DataConnection — always a fresh reliable channel
+        // Never reuse a pooled DataConnection - always a fresh reliable channel
         const conn = peer.connect(hostId, {
           reliable: true,
           serialization: 'json',
@@ -327,7 +327,7 @@ export class PeerManager {
 
   /** Handle incoming connection (host only) */
   private handleIncomingConnection(conn: DataConnection) {
-    // Accept immediately — do not wait on PeerJS connection pooling
+    // Accept immediately - do not wait on PeerJS connection pooling
     this.connections.set(conn.peer, conn);
 
     conn.on('open', () => {
@@ -554,7 +554,7 @@ export class PeerManager {
         payload: {
           reason: waiting
             ? 'Table is full, but someone is reconnecting. Use the same name you used before, or ask the host.'
-            : 'Room is full — ask the host to free a seat.',
+            : 'Room is full - ask the host to free a seat.',
         },
       });
       return;

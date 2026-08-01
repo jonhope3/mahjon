@@ -1,5 +1,5 @@
 // ============================================================
-// Tutorial — Interactive learning mode for American Mahjong
+// Tutorial - Interactive learning mode for American Mahjong
 // ============================================================
 
 import { useState } from 'react';
@@ -69,7 +69,7 @@ export function Tutorial({ onBack, onStartPlaying }: TutorialProps) {
           </p>
           <p>This tutorial covers the tiles, Charleston, gameplay, and how to win.</p>
           <p className="tutorial-tip-callout">
-            <strong>Tip:</strong> Hover a tile (or long-press on phones) anytime to see what it is —
+            <strong>Tip:</strong> Hover a tile (or long-press on phones) anytime to see what it is -
             Crak, Bam, Dot, Wind, Dragon, Flower, and so on.
           </p>
           <div className="tutorial-tiles-demo">
@@ -89,19 +89,19 @@ export function Tutorial({ onBack, onStartPlaying }: TutorialProps) {
       ),
     },
     {
-      title: 'The Tiles — Suits',
+      title: 'The Tiles - Suits',
       content: (
         <div className="tutorial-text">
           <p>
-            There are <strong>3 suits</strong>, each numbered 1–9 (4 copies of each = 108 suited
+            There are <strong>3 suits</strong>, each numbered 1-9 (4 copies of each = 108 suited
             tiles). Swipe a row to see every rank.
           </p>
 
           <div className="tutorial-section">
             <h4 className="suit-shell">Crak</h4>
             <p>
-              Red suited tiles (🐚 shell icon). Same icon on every rank — the{' '}
-              <strong>number</strong> is what changes (1–9).
+              Red suited tiles (🐚 shell icon). Same icon on every rank - the{' '}
+              <strong>number</strong> is what changes (1-9).
             </p>
             <SuitRow suit="crak" fromId={800} />
           </div>
@@ -125,13 +125,13 @@ export function Tutorial({ onBack, onStartPlaying }: TutorialProps) {
       ),
     },
     {
-      title: 'The Tiles — Honors & Specials',
+      title: 'The Tiles - Honors & Specials',
       content: (
         <div className="tutorial-text">
           <div className="tutorial-section tutorial-section--first">
             <h4>Winds (16 tiles)</h4>
             <p>
-              East 🌅, South ☀️, West 🌇, North ❄️ — used in wind/dragon hands and mixed patterns.
+              East 🌅, South ☀️, West 🌇, North ❄️ - used in wind/dragon hands and mixed patterns.
             </p>
             <div className="tutorial-tiles-demo">
               <TileComponent tile={SAMPLE_TILES.north} size="mini" />
@@ -147,7 +147,7 @@ export function Tutorial({ onBack, onStartPlaying }: TutorialProps) {
               Red, Green, and Soap (White) dragons. Year hands (2026) use Soap as the &quot;0&quot;.
             </p>
             <p>
-              <strong>Like colors:</strong> each dragon matches one suit — look for the small
+              <strong>Like colors:</strong> each dragon matches one suit - look for the small
               corner icon:
             </p>
             <ul>
@@ -195,13 +195,13 @@ export function Tutorial({ onBack, onStartPlaying }: TutorialProps) {
           <p>At the start of each round:</p>
           <ol>
             <li>
-              <strong>Build the wall</strong> — tiles are shuffled and stacked
+              <strong>Build the wall</strong> - tiles are shuffled and stacked
             </li>
             <li>
-              <strong>Deal</strong> — each player gets 13 tiles (East/dealer gets 14)
+              <strong>Deal</strong> - each player gets 13 tiles (East/dealer gets 14)
             </li>
             <li>
-              <strong>The Charleston</strong> — a tile-passing ritual:
+              <strong>The Charleston</strong> - a tile-passing ritual:
               <ul>
                 <li>
                   <strong>First Charleston</strong> (mandatory): Pass 3 tiles Right → Across → Left
@@ -220,7 +220,7 @@ export function Tutorial({ onBack, onStartPlaying }: TutorialProps) {
       ),
     },
     {
-      title: 'Gameplay — Drawing & Discarding',
+      title: 'Gameplay - Drawing & Discarding',
       content: (
         <div className="tutorial-text">
           <p>On each turn, the active player:</p>
@@ -241,16 +241,16 @@ export function Tutorial({ onBack, onStartPlaying }: TutorialProps) {
             <p>When someone discards, any player can claim it for:</p>
             <ul>
               <li>
-                <strong className="claim-pung">Pung</strong> — 3 of a kind (need 2 matching)
+                <strong className="claim-pung">Pung</strong> - 3 of a kind (need 2 matching)
               </li>
               <li>
-                <strong className="claim-kong">Kong</strong> — 4 of a kind (need 3 matching)
+                <strong className="claim-kong">Kong</strong> - 4 of a kind (need 3 matching)
               </li>
               <li>
-                <strong className="claim-quint">Quint</strong> — 5 of a kind (need 4, using jokers)
+                <strong className="claim-quint">Quint</strong> - 5 of a kind (need 4, using jokers)
               </li>
               <li>
-                <strong className="claim-mahjong">Mahjong!</strong> — win the game (highest priority)
+                <strong className="claim-mahjong">Mahjong!</strong> - win the game (highest priority)
               </li>
             </ul>
             <p>Priority: Mahjong &gt; Quint &gt; Kong &gt; Pung. Claimed sets are exposed face-up.</p>
@@ -259,7 +259,7 @@ export function Tutorial({ onBack, onStartPlaying }: TutorialProps) {
       ),
     },
     {
-      title: 'Winning — The Hand Card',
+      title: 'Winning - The Hand Card',
       content: (
         <div className="tutorial-text">
           <p>
@@ -271,7 +271,7 @@ export function Tutorial({ onBack, onStartPlaying }: TutorialProps) {
             <h4>Reading the Card</h4>
             <ul>
               <li>
-                Numbers are tile <strong>ranks</strong> (1–9)
+                Numbers are tile <strong>ranks</strong> (1-9)
               </li>
               <li>
                 <strong>Colors matter</strong>: same color = same suit
@@ -290,7 +290,7 @@ export function Tutorial({ onBack, onStartPlaying }: TutorialProps) {
           </div>
 
           <p>
-            Declare <strong>Mahjong</strong> when your hand matches — after drawing or by claiming
+            Declare <strong>Mahjong</strong> when your hand matches - after drawing or by claiming
             a discard.
           </p>
 
@@ -312,19 +312,19 @@ export function Tutorial({ onBack, onStartPlaying }: TutorialProps) {
             <h4>Beginner Tips</h4>
             <ul>
               <li>
-                <strong>Keep jokers</strong> — they are the most valuable tiles
+                <strong>Keep jokers</strong> - they are the most valuable tiles
               </li>
               <li>
-                <strong>Stay flexible</strong> — do not lock into one hand too early
+                <strong>Stay flexible</strong> - do not lock into one hand too early
               </li>
               <li>
-                <strong>Watch discards</strong> — switch patterns if your tiles are gone
+                <strong>Watch discards</strong> - switch patterns if your tiles are gone
               </li>
               <li>
                 <strong>Concealed hands</strong> score more but you cannot claim for them
               </li>
               <li>
-                <strong>Use the Charleston</strong> — pass suits you do not need
+                <strong>Use the Charleston</strong> - pass suits you do not need
               </li>
             </ul>
           </div>
@@ -333,16 +333,16 @@ export function Tutorial({ onBack, onStartPlaying }: TutorialProps) {
             <h4>Intermediate Tips</h4>
             <ul>
               <li>
-                <strong>Defensive play</strong> — avoid feeding other players
+                <strong>Defensive play</strong> - avoid feeding other players
               </li>
               <li>
-                <strong>Count tiles</strong> — track what has been discarded
+                <strong>Count tiles</strong> - track what has been discarded
               </li>
               <li>
-                <strong>2026 is 6-heavy</strong> — many patterns feature 6s and Flowers
+                <strong>2026 is 6-heavy</strong> - many patterns feature 6s and Flowers
               </li>
               <li>
-                <strong>Quints</strong> — with 8 jokers, they are more reachable than they look
+                <strong>Quints</strong> - with 8 jokers, they are more reachable than they look
               </li>
             </ul>
           </div>

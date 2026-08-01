@@ -1,5 +1,5 @@
 // ============================================================
-// UpdateBanner — non-blocking “new version” prompt
+// UpdateBanner - non-blocking “new version” prompt
 // ============================================================
 
 import { useEffect, useState } from 'react';

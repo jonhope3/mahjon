@@ -18,7 +18,7 @@
 //
 // runShiftMax: for "any N consecutive" / "any like number" lines, the engine
 //   tries adding 0..runShiftMax to every suited rank (skipping shifts that push
-//   a rank outside 1–9). Example: FFF 1111 234 5555 uses ranks 1..5, so
+//   a rank outside 1-9). Example: FFF 1111 234 5555 uses ranks 1..5, so
 //   runShiftMax = 4 (top rank 5 → 9). All-same-rank "like number" lines use 8.
 //
 // Every pattern's groups sum to exactly 14 tiles (validated below).
@@ -151,7 +151,7 @@ const cat2468: HandPattern[] = [
     groups: [f(3), s(2, 2, 'a'), s(4, 2, 'a'), s(6, 3, 'a'), s(8, 4, 'a')],
     value: 25, concealed: false,
   },
-  // 2468-7: like Kongs of 2/4/6/8 with Matching Dragons (Any 3 Suits) — one entry per number
+  // 2468-7: like Kongs of 2/4/6/8 with Matching Dragons (Any 3 Suits) - one entry per number
   {
     id: '2468-7-r2',
     category: '2468',
@@ -180,7 +180,7 @@ const cat2468: HandPattern[] = [
     groups: [s(2, 1, 'a'), s(4, 1, 'a'), s(6, 1, 'a'), s(8, 1, 'a'), s(8, 4, 'b'), d(1, 'any'), s(8, 4, 'c'), d(1, 'any')],
     value: 25, concealed: false,
   },
-  // 2468-8: FFF 2468 FFF 2222 — Kong is 2, 4, 6, or 8 (Any 2 Suits)
+  // 2468-8: FFF 2468 FFF 2222 - Kong is 2, 4, 6, or 8 (Any 2 Suits)
   {
     id: '2468-8-r2',
     category: '2468',
@@ -533,7 +533,7 @@ const catWindsDragons: HandPattern[] = [
     groups: [s(1, 1, 'a'), s(2, 1, 'a'), s(3, 1, 'a'), s(4, 1, 'a'), d(3, 'red'), d(3, 'green'), d(4, 'white')],
     value: 25, concealed: false, runShiftMax: 5,
   },
-  // wd-4: NNN 1111 1111 SSS — any like ODD number in any 2 suits (one entry per odd rank)
+  // wd-4: NNN 1111 1111 SSS - any like ODD number in any 2 suits (one entry per odd rank)
   {
     id: 'wd-4-r1',
     category: 'Winds + Dragons',
@@ -569,7 +569,7 @@ const catWindsDragons: HandPattern[] = [
     groups: [w(3, 'north'), s(9, 4, 'a'), s(9, 4, 'b'), w(3, 'south')],
     value: 25, concealed: false,
   },
-  // wd-5: EEE 2222 2222 WWW — any like EVEN number in any 2 suits (one entry per even rank)
+  // wd-5: EEE 2222 2222 WWW - any like EVEN number in any 2 suits (one entry per even rank)
   {
     id: 'wd-5-r2',
     category: 'Winds + Dragons',

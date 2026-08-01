@@ -1,5 +1,5 @@
 // ============================================================
-// ActionButtons — draw / discard / claims shared by layouts
+// ActionButtons - draw / discard / claims shared by layouts
 // ============================================================
 
 import type { ActionType } from '../engine/types';

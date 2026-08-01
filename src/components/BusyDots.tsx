@@ -1,5 +1,5 @@
 // ============================================================
-// BusyDots — animated “…” so waits don’t look frozen
+// BusyDots - animated “…” so waits don’t look frozen
 // ============================================================
 
 interface BusyDotsProps {
@@ -8,7 +8,7 @@ interface BusyDotsProps {
   className?: string;
 }
 
-/** Three pulsing dots — use after a status word: Connecting<BusyDots /> */
+/** Three pulsing dots - use after a status word: Connecting<BusyDots /> */
 export function BusyDots({ label, className = '' }: BusyDotsProps) {
   return (
     <span

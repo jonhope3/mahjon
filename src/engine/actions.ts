@@ -1,5 +1,5 @@
 // ============================================================
-// Action Validation — Can a player take a given action?
+// Action Validation - Can a player take a given action?
 // ============================================================
 
 import { Tile, Player, GameState, ActionType } from './types';
@@ -152,7 +152,7 @@ export function getValidActions(state: GameState, playerIndex: number): ActionTy
 
   if (state.phase !== 'playing') return [];
 
-  // Already answered this claim window — wait for resolution
+  // Already answered this claim window - wait for resolution
   if (state.claimWindow?.claims.has(player.id)) return [];
 
   // ---- Claim window: only claim/pass, never draw ----
@@ -183,7 +183,7 @@ export function getValidActions(state: GameState, playerIndex: number): ActionTy
 }
 
 /**
- * Priority of claims — higher priority wins the claim window.
+ * Priority of claims - higher priority wins the claim window.
  * Mahjong > Quint > Kong > Pung
  */
 export function claimPriority(action: ActionType): number {

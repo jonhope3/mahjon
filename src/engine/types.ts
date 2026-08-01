@@ -1,5 +1,5 @@
 // ============================================================
-// Mahjong Game Engine — Type Definitions
+// Mahjong Game Engine - Type Definitions
 // American Mahjong (2026) style
 // ============================================================
 
@@ -121,7 +121,19 @@ export interface GameState {
   hasDrawn: boolean;            // whether current player has drawn this turn
   winner: string | null;        // player id of winner
   winningHand: HandPattern | null;
+  /**
+   * Optional house-rule scoring toggles. Lives on GameState so the host's
+   * choice syncs to every client in a multiplayer table. Omitted = official
+   * NMJL card scoring.
+   */
+  scoringRules?: ScoringRules;
   log: GameLogEntry[];
+}
+
+/** House-rule scoring toggles (see engine/scoring.ts). */
+export interface ScoringRules {
+  selfDrawnBonus: boolean;
+  jokerlessBonus: boolean;
 }
 
 /** Game log entry for replay / display */
@@ -172,7 +184,7 @@ export interface HandPattern {
   description: string;
   /**
    * For “any consecutive” card lines: try adding 0..runShiftMax to every suited rank.
-   * Skips shifts that push any rank outside 1–9.
+   * Skips shifts that push any rank outside 1-9.
    */
   runShiftMax?: number;
   /**

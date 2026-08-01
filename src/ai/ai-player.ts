@@ -1,12 +1,19 @@
 // ============================================================
-// AI Player — Decision-making for computer opponents
+// AI Player - Decision-making for computer opponents
 // ============================================================
 
 import { GameState, Tile, GameAction, Player, Difficulty } from '../engine/types';
-import { getValidActions, canPung, canKong, canQuint } from '../engine/actions';
+import {
+  getValidActions,
+  canPung,
+  canKong,
+  canQuint,
+  findConcealedKongTiles,
+  findPungPromotion,
+} from '../engine/actions';
 import { checkWin, evaluateHandDistance } from '../engine/scoring';
 import { getBestDiscard, evaluateHand } from './evaluator';
-import { isJoker } from '../engine/tiles';
+import { isJoker, tilesMatch } from '../engine/tiles';
 
 /**
  * Get the AI's next action for the given game state.
@@ -55,14 +62,17 @@ export function getAIAction(state: GameState, playerIndex: number): GameAction |
     return { type: 'pass', playerId: player.id };
   }
 
-  // Our turn — draw if we haven't
+  // Our turn - draw if we haven't
   if (state.currentPlayerIndex === playerIndex) {
     if (!state.hasDrawn) {
       return { type: 'draw', playerId: player.id };
     }
 
-    // Self-kong when available (helps quint/kong hands)
-    if (validActions.includes('kong')) {
+    // Self-kong only when it actually advances our best card hand.
+    // A kong is a real commitment in American Mahjong: it locks 4 of your
+    // 14 slots into one group and exposes information to the table, so
+    // taking one reflexively is a genuine strategic mistake.
+    if (validActions.includes('kong') && shouldSelfKong(player, difficulty)) {
       return { type: 'kong', playerId: player.id };
     }
 
@@ -79,8 +89,55 @@ export function getAIAction(state: GameState, playerIndex: number): GameAction |
 }
 
 /**
+ * Should the AI declare a kong on its own turn?
+ *
+ * Simulates the exposure and keeps it only when the resulting hand is no
+ * further from a real 2026 card hand than it is now. Easy bots stay naive
+ * (they kong whenever they can) so that beginners see the mechanic often.
+ */
+function shouldSelfKong(player: Player, difficulty: Difficulty): boolean {
+  if (difficulty === 'easy') return true;
+
+  const before = evaluateHandDistance(player)[0]?.distance ?? 99;
+
+  // Promoting an existing exposed pung is nearly free - it doesn't reveal a
+  // new group, it just adds the 4th tile to one already on the table.
+  const promotion = findPungPromotion(player);
+  if (promotion) {
+    const ids = new Set(promotion.tilesFromHand.map(t => t.id));
+    const after: Player = {
+      ...player,
+      hand: player.hand.filter(t => !ids.has(t.id)),
+      exposedSets: player.exposedSets.map((s, i) =>
+        i === promotion.setIndex
+          ? { ...s, tiles: [...s.tiles, ...promotion.tilesFromHand], setType: 'kong' as const }
+          : s,
+      ),
+    };
+    const dist = evaluateHandDistance(after)[0]?.distance ?? 99;
+    return dist <= before;
+  }
+
+  const concealed = findConcealedKongTiles(player);
+  if (!concealed) return false;
+
+  // Exposing a concealed kong forfeits every concealed ("C") hand on the
+  // card, so only do it when it strictly helps.
+  const ids = new Set(concealed.map(t => t.id));
+  const after: Player = {
+    ...player,
+    hand: player.hand.filter(t => !ids.has(t.id)),
+    exposedSets: [...player.exposedSets, { tiles: concealed, setType: 'kong' as const }],
+  };
+  const dist = evaluateHandDistance(after)[0]?.distance ?? 99;
+
+  // Hard bots demand a strict improvement; medium accepts a lateral move.
+  return difficulty === 'hard' ? dist < before : dist <= before;
+}
+
+/**
  * Evaluate whether to claim a discarded tile.
- * Prefer claims that improve distance to a card hand — don't auto-grab every quint.
+ * Prefer claims that improve distance to a card hand - don't auto-grab every quint.
  */
 function evaluateClaim(
   state: GameState,
@@ -97,7 +154,7 @@ function evaluateClaim(
   const simulate = (type: 'quint' | 'kong' | 'pung'): number | null => {
     const setSize = type === 'pung' ? 3 : type === 'kong' ? 4 : 5;
     const matching = player.hand.filter(
-      t => !isJoker(t) && JSON.stringify(t.kind) === JSON.stringify(discard.kind),
+      t => !isJoker(t) && tilesMatch(t.kind, discard.kind),
     );
     const jokers = player.hand.filter(t => isJoker(t));
     const need = setSize - 1;
@@ -151,7 +208,7 @@ function evaluateClaim(
   // Fallback: natural copies already valued in hand
   const handEvals = evaluateHand(player);
   const discardRelevance = handEvals
-    .filter(e => !isJoker(e.tile) && JSON.stringify(e.tile.kind) === JSON.stringify(discard.kind))
+    .filter(e => !isJoker(e.tile) && tilesMatch(e.tile.kind, discard.kind))
     .reduce((sum, e) => sum + e.usefulness, 0);
   const avgUsefulness =
     handEvals.reduce((sum, e) => sum + e.usefulness, 0) / Math.max(handEvals.length, 1);

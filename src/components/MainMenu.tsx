@@ -1,5 +1,5 @@
 // ============================================================
-// MainMenu — Landing screen with game setup
+// MainMenu - Landing screen with game setup
 // ============================================================
 
 import { useEffect, useRef, useState } from 'react';
@@ -216,15 +216,10 @@ export function MainMenu({
               id="multiplayer-btn"
             >
               Play with Group
-              <span className="btn-sublabel">2–4 people online</span>
+              <span className="btn-sublabel">2-4 people online</span>
             </button>
           </div>
-          <p className="menu-footnote">
-            American Mahjong is always 4 seats. New? Open How to Play, then practice with Quick Start.
-            When friends are ready, Play with Group (2–4 people; AI fills empty seats).
-          </p>
           <InstallNudge />
-          <p className="menu-refresh-hint">Pull down to hard refresh</p>
         </div>
       ) : (
         <div className="menu-card menu-card--setup">

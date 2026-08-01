@@ -1,5 +1,5 @@
 // ============================================================
-// RoundEndOverlay — scores + next round / menu + teach link
+// RoundEndOverlay - scores + next round / menu + teach link
 // ============================================================
 
 import type { GameState } from '../engine/types';

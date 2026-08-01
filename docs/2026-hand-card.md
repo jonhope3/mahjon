@@ -1,6 +1,6 @@
 # 2026 American Mahjong Hand Card
 
-Digitized from the **Mahjong Hand Tracker & Scorecard — 2026** (NMJL-style layout).  
+Digitized from the **Mahjong Hand Tracker & Scorecard - 2026** (NMJL-style layout).  
 This is the source of truth for Mahjon’s winning hands.
 
 ![2026 Hand Tracker & Scorecard](./2026-hand-card.png)
@@ -9,7 +9,7 @@ This is the source of truth for Mahjon’s winning hands.
 
 | Symbol | Meaning |
 |--------|---------|
-| **1–9** | Number tiles (Crak, Bam, Dot) |
+| **1-9** | Number tiles (Crak, Bam, Dot) |
 | **0** | Soap / White Dragon (year “zero”) |
 | **F** | Flower |
 | **N E W S** | Winds |
@@ -122,8 +122,8 @@ In this file, suit notes say “Any 1 Suit”, “Any 2 Suits”, etc.
 
 | # | Pattern | Notes | Value |
 |---|---------|-------|-------|
-| 1 | `NNNN EEE WWW SSSS` | — | X25 |
-| 2 | `NNN EEEE WWWW SSS` | — | X25 |
+| 1 | `NNNN EEE WWW SSSS` | - | X25 |
+| 2 | `NNN EEEE WWWW SSS` | - | X25 |
 | 3 | `1234 DDD DDD DDDD` | Any 4 consecutive in 1 suit; three dragon colors | X25 |
 | 4 | `NNN 1111 1111 SSS` | Any like odd numbers in any 2 suits | X25 |
 | 5 | `EEE 2222 2222 WWW` | Any like even numbers in any 2 suits | X25 |

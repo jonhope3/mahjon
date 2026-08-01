@@ -1,5 +1,5 @@
 /* ============================================================
-   Tutorial — Full-viewport shell, sticky chrome, scroll body
+   Tutorial - Full-viewport shell, sticky chrome, scroll body
    ============================================================ */
 
 .tutorial-screen {
@@ -161,7 +161,7 @@
   margin: var(--space-sm) 0 var(--space-md);
 }
 
-/* Horizontal swipe row for full suit (9 tiles) — never overflows page width */
+/* Horizontal swipe row for full suit (9 tiles) - never overflows page width */
 .tutorial-tiles-scroll {
   display: flex;
   flex-wrap: nowrap;
@@ -296,12 +296,11 @@
   }
 
   .hand-card-legend {
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
+    gap: 4px;
   }
 }
 
-/* Short landscape phones — keep footer usable */
+/* Short landscape phones - keep footer usable */
 @media (orientation: landscape) and (max-height: 500px) {
   .tutorial-header {
     padding: 6px 12px;

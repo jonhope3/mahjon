@@ -1,5 +1,5 @@
 // ============================================================
-// Teaching helpers — turn coaching + gentle hand progress
+// Teaching helpers - turn coaching + gentle hand progress
 // ============================================================
 
 import type { ActionType, GameState, Player } from './engine/types';
@@ -28,7 +28,7 @@ export function turnHint(
     const claims = validActions.filter(a =>
       ['pung', 'kong', 'quint', 'mahjong'].includes(a),
     );
-    if (claims.length === 0) return 'Nothing to claim — tap Pass to continue.';
+    if (claims.length === 0) return 'Nothing to claim - tap Pass to continue.';
     const labels = claims.map(a =>
       a === 'mahjong' ? 'Mahjong' : a[0]!.toUpperCase() + a.slice(1),
     );
@@ -43,11 +43,11 @@ export function turnHint(
 
   // After Charleston, East (dealer) already has 14 and discards first
   if (!state.hasDrawn && validActions.includes('discard') && !validActions.includes('draw')) {
-    return 'You are East — discard one tile to start (no draw this turn).';
+    return 'You are East - discard one tile to start (no draw this turn).';
   }
 
   if (validActions.includes('draw') && !state.hasDrawn) {
-    return 'Your turn — Draw a tile.';
+    return 'Your turn - Draw a tile.';
   }
 
   if (validActions.includes('discard')) {
@@ -58,7 +58,7 @@ export function turnHint(
   return null;
 }
 
-/** Gentle closest-hand line for Coach mode — never spoils a ready win. */
+/** Gentle closest-hand line for Coach mode - never spoils a ready win. */
 export function handProgressHint(player: Player): string | null {
   try {
     const ranked = evaluateHandDistance(player);

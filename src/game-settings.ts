@@ -22,10 +22,10 @@ export const SPEED_LABEL: Record<GameSpeed, string> = {
 };
 
 export const SPEED_HINT: Record<GameSpeed, string> = {
-  slow: 'Relaxed AI turns — good for learning',
+  slow: 'Relaxed AI turns - good for learning',
   normal: 'Balanced pace',
   fast: 'Snappy AI turns',
-  instant: 'Nearly instant AI — for testing',
+  instant: 'Nearly instant AI - for testing',
 };
 
 export const TEACH_LABEL: Record<TeachMode, string> = {
@@ -35,7 +35,7 @@ export const TEACH_LABEL: Record<TeachMode, string> = {
 };
 
 export const TEACH_HINT: Record<TeachMode, string> = {
-  expert: 'Full table feel — no coaches. Stricter norms still apply (no Charleston jokers, real courtesy).',
+  expert: 'Full table feel - no coaches. Stricter norms still apply (no Charleston jokers, real courtesy).',
   guided: 'Turn tips and one-time coaches (recommended for learning)',
   coach: 'Guided plus gentle “closest hands” hints',
 };
@@ -47,8 +47,8 @@ export const DIFFICULTY_LABEL: Record<Difficulty, string> = {
 };
 
 export const DIFFICULTY_HINT: Record<Difficulty, string> = {
-  easy: 'Forgiving claims & discards — best while learning',
-  medium: 'Solid table play — default for Quick Start',
+  easy: 'Forgiving claims & discards - best while learning',
+  medium: 'Solid table play - default for Quick Start',
   hard: 'Sharper claims and tighter discards',
 };
 
@@ -57,11 +57,25 @@ export interface BotPref {
   difficulty: Difficulty;
 }
 
+/**
+ * Optional casual-table scoring. Both default OFF so scores match a real
+ * printed 2026 NMJL card - neither bonus appears on the physical card.
+ */
+export interface HouseRulePrefs {
+  /** +2 when you win on a tile you drew yourself. */
+  selfDrawnBonus: boolean;
+  /** +10 when your winning hand used no jokers. */
+  jokerlessBonus: boolean;
+}
+
 export interface AppPrefs {
   humanName: string;
   bots: [BotPref, BotPref, BotPref];
   speed: GameSpeed;
   teachMode: TeachMode;
+  houseRules: HouseRulePrefs;
+  /** Vibration cues for turn / claim / win. Phones and tablets only. */
+  haptics: boolean;
 }
 
 export const DEFAULT_PREFS: AppPrefs = {
@@ -73,6 +87,9 @@ export const DEFAULT_PREFS: AppPrefs = {
   ],
   speed: 'normal',
   teachMode: 'guided',
+  // Card-accurate by default.
+  houseRules: { selfDrawnBonus: false, jokerlessBonus: false },
+  haptics: true,
 };
 
 const PREFS_KEY = 'mahjon-prefs';
@@ -110,6 +127,11 @@ export function loadPrefs(): AppPrefs {
         }) as AppPrefs['bots'],
         speed: isSpeed(parsed.speed) ? parsed.speed : DEFAULT_PREFS.speed,
         teachMode: isTeachMode(parsed.teachMode) ? parsed.teachMode : DEFAULT_PREFS.teachMode,
+        houseRules: {
+          selfDrawnBonus: parsed.houseRules?.selfDrawnBonus === true,
+          jokerlessBonus: parsed.houseRules?.jokerlessBonus === true,
+        },
+        haptics: parsed.haptics !== false,
       };
     }
   } catch {
@@ -118,9 +140,18 @@ export function loadPrefs(): AppPrefs {
 
   const legacy = localStorage.getItem('mahjon-speed');
   if (isSpeed(legacy)) {
-    return { ...DEFAULT_PREFS, speed: legacy, bots: [...DEFAULT_PREFS.bots] as AppPrefs['bots'] };
+    return {
+      ...DEFAULT_PREFS,
+      speed: legacy,
+      bots: [...DEFAULT_PREFS.bots] as AppPrefs['bots'],
+      houseRules: { ...DEFAULT_PREFS.houseRules },
+    };
   }
-  return { ...DEFAULT_PREFS, bots: [...DEFAULT_PREFS.bots] as AppPrefs['bots'] };
+  return {
+    ...DEFAULT_PREFS,
+    bots: [...DEFAULT_PREFS.bots] as AppPrefs['bots'],
+    houseRules: { ...DEFAULT_PREFS.houseRules },
+  };
 }
 
 export function savePrefs(prefs: AppPrefs): void {
@@ -135,6 +166,7 @@ export function clearPrefs(): AppPrefs {
   return {
     ...DEFAULT_PREFS,
     bots: DEFAULT_PREFS.bots.map(b => ({ ...b })) as AppPrefs['bots'],
+    houseRules: { ...DEFAULT_PREFS.houseRules },
   };
 }
 
@@ -201,7 +233,7 @@ function forceFreshNavigate(extraParams?: Record<string, string>): void {
     return;
   }
 
-  // Same URL — true reload, no query-string "new page" hop
+  // Same URL - true reload, no query-string "new page" hop
   window.location.reload();
 }
 

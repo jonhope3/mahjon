@@ -1,5 +1,5 @@
 // ============================================================
-// useAIGameLoop — timed AI claims / turns (host or single-player)
+// useAIGameLoop - timed AI claims / turns (host or single-player)
 // ============================================================
 
 import { useEffect, useRef, type Dispatch, type SetStateAction } from 'react';

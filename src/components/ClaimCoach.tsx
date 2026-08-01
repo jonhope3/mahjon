@@ -1,5 +1,5 @@
 // ============================================================
-// ClaimCoach — teach the claim window in place
+// ClaimCoach - teach the claim window in place
 // ============================================================
 
 import type { ActionType, Tile } from '../engine/types';
@@ -35,7 +35,15 @@ export function ClaimCoach({
         : 'What’s a Pung / Kong?';
 
   return (
-    <div className={`claim-coach${variant === 'desktop' ? ' claim-coach--desktop' : ''}`}>
+    <div
+      className={`claim-coach${variant === 'desktop' ? ' claim-coach--desktop' : ''}`}
+      // The claim window is time-sensitive: screen-reader users need to be
+      // told a tile was discarded and what they can call, without having to
+      // go looking for it.
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    >
       <TileComponent tile={discard} size="normal" isLastDiscard />
       <div className="claim-coach-copy">
         <strong>
@@ -44,7 +52,7 @@ export function ClaimCoach({
         <p>
           {can
             ? `Claim ${discard.label} with ${list}, or Pass.`
-            : `Nothing to claim on ${discard.label} — Pass to continue.`}
+            : `Nothing to claim on ${discard.label} - Pass to continue.`}
         </p>
         <button type="button" className="claim-coach-help" onClick={onHelp}>
           {helpLabel}

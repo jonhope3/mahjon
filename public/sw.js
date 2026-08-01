@@ -1,18 +1,25 @@
-const CACHE_NAME = 'mahjon-cache-v40';
+const CACHE_NAME = 'mahjon-cache-v42';
 
 
 const PRECACHE_ASSETS = [
   './',
   './index.html',
   './favicon.svg',
-  './manifest.json'
+  './manifest.json',
+  // Self-hosted fonts - precached so a cold offline launch (airplane mode)
+  // renders with the real typefaces instead of a fallback + layout shift.
+  './fonts/fonts.css',
+  './fonts/fraunces-500-latin.woff2',
+  './fonts/fraunces-500-latin-ext.woff2',
+  './fonts/nunito-400-latin.woff2',
+  './fonts/nunito-400-latin-ext.woff2'
 ];
 
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(PRECACHE_ASSETS))
-      // Do not skipWaiting here — stay "waiting" so the in-app banner can prompt reload
+      // Do not skipWaiting here - stay "waiting" so the in-app banner can prompt reload
   );
 });
 

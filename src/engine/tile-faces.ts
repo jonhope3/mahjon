@@ -1,5 +1,5 @@
 // ============================================================
-// Tile face icons — one clear look per category (+ rank number)
+// Tile face icons - one clear look per category (+ rank number)
 // ============================================================
 
 import type { Dragon, Suit, Wind } from './types';
@@ -14,7 +14,7 @@ export const SUIT_FACES: Record<Suit, { icon: string; name: string; cls: string 
   dot: { icon: '🫧', name: 'Dot', cls: 'dot' },
 };
 
-/** Winds — four directions, four icons */
+/** Winds - four directions, four icons */
 export const WIND_FACES: Record<Wind, { icon: string; label: string }> = {
   east: { icon: '🌅', label: 'EAST' },
   south: { icon: '☀️', label: 'SOUTH' },
@@ -22,7 +22,7 @@ export const WIND_FACES: Record<Wind, { icon: string; label: string }> = {
   north: { icon: '❄️', label: 'NORTH' },
 };
 
-/** Dragons — three kinds (icons ocean-themed; labels match the card) */
+/** Dragons - three kinds (icons ocean-themed; labels match the card) */
 export const DRAGON_FACES: Record<Dragon, { icon: string; label: string; cls: string }> = {
   red: { icon: '🪸', label: 'Red', cls: 'dragon-red' },
   green: { icon: '🌊', label: 'Green', cls: 'dragon-green' },
@@ -57,17 +57,17 @@ export function suitPairIcon(suit: Suit): string {
   return DRAGON_FACES[SUIT_MATCHING_DRAGON[suit]].icon;
 }
 
-/** Flower — card letter F (icon stays ocean anemone) */
+/** Flower - card letter F (icon stays ocean anemone) */
 export const FLOWER_FACE = { icon: '🌺', label: 'Flower' } as const;
 
-/** Joker — all eight copies look the same */
+/** Joker - all eight copies look the same */
 export const JOKER_FACE = { icon: '🪼', label: 'Joker' } as const;
 
 export function suitFace(suit: Suit): { icon: string; name: string; cls: string } {
   return SUIT_FACES[suit];
 }
 
-/** Category icons only (suited share one each) — must stay unique across types */
+/** Category icons only (suited share one each) - must stay unique across types */
 export function allCategoryIcons(): string[] {
   return [
     ...Object.values(SUIT_FACES).map(f => f.icon),

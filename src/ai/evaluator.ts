@@ -1,5 +1,5 @@
 // ============================================================
-// AI Hand Evaluator — Heuristic tile scoring
+// AI Hand Evaluator - Heuristic tile scoring
 // ============================================================
 
 import { Tile, Player, HandPattern } from '../engine/types';

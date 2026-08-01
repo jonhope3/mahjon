@@ -1,5 +1,5 @@
 /* ============================================================
-   Tile Styles — large, readable, ocean theme
+   Tile Styles - large, readable, ocean theme
    ============================================================ */
 
 .tile {
@@ -109,7 +109,7 @@
 }
 
 /*
-  Pair badge — corner cue linking dragon ↔ matching suit
+  Pair badge - corner cue linking dragon ↔ matching suit
   (Red↔Crak, Green↔Bam, Soap↔Dot)
 */
 .tile-pair-badge {
@@ -268,7 +268,7 @@
   margin-top: 0;
 }
 
-/* Identity tip — portaled to body; must sit above claim bars / Charleston / modals */
+/* Identity tip - portaled to body; must sit above claim bars / Charleston / modals */
 .tile-identity-tip {
   z-index: var(--z-tip);
   min-width: max-content;
@@ -391,7 +391,7 @@
   }
 }
 
-/* ---- Player hand: LARGE tiles, scroll sideways — never crush ---- */
+/* ---- Player hand: LARGE tiles, scroll sideways - never crush ---- */
 .mobile-player-hand,
 .player-hand,
 .charleston-hand-row {
@@ -416,7 +416,7 @@
 }
 
 /*
-  Hand tile width — derived from published CSS viewports (not DevTools emulation).
+  Hand tile width - derived from published CSS viewports (not DevTools emulation).
 
   Sources: Apple points (ios-resolution / useyourloaf), Pixel 10 Pro = 1280÷3.125 → 410,
   screensizechecker Android/iPhone charts (2026).
@@ -430,7 +430,7 @@
       iPhone 14 Pro Max 430×932 safe 59/34  → fit14=22.9  → floor 48
     14×48 + 13×6 = 750px row; every phone scrolls. Never crush below 48.
 
-  Tablet table (≥700): iPad mini 744 … Pro 13" 1032 — prefer fit up to --tile-hand-w.
+  Tablet table (≥700): iPad mini 744 … Pro 13" 1032 - prefer fit up to --tile-hand-w.
 */
 .mobile-player-hand .tile,
 .charleston-hand-row .tile,
@@ -496,7 +496,7 @@
     0 0 0 1.5px rgba(255, 183, 77, 0.45);
 }
 
-/* Guide: tile chosen — discard is next */
+/* Guide: tile chosen - discard is next */
 .game-board.discard-ready .mobile-player-hand .tile.selected,
 .game-board.discard-ready .player-hand .tile.selected {
   box-shadow:
@@ -536,7 +536,7 @@
   z-index: 1;
 }
 
-/* ≤400 covers iPhone 14 / 14 Pro (390–393); keep preferred cap near floor */
+/* ≤400 covers iPhone 14 / 14 Pro (390-393); keep preferred cap near floor */
 @media (max-width: 400px) {
   :root {
     --tile-hand-w: 52px;

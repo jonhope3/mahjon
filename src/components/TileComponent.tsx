@@ -1,5 +1,5 @@
 // ============================================================
-// TileComponent — Renders a single mahjong tile (sea theme)
+// TileComponent - Renders a single mahjong tile (sea theme)
 // ============================================================
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -256,6 +256,13 @@ export function TileComponent({
     }, LONG_PRESS_MS);
   };
 
+  const handlePointerMove = (e: React.PointerEvent) => {
+    // Sliding a tile to rearrange should cancel identify-on-hold.
+    // (iOS often reports movementX/Y as 0, so any touch move clears.)
+    if (e.pointerType === 'mouse') return;
+    clearLongPress();
+  };
+
   const handlePointerUp = () => {
     clearLongPress();
   };
@@ -288,6 +295,7 @@ export function TileComponent({
         onPointerEnter={handlePointerEnter}
         onPointerLeave={handlePointerLeave}
         onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
         onKeyDown={

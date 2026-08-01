@@ -1,5 +1,5 @@
 // ============================================================
-// Network Protocol — Message types for WebRTC communication
+// Network Protocol - Message types for WebRTC communication
 // ============================================================
 
 import { GameState, GameAction, PlayerType, Difficulty, Tile } from '../engine/types';

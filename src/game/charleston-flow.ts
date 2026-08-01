@@ -1,5 +1,5 @@
 // ============================================================
-// charleston-flow — assemble AI + human picks, run one pass
+// charleston-flow - assemble AI + human picks, run one pass
 // ============================================================
 
 import type { GameState, Tile } from '../engine/types';
@@ -19,7 +19,7 @@ function assertNoJokers(tiles: Tile[]): boolean {
 /**
  * Build tile selections for every seat (AI fills its own).
  * First/second Charleston: exactly 3 non-joker tiles each.
- * Courtesy: 0–3 non-joker tiles; opposite seats pass the smaller count.
+ * Courtesy: 0-3 non-joker tiles; opposite seats pass the smaller count.
  */
 export function resolveCharlestonSelections(
   state: GameState,
@@ -33,7 +33,7 @@ export function resolveCharlestonSelections(
     const p = state.players[i]!;
     if (p.type === 'ai') {
       const n = courtesy ? Math.min(3, getAICharlestonTiles(p, 3).length) : 3;
-      // Courtesy AI: often pass 1–3 weak tiles (never jokers)
+      // Courtesy AI: often pass 1-3 weak tiles (never jokers)
       const aiCount = courtesy ? (Math.random() < 0.15 ? 0 : n >= 2 ? 2 : n) : 3;
       const tiles = getAICharlestonTiles(p, courtesy ? aiCount : 3);
       if (!assertNoJokers(tiles)) return null;

@@ -1,5 +1,5 @@
 // ============================================================
-// Peer transport — full override of PeerJS / WebRTC defaults
+// Peer transport - full override of PeerJS / WebRTC defaults
 // ============================================================
 // PeerJS cloud + default ICE pooling is unreliable on phones /
 // guest Wi‑Fi. We never use Peer’s implicit config: explicit
@@ -7,7 +7,7 @@
 
 import type { PeerJSOption } from 'peerjs';
 
-/** Dual urls+url — PeerJS historically reads `url` for TURN. */
+/** Dual urls+url - PeerJS historically reads `url` for TURN. */
 type IceServer = {
   urls: string | string[];
   url?: string | string[];
@@ -54,7 +54,7 @@ export function hostPeerId(roomCode: string): string {
 }
 
 /**
- * Complete PeerJS options — do not merge with library defaults for ICE.
+ * Complete PeerJS options - do not merge with library defaults for ICE.
  * iceCandidatePoolSize: 0 disables browser ICE candidate pooling.
  */
 export function buildPeerOptions(): PeerJSOption {

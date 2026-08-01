@@ -11,7 +11,7 @@
 // color; when next to a suited group they follow suit color
 // (red↔crak, green↔bam, white↔dot).
 
-import { Tile, Player, HandPattern, Suit, Dragon, PatternGroup, ExposedSet } from './types';
+import { Tile, Player, HandPattern, Suit, Dragon, PatternGroup, ExposedSet, ScoringRules } from './types';
 import { ALL_HANDS } from './hands';
 import { isJoker } from './tiles';
 
@@ -66,7 +66,7 @@ function matchesPlayerToPattern(player: Player, pattern: HandPattern): boolean {
   return false;
 }
 
-/** Add `shift` to every suited rank; return null if any rank leaves 1–9. */
+/** Add `shift` to every suited rank; return null if any rank leaves 1-9. */
 function shiftPatternRanks(pattern: HandPattern, shift: number): HandPattern | null {
   if (shift === 0) return pattern;
   const groups: PatternGroup[] = [];
@@ -210,7 +210,7 @@ function exposedSetFitsGroup(
 
   // Every natural must fit; jokers fill the rest (only legal in 3+ groups)
   if (naturals.length === 0) {
-    // All-joker exposure: only legal for 3+ wild groups — allow
+    // All-joker exposure: only legal for 3+ wild groups - allow
     return group.count >= 3;
   }
 
@@ -337,20 +337,77 @@ function tryMatchConcealed(
 }
 
 /**
- * Calculate the score for a winning hand.
- * In American Mahjong, score = base value.
- * Extra points for: self-drawn win, no jokers, etc.
+ * House-rule scoring toggles.
+ *
+ * IMPORTANT: Official NMJL scoring is simply the printed value of the hand
+ * you matched (X25 / C30 / X50 / C75 …). Neither of the bonuses below is on
+ * the real card:
+ *
+ *  - `selfDrawnBonus` is a Chinese/Riichi scoring convention, not American.
+ *  - `jokerlessBonus` is a common *house* rule at casual tables, but it is
+ *    not printed on the NMJL card.
+ *
+ * Both default to OFF so that scores match a physical 2026 card exactly.
+ * Players who want the friendlier casual scoring can opt in from Settings.
  */
-export function calculateScore(pattern: HandPattern, selfDrawn: boolean, jokerCount: number): number {
-  let score = pattern.value;
-  if (selfDrawn) score += 2;
-  if (jokerCount === 0) score += 10; // jokerless bonus
-  return score;
+export type { ScoringRules } from './types';
+
+/** Card-accurate NMJL scoring: printed hand value only. */
+export const OFFICIAL_SCORING: ScoringRules = {
+  selfDrawnBonus: false,
+  jokerlessBonus: false,
+};
+
+export const SELF_DRAWN_BONUS = 2;
+export const JOKERLESS_BONUS = 10;
+
+/** Itemized breakdown so the UI can show players exactly where points came from. */
+export interface ScoreBreakdown {
+  /** Printed value of the matched hand from the card. */
+  base: number;
+  /** House-rule additions, each labeled for display. */
+  bonuses: { label: string; points: number }[];
+  total: number;
+}
+
+/**
+ * Calculate the score for a winning hand.
+ *
+ * With the default {@link OFFICIAL_SCORING} rules this returns exactly the
+ * hand's printed card value, matching what a player would score at a real table.
+ */
+export function scoreHand(
+  pattern: HandPattern,
+  selfDrawn: boolean,
+  jokerCount: number,
+  rules: ScoringRules = OFFICIAL_SCORING,
+): ScoreBreakdown {
+  const bonuses: { label: string; points: number }[] = [];
+
+  if (rules.selfDrawnBonus && selfDrawn) {
+    bonuses.push({ label: 'Self-drawn (house rule)', points: SELF_DRAWN_BONUS });
+  }
+  if (rules.jokerlessBonus && jokerCount === 0) {
+    bonuses.push({ label: 'Jokerless (house rule)', points: JOKERLESS_BONUS });
+  }
+
+  const total = pattern.value + bonuses.reduce((n, b) => n + b.points, 0);
+  return { base: pattern.value, bonuses, total };
+}
+
+/** Convenience wrapper returning just the total. */
+export function calculateScore(
+  pattern: HandPattern,
+  selfDrawn: boolean,
+  jokerCount: number,
+  rules: ScoringRules = OFFICIAL_SCORING,
+): number {
+  return scoreHand(pattern, selfDrawn, jokerCount, rules).total;
 }
 
 /**
  * How close a player is to each card hand (for AI + gentle coaching).
- * Distance 0 means the matcher thinks the hand is complete — callers
+ * Distance 0 means the matcher thinks the hand is complete - callers
  * that coach humans should not spoil that as "you can win."
  */
 export function evaluateHandDistance(player: Player): { pattern: HandPattern; distance: number }[] {

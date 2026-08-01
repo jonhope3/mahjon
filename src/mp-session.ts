@@ -1,5 +1,5 @@
 // ============================================================
-// mp-session — remember the last family table for easy rejoin
+// mp-session - remember the last family table for easy rejoin
 // ============================================================
 
 const KEY = 'mahjon-mp-last-table';
@@ -28,7 +28,7 @@ export function loadMpLastTable(): MpLastTable | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as MpLastTable;
     if (!parsed?.roomCode || !parsed?.seatKey) return null;
-    // Keep for a week — family games often pause overnight
+    // Keep for a week - family games often pause overnight
     if (Date.now() - (parsed.savedAt || 0) > 7 * 24 * 60 * 60 * 1000) {
       localStorage.removeItem(KEY);
       return null;
@@ -62,7 +62,7 @@ export type InviteKind = 'table' | 'resume';
 
 /**
  * Build a deep link.
- * - table:  ?room=CODE          (for inviting other people — never include seat)
+ * - table:  ?room=CODE          (for inviting other people - never include seat)
  * - resume: ?room=CODE&seat=KEY (for reclaiming YOUR seat after a drop)
  */
 export function inviteUrl(roomCode: string, kind: InviteKind = 'table', seatKey?: string): string {
@@ -74,7 +74,7 @@ export function inviteUrl(roomCode: string, kind: InviteKind = 'table', seatKey?
   return url.toString();
 }
 
-/** Friendly share / copy text for texting the group (room only — no seat key). */
+/** Friendly share / copy text for texting the group (room only - no seat key). */
 export function buildInviteMessage(roomCode: string, playerName?: string): string {
   const who = playerName?.trim() ? `${playerName.trim()} is` : 'We are';
   const link = inviteUrl(roomCode, 'table');
@@ -82,11 +82,11 @@ export function buildInviteMessage(roomCode: string, playerName?: string): strin
     `${who} hosting Mahjon (American Mahjong).`,
     `Join here: ${link}`,
     `Or open the app → Play with Group → Join with code: ${roomCode}`,
-    `(2–4 people. Same Wi‑Fi or internet is fine — no accounts needed.)`,
+    `(2-4 people. Same Wi‑Fi or internet is fine - no accounts needed.)`,
   ].join('\n');
 }
 
-/** Personal rejoin link — includes your seat key. Don’t send this as the group invite. */
+/** Personal rejoin link - includes your seat key. Don’t send this as the group invite. */
 export function buildResumeMessage(roomCode: string, seatKey: string, playerName?: string): string {
   const link = inviteUrl(roomCode, 'resume', seatKey);
   const who = playerName?.trim() || 'Your';
@@ -94,7 +94,7 @@ export function buildResumeMessage(roomCode: string, seatKey: string, playerName
     `${who} Mahjon seat backup`,
     `Room ${roomCode} · Seat ${seatKey}`,
     link,
-    `(Only for you — use this if you get disconnected.)`,
+    `(Only for you - use this if you get disconnected.)`,
   ].join('\n');
 }
 
@@ -108,7 +108,7 @@ export async function shareOrCopyInvite(
     if (typeof navigator.share === 'function') {
       // Pass url separately; keep text free of a second copy of the same link on iOS
       await navigator.share({
-        title: 'Mahjon — join our table',
+        title: 'Mahjon - join our table',
         text: `${playerName?.trim() ? `${playerName.trim()} is` : 'We are'} hosting Mahjon. Room code: ${roomCode.trim().toUpperCase()}`,
         url: link,
       });

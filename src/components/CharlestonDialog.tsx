@@ -1,5 +1,5 @@
 // ============================================================
-// CharlestonDialog — Tile-passing dialog + learning help
+// CharlestonDialog - Tile-passing dialog + learning help
 // ============================================================
 
 import { useState, useCallback, useEffect } from 'react';
@@ -28,6 +28,13 @@ interface CharlestonDialogProps {
   teachMode?: TeachMode;
   /** When true, show waiting state after you've already passed */
   waitingForOthers?: boolean;
+  /**
+   * Memory aid: what you sent and what came back on the previous pass.
+   * At a real table players hold this in their head - it's the main clue
+   * about what the seats next to you are collecting.
+   */
+  lastPassed?: Tile[];
+  lastReceived?: Tile[];
 }
 
 export function CharlestonDialog({
@@ -38,6 +45,8 @@ export function CharlestonDialog({
   onSkipRest,
   teachMode = 'guided',
   waitingForOthers = false,
+  lastPassed,
+  lastReceived,
 }: CharlestonDialogProps) {
   const [selectedTiles, setSelectedTiles] = useState<Tile[]>([]);
   const [showHelp, setShowHelp] = useState(false);
@@ -65,7 +74,7 @@ export function CharlestonDialog({
     (tile: Tile) => {
       setError(null);
       if (isJoker(tile)) {
-        setError('Jokers stay with you — you can’t pass them in Charleston.');
+        setError('Jokers stay with you - you can’t pass them in Charleston.');
         return;
       }
       setSelectedTiles(prev => {
@@ -80,7 +89,7 @@ export function CharlestonDialog({
 
   const handleConfirm = () => {
     if (selectedTiles.some(isJoker)) {
-      setError('Jokers stay with you — you can’t pass them in Charleston.');
+      setError('Jokers stay with you - you can’t pass them in Charleston.');
       return;
     }
     if (courtesy) {
@@ -130,8 +139,8 @@ export function CharlestonDialog({
             {showIntro && showTurnCoaching(teachMode) ? (
               <div className="charleston-intro">
                 <p>
-                  Pass <strong>3 tiles</strong> you don’t need — right, across, then left. Keep
-                  jokers — they never leave your hand in Charleston.
+                  Pass <strong>3 tiles</strong> you don’t need - right, across, then left. Keep
+                  jokers - they never leave your hand in Charleston.
                 </p>
                 <p className="charleston-hint">
                   Tap tiles to select them. Long-press any tile to see what it is.
@@ -142,21 +151,21 @@ export function CharlestonDialog({
                   onClick={dismissIntro}
                   id="charleston-intro-got-it"
                 >
-                  Got it — pick tiles
+                  Got it - pick tiles
                 </button>
               </div>
             ) : waitingForOthers ? (
               <p className="charleston-waiting" role="status">
-                Tiles sent — waiting for the other players
+                Tiles sent - waiting for the other players
                 <BusyDots />
               </p>
             ) : (
               <>
                 <p className="charleston-hint">
                   {courtesy
-                    ? 'Courtesy: offer 0–3 tiles across. You and the player across pass the smaller number.'
+                    ? 'Courtesy: offer 0-3 tiles across. You and the player across pass the smaller number.'
                     : round === 'second'
-                      ? 'Optional — pass 3 (no jokers), skip this pass, or skip the rest.'
+                      ? 'Optional - pass 3 (no jokers), skip this pass, or skip the rest.'
                       : 'Tap 3 tiles to pass. Jokers cannot be passed.'}
                 </p>
 
@@ -166,12 +175,38 @@ export function CharlestonDialog({
                   </p>
                 )}
 
+                {/* Memory aid - what you sent, and what came back. */}
+                {(lastPassed?.length || lastReceived?.length) && !waitingForOthers ? (
+                  <div className="charleston-recap">
+                    {lastPassed && lastPassed.length > 0 && (
+                      <div className="charleston-recap-row">
+                        <span className="charleston-recap-label">You passed</span>
+                        <div className="charleston-recap-tiles">
+                          {lastPassed.map(t => (
+                            <TileComponent key={`p-${t.id}`} tile={t} size="mini" />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {lastReceived && lastReceived.length > 0 && (
+                      <div className="charleston-recap-row">
+                        <span className="charleston-recap-label">You received</span>
+                        <div className="charleston-recap-tiles">
+                          {lastReceived.map(t => (
+                            <TileComponent key={`r-${t.id}`} tile={t} size="mini" highlighted />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+
                 <div
                   className={`charleston-selected ${isReady && selectedTiles.length > 0 ? 'ready' : ''} charleston-selected-row`}
                 >
                   {selectedTiles.length === 0 && (
                     <span className="charleston-placeholder">
-                      {courtesy ? 'Offer 0–3 tiles (or pass none)' : 'Select 3 tiles'}
+                      {courtesy ? 'Offer 0-3 tiles (or pass none)' : 'Select 3 tiles'}
                     </span>
                   )}
                   {selectedTiles.map(tile => (

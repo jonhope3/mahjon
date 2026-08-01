@@ -1,0 +1,318 @@
+/* ============================================================
+   Hand rack - drag-to-rearrange
+   ============================================================
+   Real players group tiles on the rack into the shape of their target
+   hand (FF together, 2222 together, the pair off to one side). Forced
+   auto-sorting fights that, so the rack supports manual arrangement.
+
+   Layout (flex, gap, overflow) is inherited from the existing
+   .player-hand / .mobile-player-hand containers - these rules only add
+   the drag affordances on top.
+*/
+
+.hand-rack {
+  /* Allow vertical page scroll outside slots; slots own the drag gesture. */
+  touch-action: pan-y;
+}
+
+.hand-rack-slot {
+  display: flex;
+  align-items: flex-end;
+  flex: 0 0 auto;
+  position: relative;
+  border-radius: 10px;
+  transition: transform 140ms ease, opacity 140ms ease;
+  /* Critical: without this, mobile/iPad horizontal pans steal rearrange drags. */
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Focus ring belongs on the slot (the thing you move), not the inner tile */
+.hand-rack-slot:focus-visible {
+  outline: 3px solid var(--focus-ring, #7fd4ec);
+  outline-offset: 3px;
+}
+
+/* While dragging, stop the browser scrolling/selecting under the finger */
+.hand-rack.is-dragging {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.hand-rack.is-dragging .hand-rack-slot {
+  cursor: grabbing;
+}
+
+.hand-rack-slot.is-dragged {
+  opacity: 0.42;
+  transform: translateY(-6px) scale(1.04);
+  z-index: 5;
+}
+
+/* Insertion caret marking where the tile will land */
+.hand-rack-slot.is-drop-target::before {
+  content: '';
+  position: absolute;
+  inset-block: 2px;
+  inset-inline-start: -5px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--accent-sand, #f2c98a);
+  box-shadow: 0 0 10px 2px rgba(242, 201, 138, 0.65);
+  z-index: 6;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .hand-rack-slot {
+    cursor: grab;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hand-rack-slot,
+  .hand-rack-slot.is-dragged {
+    transition: none;
+    transform: none;
+  }
+}
+
+/* ------------------------------------------------------------
+   Hand tools row - Sort button + arrangement hint
+   ------------------------------------------------------------ */
+
+.hand-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 0 6px;
+}
+
+.hand-tools .hand-tools-hint {
+  font-size: 0.72rem;
+  opacity: 0.62;
+  margin-right: auto;
+}
+
+.hand-tools .btn-sort {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  touch-action: manipulation;
+  min-height: 32px; /* comfortable thumb target */
+}
+
+.hand-tools .btn-sort:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.hand-tools .btn-sort:focus-visible {
+  outline: 3px solid var(--focus-ring, #7fd4ec);
+  outline-offset: 2px;
+}
+
+.hand-tools .btn-sort[disabled] {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Phones: keep a short rearrange hint - Sort alone wasn’t discoverable */
+@media (max-width: 699px) {
+  .hand-tools {
+    padding: 2px 4px 4px;
+    justify-content: space-between;
+  }
+
+  .hand-tools .hand-tools-hint {
+    display: block;
+    font-size: 0.68rem;
+    opacity: 0.7;
+    margin-right: 8px;
+  }
+}
+
+/* ------------------------------------------------------------
+   Confirm dialog for irreversible claims
+   ------------------------------------------------------------ */
+
+.claim-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.claim-confirm .claim-confirm-lead {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.claim-confirm .claim-confirm-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.claim-confirm .claim-confirm-warn {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  opacity: 0.82;
+}
+
+.claim-confirm .claim-confirm-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.claim-confirm .claim-confirm-actions .btn {
+  min-height: 46px; /* large tap target under time pressure */
+  padding-inline: 20px;
+}
+
+@media (max-width: 480px) {
+  .claim-confirm .claim-confirm-actions {
+    flex-direction: column-reverse;
+  }
+
+  .claim-confirm .claim-confirm-actions .btn {
+    width: 100%;
+  }
+}
+
+/* ------------------------------------------------------------
+   Charleston recap - "you passed / you received"
+   ------------------------------------------------------------
+   At a real table players track what they sent and what came back;
+   it's the main read on what neighbouring seats are collecting.
+*/
+
+.charleston-recap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.16);
+}
+
+.charleston-recap-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.charleston-recap-label {
+  flex: 0 0 auto;
+  min-width: 86px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.charleston-recap-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+@media (max-width: 480px) {
+  .charleston-recap-label {
+    min-width: 72px;
+    font-size: 0.66rem;
+  }
+}
+
+/* ------------------------------------------------------------
+   Settings toggle rows (house rules, haptics)
+   ------------------------------------------------------------ */
+
+.settings-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 4px;
+  cursor: pointer;
+  /* Comfortable target on phones */
+  min-height: 44px;
+}
+
+.settings-toggle input[type='checkbox'] {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+  accent-color: var(--accent-sand, #f2c98a);
+  cursor: pointer;
+}
+
+.settings-toggle > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.35;
+}
+
+.settings-toggle small {
+  font-size: 0.76rem;
+  opacity: 0.65;
+}
+
+.settings-toggle:focus-within {
+  outline: 2px solid var(--focus-ring, #7fd4ec);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* Large tablets - use the space available
+   ------------------------------------------------------------
+   The shared 700-1400px tablet tier sizes tiles for an iPad mini.
+   On a 12.9" iPad Pro (1024pt landscape / 1366pt) that leaves the
+   board looking like a stretched phone, so scale the tiles up.
+*/
+
+@media (min-width: 1100px) and (pointer: coarse) {
+  :root {
+    --tile-hand-w: 72px;
+    --tile-hand-h: 98px;
+    --tile-w: 64px;
+    --tile-h: 86px;
+    --tile-mini-w: 46px;
+    --tile-mini-h: 62px;
+  }
+}
+
+/* ------------------------------------------------------------
+   Keyboard key hints in help text
+   ------------------------------------------------------------ */
+
+.help-panel-body kbd {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 1px 6px;
+  margin: 0 1px;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-bottom-width: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.82em;
+  line-height: 1.5;
+  text-align: center;
+  white-space: nowrap;
+}

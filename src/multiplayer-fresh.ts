@@ -1,5 +1,5 @@
 // ============================================================
-// Multiplayer freshness — same build before anyone hosts/joins
+// Multiplayer freshness - same build before anyone hosts/joins
 // ============================================================
 
 import { APP_VERSION } from './app-version';

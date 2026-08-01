@@ -1,9 +1,9 @@
 // ============================================================
-// App — screens, game state, multiplayer glue
+// App - screens, game state, multiplayer glue
 // ============================================================
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { GameState, Tile, ActionType } from './engine/types';
+import { GameState, Tile, ActionType, GamePhase } from './engine/types';
 import { GameConfig, createGame, dealTiles, processAction, startNextRound, skipCharleston, advanceCharlestonWithoutPass } from './engine/game';
 import { getCharlestonRound } from './engine/charleston';
 import {
@@ -23,6 +23,8 @@ import { PeerManager } from './network/peer-manager';
 import { serializeAction } from './network/protocol';
 import { AppPrefs, loadPrefs, prefsToGamePlayers, savePrefs } from './game-settings';
 import { useAIGameLoop } from './hooks/useAIGameLoop';
+import { useWakeLock } from './hooks/useWakeLock';
+import { setHapticsEnabled } from './haptics';
 import {
   clearMultiplayerLobbyIntent,
   ensureFreshForMultiplayer,
@@ -35,6 +37,7 @@ import './styles/index.css';
 import './styles/menu.css';
 import './styles/game.css';
 import './styles/tiles.css';
+import './styles/hand-rack.css';
 
 type Screen = 'menu' | 'connecting' | 'playing' | 'lobby' | 'tutorial';
 
@@ -54,6 +57,13 @@ export default function App() {
   const [humanPlayerIndex, setHumanPlayerIndex] = useState(0);
   const [peerManager, setPeerManager] = useState<PeerManager | null>(null);
   const [prefs, setPrefs] = useState<AppPrefs>(() => loadPrefs());
+  // Read prefs from callbacks without adding them to every dependency array.
+  const prefsRef = useRef(prefs);
+  useEffect(() => {
+    prefsRef.current = prefs;
+    // Keep the haptics module in sync with the Settings toggle.
+    setHapticsEnabled(prefs.haptics);
+  }, [prefs]);
   const [showSettings, setShowSettings] = useState(false);
   const [charlestonWaiting, setCharlestonWaiting] = useState(false);
 
@@ -64,6 +74,16 @@ export default function App() {
   const peerManagerRef = useRef(peerManager);
   peerManagerRef.current = peerManager;
   const charlestonSelectionsRef = useRef(new Map<number, number[]>());
+  /**
+   * What the human passed on the previous Charleston step, plus the hand
+   * they held at the time - used to show "you passed / you received", which
+   * is information a player would naturally hold in their head at a table.
+   */
+  const charlestonMemoryRef = useRef<{
+    phase: GamePhase;
+    passed: Tile[];
+    handBefore: number[];
+  } | null>(null);
   const disconnectGraceRef = useRef(new Map<number, ReturnType<typeof setTimeout>>());
 
   // Family tables: give people time to unlock a phone / switch Wi‑Fi before AI takes over
@@ -148,7 +168,7 @@ export default function App() {
                   timestamp: Date.now(),
                   playerId: 'system',
                   action: 'pass' as const,
-                  message: `${seat.name} disconnected — AI is playing their seat until they rejoin.`,
+                  message: `${seat.name} disconnected - AI is playing their seat until they rejoin.`,
                 },
               ],
             };
@@ -169,7 +189,7 @@ export default function App() {
                 timestamp: Date.now(),
                 playerId: 'system',
                 action: 'pass' as const,
-                message: `${seat.name} lost connection — waiting briefly before AI takes over…`,
+                message: `${seat.name} lost connection - waiting briefly before AI takes over…`,
               },
             ],
           };
@@ -210,7 +230,7 @@ export default function App() {
             current.lastDiscard?.id === serializableAction.targetTileId
               ? current.lastDiscard
               : undefined;
-          // Authenticated seat — ignore client-supplied playerId
+          // Authenticated seat - ignore client-supplied playerId
           const newState = processAction(current, {
             type: serializableAction.type,
             playerId: seatPlayer.id,
@@ -280,7 +300,11 @@ export default function App() {
   }, [handlePlayMultiplayer]);
 
   const handleStartGame = useCallback((config: GameConfig) => {
-    const dealt = dealTiles(createGame(config));
+    // House-rule scoring lives on GameState so the host's choice syncs to
+    // every client in a multiplayer table.
+    const dealt = dealTiles(
+      createGame({ scoringRules: prefsRef.current.houseRules, ...config }),
+    );
     const pm = peerManagerRef.current;
     if (pm?.roomCode && pm.resumeKey) {
       const seatName =
@@ -339,6 +363,15 @@ export default function App() {
     const state = gameStateRef.current;
     if (!state) return;
     const humanIdx = humanPlayerIndexRef.current;
+
+    // Remember what we just passed. Tracking what you sent and what came
+    // back is real strategic information at the table - it's the main clue
+    // about what the seats either side of you are collecting.
+    charlestonMemoryRef.current = {
+      phase: state.phase,
+      passed: tiles,
+      handBefore: state.players[humanIdx]!.hand.map(t => t.id),
+    };
 
     if (peerManager) {
       if (peerManager.isHost) {
@@ -446,6 +479,26 @@ export default function App() {
 
   const inGame = screen === 'playing' && !!gameState;
 
+  // Derive "what came back" by diffing the current hand against the hand we
+  // held when we passed. Only meaningful once the phase has actually moved on.
+  const charlestonRecap = (() => {
+    const memory = charlestonMemoryRef.current;
+    if (!gameState || !memory) return null;
+    if (memory.phase === gameState.phase) return null; // pass not resolved yet
+    const before = new Set(memory.handBefore);
+    const received = gameState.players[humanPlayerIndex]!.hand.filter(
+      t => !before.has(t.id),
+    );
+    if (received.length === 0) return null;
+    return { passed: memory.passed, received };
+  })();
+
+  // Keep the screen awake at the table. Without this the phone/iPad dims
+  // while you watch AI turns or wait on other players - and tapping to wake
+  // is a constant annoyance in the couch/airplane use case this app targets.
+  // Also held in the lobby, where players can be waiting for a while.
+  useWakeLock(inGame || screen === 'lobby');
+
   return (
     <>
       <UpdateBanner inGame={inGame} />
@@ -516,6 +569,8 @@ export default function App() {
               onConfirm={handleCharlestonConfirm}
               teachMode={prefs.teachMode}
               waitingForOthers={charlestonWaiting}
+              lastPassed={charlestonRecap?.passed}
+              lastReceived={charlestonRecap?.received}
               onSkip={
                 getCharlestonRound(gameState.phase) !== 'first'
                   ? handleSkipPass

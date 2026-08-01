@@ -1,5 +1,5 @@
 // ============================================================
-// LobbyScreen — family-friendly multiplayer lobby
+// LobbyScreen - family-friendly multiplayer lobby
 // ============================================================
 
 import { useState, useEffect, useCallback } from 'react';
@@ -121,7 +121,7 @@ export function LobbyScreen({
       setMode('join');
     } catch (err) {
       setMode('choose');
-      setError(err instanceof Error ? err.message : 'Could not join — check the code and try again.');
+      setError(err instanceof Error ? err.message : 'Could not join - check the code and try again.');
     } finally {
       setBusy(false);
     }
@@ -218,7 +218,7 @@ export function LobbyScreen({
   const shareInvite = async () => {
     const code = lobby?.roomCode || peerManager.roomCode;
     if (!code) return;
-    // Group invite is room-only — never attach your personal seat key
+    // Group invite is room-only - never attach your personal seat key
     const result = await shareOrCopyInvite(code, playerName);
     if (result === 'copied') flashCopied('invite');
   };
@@ -243,7 +243,7 @@ export function LobbyScreen({
           setError(
             err instanceof Error
               ? err.message
-              : 'Could not join from invite — check that the host still has the table open.',
+              : 'Could not join from invite - check that the host still has the table open.',
           );
         }
       } finally {
@@ -284,8 +284,8 @@ export function LobbyScreen({
           <>
             <h2>Group table</h2>
             <p className="mp-version-note">
-              Mahjong needs <strong>4 seats</strong>. Your group can be <strong>2–4 people</strong>;
-              empty seats play as AI. Never played? Go back and tap <strong>How to Play</strong> first —
+              Mahjong needs <strong>4 seats</strong>. Your group can be <strong>2-4 people</strong>;
+              empty seats play as AI. Never played? Go back and tap <strong>How to Play</strong> first -
               or jump in and use teaching tips during the game.
             </p>
             <ol className="lobby-howto">
@@ -409,7 +409,7 @@ export function LobbyScreen({
             <div className="lobby-room-header">
               {mode === 'host' ? (
                 <>
-                  <p className="lobby-host-lead">You’re hosting — share this code</p>
+                  <p className="lobby-host-lead">You’re hosting - share this code</p>
                   <button
                     type="button"
                     className="lobby-room-code"
@@ -422,7 +422,7 @@ export function LobbyScreen({
                     {copied === 'room'
                       ? 'Copied! Text it to your group.'
                       : copied === 'invite'
-                        ? 'Invite copied — paste into a text.'
+                        ? 'Invite copied - paste into a text.'
                         : 'Tap the code to copy, or share an invite.'}
                   </p>
                   <button type="button" className="btn btn-primary lobby-share-btn" onClick={shareInvite}>
@@ -451,7 +451,7 @@ export function LobbyScreen({
                   </button>
                   <span className="lobby-seat-hint">
                     {' '}
-                    — saved on this phone for “Resume my seat”
+                    - saved on this phone for “Resume my seat”
                   </span>
                 </p>
               )}
@@ -476,7 +476,7 @@ export function LobbyScreen({
                       {offline ? (
                         <>
                           {' '}
-                          — reconnecting
+                          - reconnecting
                           <BusyDots />
                         </>
                       ) : (
@@ -557,7 +557,7 @@ export function LobbyScreen({
 
             <p className="lobby-status">
               {status === 'connected'
-                ? `${humanCount} of 4 people · empty seats are AI · group size 2–4`
+                ? `${humanCount} of 4 people · empty seats are AI · group size 2-4`
                 : status === 'connecting'
                   ? (
                     <>
@@ -570,7 +570,7 @@ export function LobbyScreen({
             {mode === 'host' && (
               <p className="lobby-hint settings-hint">
                 Min 2 people to start, max 4. Don’t know the rules yet? Teaching mode coaches you
-                during play — or leave and open How to Play.
+                during play - or leave and open How to Play.
               </p>
             )}
           </>

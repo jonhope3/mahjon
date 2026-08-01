@@ -3,15 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="description" content="Mahjon — Learn and play American Mahjong with a calm ocean theme. Offline PWA, AI, and friends via WebRTC." />
-    <title>Mahjon — American Mahjong</title>
+    <meta name="description" content="Mahjon - Learn and play American Mahjong with a calm ocean theme. Offline PWA, AI, and friends via WebRTC." />
+    <title>Mahjon - American Mahjong</title>
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="theme-color" content="#0c576e" />
     <link rel="manifest" href="manifest.json" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <!--
+      Self-hosted fonts (see scripts/vendor-fonts.py). Loading these from the
+      Google Fonts CDN broke the "fully offline" promise: the service worker
+      can only cache what it has already seen, so a cold offline launch showed
+      fallback fonts and a layout shift. Preloading the two variable faces we
+      actually render first also removes two third-party preconnects from the
+      critical path.
+    -->
+    <link rel="preload" href="/fonts/fraunces-500-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/nunito-400-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/fonts/fonts.css" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
   <body>

@@ -1,17 +1,23 @@
 // ============================================================
-// GameBoard — Main game UI (mobile + desktop shells)
+// GameBoard - Main game UI (mobile + desktop shells)
 // ============================================================
 
-import { useCallback, useState, useEffect, type CSSProperties } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import { GameState, Tile, ActionType, Player } from '../engine/types';
 import { TileComponent } from './TileComponent';
-import { sortTiles, wallRemaining } from '../engine/tiles';
+import { wallRemaining, isJoker, tilesMatch } from '../engine/tiles';
 import { getValidActions } from '../engine/actions';
+import { checkWin } from '../engine/scoring';
 import { HandCardModal } from './HandCardModal';
-import { HelpPanel, PLAY_HELP } from './HelpPanel';
+import { HelpPanel, PlayHelp } from './HelpPanel';
+import { useInputProfile } from '../hooks/useInputProfile';
 import { ClaimCoach } from './ClaimCoach';
+import { ClaimConfirm, type PendingClaim } from './ClaimConfirm';
+import { HandRack } from './HandRack';
 import { RoundEndOverlay } from './RoundEndOverlay';
 import { ActionButtons } from './ActionButtons';
+import { useHandOrder } from '../hooks/useHandOrder';
+import { haptic } from '../haptics';
 import type { TeachMode } from '../game-settings';
 import {
   handProgressHint,
@@ -61,10 +67,13 @@ export function GameBoard({
   const [showJokerTip, setShowJokerTip] = useState(false);
   const [showRecent, setShowRecent] = useState(false);
   const [inviteFlash, setInviteFlash] = useState<string | null>(null);
+  /** Claim awaiting explicit confirmation (mis-tap guard). */
+  const [pendingClaim, setPendingClaim] = useState<PendingClaim | null>(null);
   // Phones only (CSS W ≤699). iPad mini starts at 744 points.
   const [isMobile, setIsMobile] = useState(() =>
     window.matchMedia('(max-width: 699px)').matches,
   );
+  const inputProfile = useInputProfile();
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 699px)');
@@ -114,19 +123,195 @@ export function GameBoard({
     : null;
   const progress = showHandProgress(teachMode) ? handProgressHint(humanPlayer) : null;
 
+  // ---- Hand arrangement -------------------------------------------------
+  // Players group tiles into their target hand shape; auto-sort is opt-in.
+  const { orderedHand, isCustomOrder, moveTile, resetOrder } = useHandOrder(
+    humanPlayer.hand,
+    `mahjon-hand-order-${humanPlayer.id}`,
+  );
+
+  // ---- Haptic turn cues -------------------------------------------------
+  // Phone players look away between turns; a short buzz beats watching.
+  useEffect(() => {
+    if (isMyTurn && state.phase === 'playing' && !state.hasDrawn) haptic('turn');
+  }, [isMyTurn, state.phase, state.hasDrawn]);
+
+  const canClaimNow = claimPending && claimActions.length > 0 && !waitingOnClaims;
+  useEffect(() => {
+    if (canClaimNow) haptic('claim');
+  }, [canClaimNow]);
+
+  useEffect(() => {
+    if (state.winner && state.winner === humanPlayer.id) haptic('mahjong');
+  }, [state.winner, humanPlayer.id]);
+
   const handleTileClick = useCallback((tile: Tile) => {
     onSelectTile(selectedTile?.id === tile.id ? null : tile);
   }, [selectedTile, onSelectTile]);
 
+  const handleSortHand = useCallback(() => {
+    resetOrder();
+    haptic('commit');
+  }, [resetOrder]);
+
   const handleDiscard = useCallback(() => {
     if (!selectedTile) return;
+    haptic('commit');
     onAction('discard', [selectedTile]);
     onSelectTile(null);
   }, [selectedTile, onAction, onSelectTile]);
 
+  /**
+   * Claims are irreversible and appear under time pressure, so they get a
+   * confirmation step showing exactly which tiles will be exposed.
+   */
+  const requestAction = useCallback(
+    (action: ActionType) => {
+      if (action !== 'pung' && action !== 'kong' && action !== 'quint' && action !== 'mahjong') {
+        onAction(action);
+        return;
+      }
+
+      const discard = state.lastDiscard;
+
+      if (action === 'mahjong') {
+        const probe: Player = discard && state.lastDiscardBy !== humanPlayer.id
+          ? { ...humanPlayer, hand: [...humanPlayer.hand, discard] }
+          : humanPlayer;
+        const pattern = checkWin(probe);
+        setPendingClaim({
+          action,
+          discard: state.lastDiscardBy !== humanPlayer.id ? discard : null,
+          tilesFromHand: [],
+          handName: pattern?.description,
+        });
+        return;
+      }
+
+      // Preview the tiles this claim will consume - naturals first, then
+      // jokers, matching the engine's own selection in applyExposedClaim.
+      const setSize = action === 'pung' ? 3 : action === 'kong' ? 4 : 5;
+      const needed = setSize - 1;
+      const naturals = discard
+        ? humanPlayer.hand.filter(t => !isJoker(t) && tilesMatch(t.kind, discard.kind))
+        : [];
+      const jokers = humanPlayer.hand.filter(t => isJoker(t));
+      const fromNaturals = naturals.slice(0, Math.min(naturals.length, needed));
+      const fromJokers = jokers.slice(0, Math.max(0, needed - fromNaturals.length));
+
+      setPendingClaim({
+        action,
+        discard,
+        tilesFromHand: [...fromNaturals, ...fromJokers],
+      });
+    },
+    [onAction, state.lastDiscard, state.lastDiscardBy, humanPlayer],
+  );
+
+  const confirmClaim = useCallback(() => {
+    if (!pendingClaim) return;
+    haptic('commit');
+    onAction(pendingClaim.action);
+    setPendingClaim(null);
+  }, [pendingClaim, onAction]);
+
+  const cancelClaim = useCallback(() => {
+    setPendingClaim(null);
+  }, []);
+
+  // Dismiss discard-claim confirms when the claim window closes. Track the
+  // previous value so self-kong / self-drawn Mahjong confirms (opened while
+  // claimPending is already false) are not wiped on mount or unrelated renders.
+  const wasClaimPending = useRef(claimPending);
+  useEffect(() => {
+    if (wasClaimPending.current && !claimPending) {
+      setPendingClaim(null);
+    }
+    wasClaimPending.current = claimPending;
+  }, [claimPending]);
+
+  // ---- Keyboard shortcuts ------------------------------------------------
+  // Everything was click-only, which is slow on a laptop or an iPad with a
+  // Magic Keyboard - especially in the timed claim window, where mouse travel
+  // is a real disadvantage. Tile-level arrows/Enter live in HandRack.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      // Don't hijack typing, and let open dialogs handle their own keys.
+      const el = e.target as HTMLElement | null;
+      if (
+        el &&
+        (el.tagName === 'INPUT' ||
+          el.tagName === 'TEXTAREA' ||
+          el.tagName === 'SELECT' ||
+          el.isContentEditable)
+      ) {
+        return;
+      }
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (pendingClaim || showHandCard || showHelp) return;
+
+      const key = e.key.toLowerCase();
+
+      // Reference panels - always available.
+      if (key === 'c') {
+        e.preventDefault();
+        setShowHandCard(true);
+        return;
+      }
+      if (key === '?' || (key === '/' && e.shiftKey)) {
+        e.preventDefault();
+        setShowHelp(true);
+        return;
+      }
+
+      if (state.phase !== 'playing') return;
+
+      if (key === 'd' && validActions.includes('draw')) {
+        e.preventDefault();
+        requestAction('draw');
+        return;
+      }
+      if (e.key === 'Enter' && validActions.includes('discard') && selectedTile) {
+        e.preventDefault();
+        handleDiscard();
+        return;
+      }
+      if (key === 'p' && validActions.includes('pass')) {
+        e.preventDefault();
+        requestAction('pass');
+        return;
+      }
+
+      // Claim shortcuts mirror the on-screen button order.
+      const claimKeys: Record<string, ActionType> = {
+        '1': 'pung',
+        '2': 'kong',
+        '3': 'quint',
+        '4': 'mahjong',
+      };
+      const claim = claimKeys[e.key];
+      if (claim && validActions.includes(claim)) {
+        e.preventDefault();
+        requestAction(claim);
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [
+    state.phase,
+    validActions,
+    selectedTile,
+    pendingClaim,
+    showHandCard,
+    showHelp,
+    requestAction,
+    handleDiscard,
+  ]);
+
   const handleShareInvite = useCallback(async () => {
     if (!roomCode) return;
-    // Always room-only — seat keys are personal, not for group invites
+    // Always room-only - seat keys are personal, not for group invites
     const result = await shareOrCopyInvite(roomCode, humanPlayer.name);
     if (result === 'copied') {
       setInviteFlash('Invite copied');
@@ -178,10 +363,17 @@ export function GameBoard({
           canStartNextRound={canStartNextRound}
         />
       )}
+      {pendingClaim && (
+        <ClaimConfirm
+          claim={pendingClaim}
+          onConfirm={confirmClaim}
+          onCancel={cancelClaim}
+        />
+      )}
       {showHandCard && <HandCardModal onClose={() => setShowHandCard(false)} />}
       {showHelp && (
         <HelpPanel title="How this turn works" onClose={() => setShowHelp(false)}>
-          {PLAY_HELP}
+          <PlayHelp />
         </HelpPanel>
       )}
     </>
@@ -255,7 +447,7 @@ export function GameBoard({
           })}
         </div>
 
-        {/* Exposed melds are public — show them readable (not tiny in the seat cards) */}
+        {/* Exposed melds are public - show them readable (not tiny in the seat cards) */}
         {opponentIndices.some(idx => state.players[idx]!.exposedSets.length > 0) && (
           <div className="mobile-table-exposed" aria-label="Opponents’ exposed sets">
             <span className="mobile-table-exposed-label">Table</span>
@@ -348,7 +540,7 @@ export function GameBoard({
             humanPlayer.exposedSets.length > 0 ? ' has-exposed' : ''
           }`}
         >
-          {/* Zone 1: identity + tools — never scrolls over the hand */}
+          {/* Zone 1: identity + tools - never scrolls over the hand */}
           <div className="mobile-player-status">
             <div className="player-avatar-col">
               <div className="player-avatar" aria-hidden>
@@ -382,7 +574,7 @@ export function GameBoard({
             </div>
           </div>
 
-          {/* Zone 2: exposed melds — own row, compact, cannot cover the hand */}
+          {/* Zone 2: exposed melds - own row, compact, cannot cover the hand */}
           {humanPlayer.exposedSets.length > 0 && (
             <div className="mobile-player-exposed" aria-label="Your exposed sets">
               <span className="mobile-exposed-label">Exposed</span>
@@ -405,23 +597,33 @@ export function GameBoard({
             </div>
           )}
 
-          {/* Zone 3: hand — reserved height, horizontal scroll only */}
+          {/* Zone 3: hand - reserved height, horizontal scroll only */}
           <div className="mobile-hand-slot">
-            <div
+            <HandRack
               className="mobile-player-hand"
-              style={{ '--hand-size': humanPlayer.hand.length } as CSSProperties}
+              tiles={orderedHand}
+              selectedTile={selectedTile}
+              clickable={isMyTurn && state.hasDrawn}
+              onTileClick={handleTileClick}
+              onMoveTile={moveTile}
+              size="normal"
+            />
+          </div>
+          <div className="hand-tools">
+            <span className="hand-tools-hint">
+              {inputProfile === 'desktop'
+                ? 'Drag tiles to group your hand'
+                : 'Slide a tile to rearrange'}
+            </span>
+            <button
+              type="button"
+              className="btn-sort"
+              onClick={handleSortHand}
+              disabled={!isCustomOrder}
+              aria-label="Sort hand by suit and rank"
             >
-              {sortTiles(humanPlayer.hand).map(tile => (
-                <TileComponent
-                  key={tile.id}
-                  tile={tile}
-                  clickable={isMyTurn && state.hasDrawn}
-                  selected={selectedTile?.id === tile.id}
-                  onClick={handleTileClick}
-                  size="normal"
-                />
-              ))}
-            </div>
+              Sort
+            </button>
           </div>
 
           {isClaimWindow && state.lastDiscard && teachMode !== 'expert' && (
@@ -433,7 +635,7 @@ export function GameBoard({
             />
           )}
 
-          {/* Zone 4: actions / hints — always below the hand */}
+          {/* Zone 4: actions / hints - always below the hand */}
           <div
             className={`mobile-action-bar${isClaimWindow ? ' claim-mode' : ''}${
               validActions.includes('draw') ? ' draw-ready' : ''
@@ -453,7 +655,7 @@ export function GameBoard({
               <ActionButtons
                 validActions={validActions}
                 canDiscard={!!selectedTile}
-                onAction={a => onAction(a)}
+                onAction={requestAction}
                 onDiscard={handleDiscard}
               />
             </div>
@@ -535,15 +737,22 @@ export function GameBoard({
           />
         </div>
         <div className="discard-pool">
-          {allDiscards.length === 0 && <span className="discard-pool-label">Discards</span>}
-          {allDiscards.map(tile => (
-            <TileComponent
-              key={tile.id}
-              tile={tile}
-              size="mini"
-              isLastDiscard={state.lastDiscard?.id === tile.id}
-            />
-          ))}
+          {allDiscards.length === 0 ? (
+            <div className="discard-pool-empty" aria-hidden="true">
+              <span className="discard-pool-empty-count">{wallRemaining(state.wall)}</span>
+              <span className="discard-pool-empty-title">Discards</span>
+              <span className="discard-pool-empty-sub">tiles left in the wall</span>
+            </div>
+          ) : (
+            allDiscards.map(tile => (
+              <TileComponent
+                key={tile.id}
+                tile={tile}
+                size="mini"
+                isLastDiscard={state.lastDiscard?.id === tile.id}
+              />
+            ))
+          )}
         </div>
         <div className="opponent-area right">
           <OpponentDisplay
@@ -553,10 +762,6 @@ export function GameBoard({
             onJokerClick={handleExposedJokerClick}
             canSwapJoker={canSwapJoker}
           />
-        </div>
-        <div className="wall-counter">
-          <div className="count">{wallRemaining(state.wall)}</div>
-          <div className="label">Tiles Left</div>
         </div>
       </div>
 
@@ -606,19 +811,29 @@ export function GameBoard({
               ))}
             </div>
           )}
-          <div
+          <HandRack
             className="player-hand"
-            style={{ '--hand-size': humanPlayer.hand.length } as CSSProperties}
-          >
-            {sortTiles(humanPlayer.hand).map(tile => (
-              <TileComponent
-                key={tile.id}
-                tile={tile}
-                clickable={isMyTurn && state.hasDrawn}
-                selected={selectedTile?.id === tile.id}
-                onClick={handleTileClick}
-              />
-            ))}
+            tiles={orderedHand}
+            selectedTile={selectedTile}
+            clickable={isMyTurn && state.hasDrawn}
+            onTileClick={handleTileClick}
+            onMoveTile={moveTile}
+          />
+          <div className="hand-tools">
+            <span className="hand-tools-hint">
+              {inputProfile === 'tablet'
+                ? 'Drag tiles to rearrange · Shift + ← → with a keyboard'
+                : 'Drag tiles to group your hand · Shift + ← → to rearrange'}
+            </span>
+            <button
+              type="button"
+              className="btn-sort"
+              onClick={handleSortHand}
+              disabled={!isCustomOrder}
+              aria-label="Sort hand by suit and rank"
+            >
+              Sort
+            </button>
           </div>
         </div>
 
@@ -655,7 +870,7 @@ export function GameBoard({
             <ActionButtons
               validActions={validActions}
               canDiscard={!!selectedTile}
-              onAction={a => onAction(a)}
+              onAction={requestAction}
               onDiscard={handleDiscard}
             />
           </div>

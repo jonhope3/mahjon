@@ -1,5 +1,5 @@
 // ============================================================
-// InstallNudge — soft “Add to Home Screen” tip on the menu only
+// InstallNudge - soft “Add to Home Screen” tip on the menu only
 // ============================================================
 
 import { useEffect, useState } from 'react';

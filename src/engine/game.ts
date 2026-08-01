@@ -4,7 +4,7 @@
 
 import {
   GameState, Player, Tile, GameAction, ActionType,
-  SeatWind, PlayerType, Difficulty, ExposedSet,
+  SeatWind, PlayerType, Difficulty, ExposedSet, ScoringRules,
 } from './types';
 import { createTileSet, shuffleTiles, buildWall, drawFromWall, sortTiles, isJoker, tilesMatch } from './tiles';
 import { checkWin, calculateScore } from './scoring';
@@ -30,6 +30,8 @@ export interface GameConfig {
     type: PlayerType;
     difficulty?: Difficulty;
   }[];
+  /** Optional house-rule scoring. Omit for official NMJL card scoring. */
+  scoringRules?: ScoringRules;
 }
 
 /** Create a fresh game state */
@@ -68,6 +70,7 @@ export function createGame(config: GameConfig): GameState {
     hasDrawn: false,
     winner: null,
     winningHand: null,
+    scoringRules: config.scoringRules,
     log: [],
   };
 
@@ -117,6 +120,7 @@ export function startNextRound(prev: GameState): GameState {
       type: p.type,
       difficulty: p.difficulty,
     })),
+    scoringRules: prev.scoringRules,
   });
   fresh.dealerIndex = nextDealer;
   fresh.currentPlayerIndex = nextDealer;
@@ -187,7 +191,7 @@ function handleDraw(state: GameState, action: GameAction): GameState {
 
   const result = drawFromWall(state.wall);
   if (!result) {
-    // Wall empty — draw game
+    // Wall empty - draw game
     state.phase = 'round_end';
     addLog(state, action.playerId, 'draw', 'Wall is empty. Draw game.');
     return state;
@@ -265,7 +269,7 @@ function handleClaim(state: GameState, action: GameAction): GameState {
 
 /**
  * Self-kong on your turn after drawing (American card play: expose, then discard).
- * No replacement tile from the wall — hand stays at card size.
+ * No replacement tile from the wall - hand stays at card size.
  */
 function handleSelfKong(state: GameState, action: GameAction): GameState {
   if (state.phase !== 'playing') return state;
@@ -343,7 +347,8 @@ function declareMahjongWin(
 
   const selfDrawn = !claimedFromDiscard;
   const jokerCount = countPlayerJokers(player);
-  const score = calculateScore(winPattern, selfDrawn, jokerCount);
+  // Defaults to official NMJL card scoring when no house rules are set.
+  const score = calculateScore(winPattern, selfDrawn, jokerCount, state.scoringRules);
 
   if (claimedFromDiscard && state.lastDiscard && state.lastDiscardBy) {
     const discarderIdx = state.players.findIndex(p => p.id === state.lastDiscardBy);
@@ -481,7 +486,7 @@ function applyExposedClaim(
   const fromMatching = Math.min(matching.length, needed);
   const fromJokers = Math.min(needed - fromMatching, jokers.length);
   if (fromMatching + fromJokers < needed) {
-    // Claim became illegal somehow — treat as pass for the table
+    // Claim became illegal somehow - treat as pass for the table
     return advanceTurn(state);
   }
 

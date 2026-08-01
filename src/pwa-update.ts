@@ -1,5 +1,5 @@
 // ============================================================
-// PWA update checks — find new SW, notify UI, apply on demand
+// PWA update checks - find new SW, notify UI, apply on demand
 // ============================================================
 
 type Listener = (updateReady: boolean) => void;

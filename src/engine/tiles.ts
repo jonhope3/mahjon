@@ -57,7 +57,7 @@ export function tileTooltip(kind: TileKind): string {
     case 'flower':
       return 'Flower (F on the card)';
     case 'joker':
-      return 'Joker — wild in groups of 3+, never in pairs or singles';
+      return 'Joker - wild in groups of 3+, never in pairs or singles';
   }
 }
 

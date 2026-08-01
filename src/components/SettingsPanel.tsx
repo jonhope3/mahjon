@@ -1,5 +1,5 @@
 // ============================================================
-// SettingsPanel — speed, names, new game, quit, fresh reload
+// SettingsPanel - speed, names, new game, quit, fresh reload
 // ============================================================
 
 import { useEffect, useState } from 'react';
@@ -41,6 +41,8 @@ function cleanPrefs(draft: AppPrefs): AppPrefs {
     })) as AppPrefs['bots'],
     speed: draft.speed,
     teachMode: draft.teachMode,
+    houseRules: { ...draft.houseRules },
+    haptics: draft.haptics,
   };
 }
 
@@ -192,7 +194,7 @@ export function SettingsPanel({
             ))}
           </div>
           {draft.speed === 'instant' && !showAdvanced && (
-            <p className="settings-hint">Max speed is on — open Advanced to change it.</p>
+            <p className="settings-hint">Max speed is on - open Advanced to change it.</p>
           )}
         </section>
 
@@ -256,9 +258,69 @@ export function SettingsPanel({
           ))}
         </section>
 
+        <section className="settings-section settings-section--wide">
+          <h3>Scoring &amp; feel</h3>
+          <p className="settings-hint">
+            Mahjon scores each hand at its printed value on the 2026 card. The
+            two bonuses below are casual house rules - they are <em>not</em> on
+            the real card, so leave them off to match a physical table.
+          </p>
+
+          <label className="settings-toggle">
+            <input
+              type="checkbox"
+              checked={draft.houseRules.selfDrawnBonus}
+              onChange={e =>
+                setDraft(d => ({
+                  ...d,
+                  houseRules: { ...d.houseRules, selfDrawnBonus: e.target.checked },
+                }))
+              }
+            />
+            <span>
+              <strong>Self-drawn bonus (+2)</strong>
+              <small>House rule. Not official NMJL scoring.</small>
+            </span>
+          </label>
+
+          <label className="settings-toggle">
+            <input
+              type="checkbox"
+              checked={draft.houseRules.jokerlessBonus}
+              onChange={e =>
+                setDraft(d => ({
+                  ...d,
+                  houseRules: { ...d.houseRules, jokerlessBonus: e.target.checked },
+                }))
+              }
+            />
+            <span>
+              <strong>Jokerless bonus (+10)</strong>
+              <small>House rule. Not printed on the card.</small>
+            </span>
+          </label>
+
+          <label className="settings-toggle">
+            <input
+              type="checkbox"
+              checked={draft.haptics}
+              onChange={e => setDraft(d => ({ ...d, haptics: e.target.checked }))}
+            />
+            <span>
+              <strong>Vibration cues</strong>
+              <small>Short buzz on your turn, claims, and Mahjong. Phones &amp; tablets.</small>
+            </span>
+          </label>
+
+          <p className="settings-hint">
+            Scoring changes apply to the next game you start. In multiplayer the
+            host&rsquo;s setting is used for the whole table.
+          </p>
+        </section>
+
         {inGame && players && onApplyLiveNames && (
           <section className="settings-section settings-section--wide">
-            <h3>This game — rename seats</h3>
+            <h3>This game - rename seats</h3>
             <p className="settings-hint">
               Saved with Settings → Save. Host syncs names to the table.
             </p>
@@ -344,7 +406,7 @@ export function SettingsPanel({
               ) : (
                 <div className="settings-reset-confirm">
                   <p className="settings-hint settings-hint--warn">
-                    Clears names, speed, prefs, cache — then reloads. Continue?
+                    Clears names, speed, prefs, cache - then reloads. Continue?
                   </p>
                   <div className="settings-actions">
                     <button type="button" className="btn btn-danger" onClick={hardReset} disabled={busy}>

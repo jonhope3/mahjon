@@ -1,9 +1,9 @@
 /* ============================================================
-   Mahjon — Design System & Global Styles
+   Mahjon - Design System & Global Styles
    ============================================================ */
 
 :root {
-  /* Colors — Ocean & Beach Theme */
+  /* Colors - Ocean & Beach Theme */
   --color-felt: #0c576e;
   --color-felt-dark: #053443;
   --color-felt-light: #1a8a98;
@@ -119,7 +119,7 @@ body {
   min-height: 100dvh;
   overflow-x: hidden;
   line-height: 1.5;
-  /* App chrome — don't select UI text like a webpage */
+  /* App chrome - don't select UI text like a webpage */
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
@@ -215,7 +215,7 @@ input, select, textarea {
   background: rgba(255, 255, 255, 0.28);
 }
 
-/* Animated waiting dots — shows the page isn’t frozen */
+/* Animated waiting dots - shows the page isn’t frozen */
 .busy-dots {
   display: inline-flex;
   align-items: baseline;

@@ -1,5 +1,5 @@
 // ============================================================
-// Charleston — The tile-passing ritual before gameplay
+// Charleston - The tile-passing ritual before gameplay
 // ============================================================
 
 import { Tile, Player, GamePhase } from './types';

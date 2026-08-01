@@ -1,5 +1,5 @@
 // ============================================================
-// Modal — shared overlay shell (help, settings, hand card, …)
+// Modal - shared overlay shell (help, settings, hand card, …)
 // ============================================================
 
 import { useEffect, useRef, type ReactNode, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent } from 'react';

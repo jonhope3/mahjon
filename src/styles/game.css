@@ -173,24 +173,51 @@
   gap: 3px;
   align-content: center;
   justify-content: center;
+  align-items: center;
   padding: var(--space-md);
   background: rgba(0, 0, 0, 0.15);
   border-radius: var(--radius-lg);
   border: 1px solid rgba(255, 255, 255, 0.05);
   overflow-y: auto;
   max-height: 100%;
+  position: relative;
+  min-height: 120px;
 }
 
-.discard-pool-label {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: var(--font-size-xs);
-  color: rgba(255, 255, 255, 0.15);
-  text-transform: uppercase;
-  letter-spacing: 0.3em;
+/* Empty-table placeholder - one stacked composition, not overlapping watermarks */
+.discard-pool-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  text-align: center;
   pointer-events: none;
+  user-select: none;
+}
+
+.discard-pool-empty-count {
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  font-weight: 800;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.16);
+  letter-spacing: -0.02em;
+}
+
+.discard-pool-empty-title {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.28);
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+}
+
+.discard-pool-empty-sub {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.18);
+  letter-spacing: 0.04em;
 }
 
 /* ---- Bottom Bar (player's hand + actions) ---- */
@@ -384,31 +411,6 @@
   color: var(--color-text-muted);
 }
 
-/* ---- Wall Counter ---- */
-.wall-counter {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-  z-index: var(--z-tiles);
-  pointer-events: none;
-}
-
-.wall-counter .count {
-  font-size: var(--font-size-3xl);
-  font-weight: 800;
-  color: rgba(255, 255, 255, 0.12);
-  line-height: 1;
-}
-
-.wall-counter .label {
-  font-size: var(--font-size-xs);
-  color: rgba(255, 255, 255, 0.08);
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
-}
-
 /* ---- Round End Overlay ---- */
 .round-end-overlay {
   position: fixed;
@@ -550,7 +552,7 @@
   }
 }
 
-/* iPad / tablet table layout — phone shell ends at 699px
+/* iPad / tablet table layout - phone shell ends at 699px
    Covers mini 744 → Pro 13" 1032 portrait and landscape widths to 1376 */
 @media (min-width: 700px) and (max-width: 1400px) {
   .game-board:not(.mobile) {
@@ -592,7 +594,7 @@
   }
 }
 
-/* iPad landscape — table stays playable (heights 744–1032, never ≤520) */
+/* iPad landscape - table stays playable (heights 744-1032, never ≤520) */
 @media (min-width: 700px) and (orientation: landscape) and (max-height: 900px) {
   .game-board:not(.mobile) .center-area {
     grid-template-columns: minmax(0, 72px) minmax(0, 1fr) minmax(0, 72px);
@@ -644,7 +646,7 @@
     width: min(42px, var(--tile-hand-w)) !important;
   }
 
-  /* Keep claim coach visible — beginners need it most in cramped layouts */
+  /* Keep claim coach visible - beginners need it most in cramped layouts */
   .claim-coach--desktop {
     max-width: 100%;
     padding: 8px 10px;
@@ -715,7 +717,7 @@
 }
 
 /* ============================================================
-   Mobile app shell — phone CSS viewports only (≤699)
+   Mobile app shell - phone CSS viewports only (≤699)
    iPhone 14 390×844 | 14 Pro 393×852 | Pixel 10 Pro 410×914 |
    14 Plus 428×926 | 14 Pro Max 430×932
    iPads (≥744) use the table layout, not this shell.
@@ -1036,21 +1038,21 @@
   max-width: 100%;
 }
 
-.discard-pool-label {
+.mobile-discard-pool .discard-pool-label {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   font-size: 14px;
   font-weight: 800;
-  color: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.22);
   text-transform: uppercase;
   letter-spacing: 0.2em;
   pointer-events: none;
 }
 
 /*
-  Mobile bottom bar — fixed zones (iPhone 14+ / Pixel 10 Pro)
+  Mobile bottom bar - fixed zones (iPhone 14+ / Pixel 10 Pro)
   ============================================================
   Zone stack (top → bottom), NO shared scroll of melds+hand:
     1. status   (flex-shrink: 0)
@@ -1075,7 +1077,7 @@
   backdrop-filter: blur(22px);
   -webkit-backdrop-filter: blur(22px);
   flex: 0 0 auto;
-  /* Soft cap — discard pool yields first; zones never share a scrollport */
+  /* Soft cap - discard pool yields first; zones never share a scrollport */
   /* vh first for iOS 14 (no dvh); dvh overrides on 15.4+ */
   max-height: min(58vh, 480px);
   max-height: min(58dvh, 480px);
@@ -1238,7 +1240,7 @@
   align-items: center;
 }
 
-/* Force compact exposed tiles — never hand-sized */
+/* Force compact exposed tiles - never hand-sized */
 .mobile-player-exposed .tile,
 .mobile-exposed-set .tile {
   width: 28px !important;
@@ -1386,7 +1388,7 @@
   transform: scale(0.96);
 }
 
-/* Compact tool chips — Card / Help / ··· */
+/* Compact tool chips - Card / Help / ··· */
 .btn-tool {
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -1600,7 +1602,7 @@ button.linkish {
   flex-shrink: 0;
 }
 
-/* Claim coach sits between hand and actions — compact, never overlaps hand */
+/* Claim coach sits between hand and actions - compact, never overlaps hand */
 .mobile-bottom-bar > .claim-coach {
   flex: 0 0 auto;
   margin: 4px 0 0;
