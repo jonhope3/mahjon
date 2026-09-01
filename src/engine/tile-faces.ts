@@ -24,9 +24,9 @@ export const WIND_FACES: Record<Wind, { icon: string; label: string }> = {
 
 /** Dragons - three kinds (icons ocean-themed; labels match the card) */
 export const DRAGON_FACES: Record<Dragon, { icon: string; label: string; cls: string }> = {
-  red: { icon: '🪸', label: 'Red', cls: 'dragon-red' },
-  green: { icon: '🌊', label: 'Green', cls: 'dragon-green' },
-  white: { icon: '🦪', label: 'Soap', cls: 'dragon-white' },
+  red: { icon: '🦪', label: 'Red', cls: 'dragon-red' },
+  green: { icon: '🪸', label: 'Green', cls: 'dragon-green' },
+  white: { icon: '🌊', label: 'Soap', cls: 'dragon-white' },
 };
 
 /**

@@ -281,15 +281,28 @@ export function MainMenu({
             <div className="setup-actions">
               <button
                 className="btn btn-primary"
-                onClick={() =>
+                onClick={() => {
+                  const human = players[0]?.name.trim() || prefs.humanName;
+                  onPrefsChange({
+                    ...prefs,
+                    humanName: human,
+                    bots: [1, 2, 3].map(i => {
+                      const p = players[i]!;
+                      const fallback = prefs.bots[i - 1]!;
+                      return {
+                        name: p.name.trim() || fallback.name,
+                        difficulty: p.type === 'ai' ? p.difficulty : fallback.difficulty,
+                      };
+                    }) as AppPrefs['bots'],
+                  });
                   onStartGame({
                     players: players.map(p => ({
                       name: p.name,
                       type: p.type,
                       difficulty: p.type === 'ai' ? p.difficulty : undefined,
                     })),
-                  })
-                }
+                  });
+                }}
                 id="start-game-btn"
               >
                 Start Game

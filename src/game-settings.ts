@@ -159,6 +159,13 @@ export function savePrefs(prefs: AppPrefs): void {
   localStorage.setItem('mahjon-speed', prefs.speed);
 }
 
+/** Remember the display name used in the lobby / Settings. */
+export function persistHumanName(name: string): void {
+  const trimmed = name.trim();
+  if (!trimmed) return;
+  savePrefs({ ...loadPrefs(), humanName: trimmed });
+}
+
 /** Wipe Mahjon prefs. Does not touch unrelated site storage. */
 export function clearPrefs(): AppPrefs {
   localStorage.removeItem(PREFS_KEY);

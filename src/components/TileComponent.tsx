@@ -35,6 +35,7 @@ interface TileComponentProps {
 }
 
 const LONG_PRESS_MS = 420;
+const LONG_PRESS_MOVE_PX = 8;
 const TIP_MARGIN = 10;
 
 type TipPlacement = 'above' | 'below';
@@ -120,6 +121,7 @@ export function TileComponent({
   const [tipPos, setTipPos] = useState<TipPos | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressFired = useRef(false);
+  const longPressStart = useRef<{ x: number; y: number } | null>(null);
   const tipHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const identity = tile && faceUp ? tileTooltip(tile.kind) : '';
@@ -241,6 +243,7 @@ export function TileComponent({
     if (!canShowTip) return;
     if (e.pointerType === 'mouse') return;
     longPressFired.current = false;
+    longPressStart.current = { x: e.clientX, y: e.clientY };
     clearLongPress();
     longPressTimer.current = setTimeout(() => {
       longPressFired.current = true;
@@ -257,14 +260,18 @@ export function TileComponent({
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    // Sliding a tile to rearrange should cancel identify-on-hold.
-    // (iOS often reports movementX/Y as 0, so any touch move clears.)
     if (e.pointerType === 'mouse') return;
+    const start = longPressStart.current;
+    if (!start) return;
+    const travelled = Math.hypot(e.clientX - start.x, e.clientY - start.y);
+    if (travelled < LONG_PRESS_MOVE_PX) return;
     clearLongPress();
+    longPressStart.current = null;
   };
 
   const handlePointerUp = () => {
     clearLongPress();
+    longPressStart.current = null;
   };
 
   if (!tile || !faceUp) {

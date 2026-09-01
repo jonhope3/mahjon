@@ -108,6 +108,10 @@ function ControlsHelp({ profile }: { profile: InputProfile }) {
             Dot, Wind, Dragon, Flower, Joker).
           </li>
           <li>
+            <strong>Home:</strong> Tap <strong>Mahjon</strong> at the top to return to the menu
+            (confirms if a game is in progress).
+          </li>
+          <li>
             <strong>Claims:</strong> When someone discards, use the Pung / Kong / Quint / Mahjong /
             Pass buttons - you don’t pick tiles from your hand for a normal claim.
           </li>
@@ -131,6 +135,9 @@ function ControlsHelp({ profile }: { profile: InputProfile }) {
           </li>
           <li>
             <strong>Identify a tile:</strong> Long-press (or hover with a trackpad) any face-up tile.
+          </li>
+          <li>
+            <strong>Home:</strong> Tap <strong>Mahjon</strong> at the top to return to the menu.
           </li>
           <li>
             <strong>Keyboard (Magic Keyboard / Smart Keyboard):</strong>{' '}
@@ -159,6 +166,9 @@ function ControlsHelp({ profile }: { profile: InputProfile }) {
         </li>
         <li>
           <strong>Identify a tile:</strong> Hover any face-up tile.
+        </li>
+        <li>
+          <strong>Home:</strong> Click <strong>Mahjon</strong> at the top to return to the menu.
         </li>
         <li>
           <strong>Keyboard:</strong> <kbd>←</kbd> <kbd>→</kbd> move between tiles,{' '}

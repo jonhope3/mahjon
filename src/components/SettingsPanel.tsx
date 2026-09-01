@@ -26,6 +26,8 @@ interface SettingsPanelProps {
   inGame?: boolean;
   players?: Player[];
   onApplyLiveNames?: (names: string[]) => void;
+  /** Guest: change only your own table name */
+  onRenameSelf?: (name: string) => void;
   onNewGame?: () => void;
   onQuitToMenu?: () => void;
   resumeKey?: string;
@@ -55,6 +57,7 @@ export function SettingsPanel({
   inGame = false,
   players,
   onApplyLiveNames,
+  onRenameSelf,
   onNewGame,
   onQuitToMenu,
   resumeKey,
@@ -98,6 +101,9 @@ export function SettingsPanel({
           (n, i) => n.trim() || (i === 0 ? cleaned.humanName : cleaned.bots[i - 1]!.name),
         ),
       );
+    }
+    if (onRenameSelf) {
+      onRenameSelf(cleaned.humanName);
     }
     onClose();
   };
@@ -220,7 +226,10 @@ export function SettingsPanel({
 
         <section className="settings-section settings-section--wide">
           <h3>Default names &amp; bots</h3>
-          <p className="settings-hint">Used for Quick Start and new games. Saved on this device.</p>
+          <p className="settings-hint">
+            Used for Quick Start and new games. Saved on this device
+            {inGame ? ' — Save also updates your name at this table.' : '.'}
+          </p>
           <label className="settings-field">
             <span>Your name</span>
             <input

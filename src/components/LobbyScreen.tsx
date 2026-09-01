@@ -14,6 +14,7 @@ import {
   shareOrCopyInvite,
   type MpLastTable,
 } from '../mp-session';
+import { persistHumanName } from '../game-settings';
 import { BusyDots } from './BusyDots';
 
 interface LobbyScreenProps {
@@ -22,6 +23,7 @@ interface LobbyScreenProps {
   onBack: () => void;
   onOpenSettings: () => void;
   defaultName?: string;
+  onNamePersist?: (name: string) => void;
 }
 
 const SEATS = ['East', 'South', 'West', 'North'] as const;
@@ -32,6 +34,7 @@ export function LobbyScreen({
   onBack,
   onOpenSettings,
   defaultName = 'Player',
+  onNamePersist,
 }: LobbyScreenProps) {
   const deep = useState(() => {
     const peeked = peekMpDeepLink();
@@ -92,18 +95,30 @@ export function LobbyScreen({
     window.setTimeout(() => setCopied(null), 2200);
   };
 
+  const rememberName = useCallback(
+    (raw: string) => {
+      const name = raw.trim() || 'Player';
+      persistHumanName(name);
+      onNamePersist?.(name);
+      return name;
+    },
+    [onNamePersist],
+  );
+
   const handleCreateRoom = useCallback(async () => {
     setError(null);
     setBusy(true);
     try {
-      await peerManager.createRoom(playerName.trim() || 'Host');
+      const name = rememberName(playerName);
+      setPlayerName(name);
+      await peerManager.createRoom(name);
       setMode('host');
     } catch {
       /* onError callback */
     } finally {
       setBusy(false);
     }
-  }, [peerManager, playerName]);
+  }, [peerManager, playerName, rememberName]);
 
   const handleJoinRoom = useCallback(async () => {
     if (!roomCode.trim()) {
@@ -113,9 +128,11 @@ export function LobbyScreen({
     setError(null);
     setBusy(true);
     try {
+      const name = rememberName(playerName);
+      setPlayerName(name);
       await peerManager.joinRoom(
         roomCode.trim().toUpperCase(),
-        playerName.trim() || 'Guest',
+        name,
         resumeKey.trim() || undefined,
       );
       setMode('join');
@@ -125,7 +142,7 @@ export function LobbyScreen({
     } finally {
       setBusy(false);
     }
-  }, [peerManager, roomCode, playerName, resumeKey]);
+  }, [peerManager, roomCode, playerName, resumeKey, rememberName]);
 
   const handleResumeLast = useCallback(async () => {
     if (!lastTable) return;
@@ -269,7 +286,14 @@ export function LobbyScreen({
       </button>
 
       <div className="menu-logo">
-        <h1>Mahjon</h1>
+        <button
+          type="button"
+          className="menu-logo-home"
+          onClick={onBack}
+          aria-label="Back to home"
+        >
+          Mahjon
+        </button>
         <p className="subtitle">Play with group</p>
       </div>
 
@@ -300,6 +324,10 @@ export function LobbyScreen({
                 type="text"
                 value={playerName}
                 onChange={e => setPlayerName(e.target.value)}
+                onBlur={() => {
+                  const name = rememberName(playerName);
+                  setPlayerName(name);
+                }}
                 placeholder="e.g. Alex"
                 id="mp-player-name"
                 autoComplete="nickname"
@@ -456,6 +484,23 @@ export function LobbyScreen({
                 </p>
               )}
             </div>
+
+            <label className="lobby-field">
+              <span>Your name</span>
+              <input
+                type="text"
+                value={playerName}
+                onChange={e => setPlayerName(e.target.value)}
+                onBlur={() => {
+                  const name = rememberName(playerName);
+                  setPlayerName(name);
+                  peerManager.renameSelf(name);
+                }}
+                placeholder="e.g. Alex"
+                autoComplete="nickname"
+                maxLength={20}
+              />
+            </label>
 
             <div className="lobby-slots" role="list">
               {lobby.slots.map((slot, i) => {

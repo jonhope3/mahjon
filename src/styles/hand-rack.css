@@ -22,8 +22,8 @@
   position: relative;
   border-radius: 10px;
   transition: transform 140ms ease, opacity 140ms ease;
-  /* Critical: without this, mobile/iPad horizontal pans steal rearrange drags. */
-  touch-action: none;
+  /* Allow vertical page scroll until a rearrange actually starts. */
+  touch-action: pan-y;
   -webkit-user-select: none;
   user-select: none;
 }
@@ -43,6 +43,7 @@
 
 .hand-rack.is-dragging .hand-rack-slot {
   cursor: grabbing;
+  touch-action: none;
 }
 
 .hand-rack-slot.is-dragged {

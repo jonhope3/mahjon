@@ -38,7 +38,8 @@
   text-align: center;
 }
 
-.menu-logo h1 {
+.menu-logo h1,
+.menu-logo-home {
   font-family: var(--font-display);
   font-size: var(--font-size-hero);
   font-weight: 800;
@@ -51,6 +52,17 @@
   letter-spacing: -0.03em;
   text-transform: none;
   filter: drop-shadow(0 8px 28px rgba(0, 0, 0, 0.4));
+}
+
+.menu-logo-home {
+  display: inline-block;
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  font: inherit;
 }
 
 .menu-logo .subtitle {
@@ -184,12 +196,17 @@
   max-width: 320px;
 }
 
-.connecting-card h1 {
+.connecting-card h1,
+.connecting-card .menu-logo-home {
   font-family: var(--font-display);
   font-size: clamp(2rem, 8vw, 2.75rem);
   font-weight: 800;
   color: var(--color-accent);
   margin-bottom: var(--space-lg);
+  -webkit-text-fill-color: var(--color-accent);
+  background: none;
+  animation: none;
+  filter: none;
 }
 
 .connecting-title {
@@ -998,7 +1015,8 @@
     margin-bottom: 28px;
   }
 
-  .menu-logo h1 {
+  .menu-logo h1,
+  .menu-logo-home {
     font-size: clamp(2.75rem, 5.5vw, 3.6rem);
   }
 
@@ -1066,7 +1084,8 @@
     max-width: 680px;
   }
 
-  .menu-logo h1 {
+  .menu-logo h1,
+  .menu-logo-home {
     font-size: 3.75rem;
   }
 
@@ -1246,7 +1265,8 @@
 }
 
 @media (max-width: 380px) {
-  .menu-logo h1 {
+  .menu-logo h1,
+  .menu-logo-home {
     font-size: 2.25rem;
   }
 }
@@ -1286,7 +1306,8 @@
     padding: 0 48px;
   }
 
-  .menu-logo h1 {
+  .menu-logo h1,
+  .menu-logo-home {
     font-size: clamp(2.85rem, 15vw, 3.6rem);
     line-height: 1.02;
     letter-spacing: -0.025em;

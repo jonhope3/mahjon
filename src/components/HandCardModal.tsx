@@ -106,7 +106,7 @@ export function HandCardModal({ onClose }: HandCardModalProps) {
                 <strong>Dot 🫧</strong> - numbers 1-9
               </li>
               <li>
-                <strong>D</strong> - Dragon (Red 🪸 / Green 🌊 / Soap 🦪)
+                <strong>D</strong> - Dragon (Red 🦪 / Green 🪸 / Soap 🌊)
               </li>
               <li>
                 <strong>F</strong> - Flower 🌺

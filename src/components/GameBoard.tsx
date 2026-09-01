@@ -352,6 +352,12 @@ export function GameBoard({
 
   const openHelp = () => setShowHelp(true);
 
+  const requestQuitHome = () => {
+    if (window.confirm('Leave this game and go to the menu?')) {
+      onQuitToMenu();
+    }
+  };
+
   const overlays = (
     <>
       {state.phase === 'round_end' && (
@@ -408,6 +414,14 @@ export function GameBoard({
       >
         {rotatePrompt}
         <div className="mobile-top-bar">
+          <button
+            type="button"
+            className="board-title-home"
+            onClick={requestQuitHome}
+            aria-label="Leave game and go home"
+          >
+            Mahjon
+          </button>
           <div className="status-pill round">
             <span className="label">R:</span>
             <span className="val">{state.roundNumber}</span>
@@ -681,6 +695,14 @@ export function GameBoard({
       {rotatePrompt}
       <div className="top-bar">
         <div className="game-info">
+          <button
+            type="button"
+            className="board-title-home"
+            onClick={requestQuitHome}
+            aria-label="Leave game and go home"
+          >
+            Mahjon
+          </button>
           <div className="game-info-item">
             <span className="game-info-label">Round</span>
             <span className="game-info-value">{state.roundNumber}</span>

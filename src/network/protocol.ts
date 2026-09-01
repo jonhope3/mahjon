@@ -16,6 +16,7 @@ export type NetworkMessage =
   | { type: 'charleston_tiles'; payload: { playerIndex: number; tileIds: number[] } }
   | { type: 'charleston_control'; payload: { kind: 'skip_pass' | 'skip_rest' } }
   | { type: 'chat'; payload: { playerName: string; message: string } }
+  | { type: 'rename_self'; payload: { playerName: string } }
   | { type: 'ping'; payload: Record<string, never> }
   | { type: 'pong'; payload: Record<string, never> };
 

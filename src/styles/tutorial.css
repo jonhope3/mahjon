@@ -42,6 +42,17 @@
   z-index: 2;
 }
 
+.tutorial-home {
+  display: block;
+  font-size: 1.35rem;
+  margin-bottom: var(--space-sm);
+  -webkit-text-fill-color: unset;
+  color: var(--color-accent);
+  background: none;
+  animation: none;
+  filter: none;
+}
+
 .tutorial-progress {
   display: flex;
   gap: 4px;

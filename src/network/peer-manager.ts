@@ -27,6 +27,8 @@ export interface PeerManagerCallbacks {
   onGameStateSync: (state: GameState) => void;
   /** Fired when a player reclaims a seat mid-game */
   onPlayerRejoined?: (playerIndex: number, playerName: string) => void;
+  /** Lobby or in-game display name change */
+  onPlayerRenamed?: (playerIndex: number, playerName: string) => void;
   /** Fired when a human disconnects mid-game (host may AI-drive after a grace period) */
   onPlayerDisconnected?: (playerIndex: number) => void;
   /** Host only - playerIndex is the authenticated seat for this connection */
@@ -99,13 +101,12 @@ export class PeerManager {
     await this.hardReset();
     this._isHost = true;
     this._playerIndex = 0;
-    this._roomCode = generateRoomCode();
     this.callbacks.onStatusChange('connecting');
 
-    const peerId = hostPeerId(this._roomCode);
     let lastErr: unknown;
-
     for (let attempt = 1; attempt <= HOST_ID_ATTEMPTS; attempt++) {
+      this._roomCode = generateRoomCode();
+      const peerId = hostPeerId(this._roomCode);
       try {
         await this.openHostPeer(peerId);
         this.lobby = createLobby(this._roomCode, playerName);
@@ -117,7 +118,6 @@ export class PeerManager {
       } catch (err) {
         lastErr = err;
         const type = peerErrorType(err);
-        // PeerJS cloud holds IDs briefly - destroy + wait clears that pool
         await this.destroyPeerOnly();
         if (type === 'unavailable-id' || type === 'network' || type === 'server-error') {
           await sleep(600 * attempt);
@@ -129,7 +129,9 @@ export class PeerManager {
 
     this.callbacks.onStatusChange('error');
     const msg = peerErrorMessage(lastErr) || 'Could not open a table. Try again.';
-    this.callbacks.onError(`Host error: ${msg}`);
+    this.callbacks.onError(
+      `Host error: ${msg}. Signaling may be busy — wait a few seconds and host again.`,
+    );
     throw lastErr instanceof Error ? lastErr : new Error(msg);
   }
 
@@ -213,7 +215,9 @@ export class PeerManager {
       lastErr instanceof Error
         ? lastErr.message
         : peerErrorMessage(lastErr) || 'Could not join - check the code and try again.';
-    this.callbacks.onError(msg);
+    this.callbacks.onError(
+      `${msg}. If you just left a table, wait a few seconds and try again.`,
+    );
     throw lastErr instanceof Error ? lastErr : new Error(msg);
   }
 
@@ -366,6 +370,10 @@ export class PeerManager {
     switch (msg.type) {
       case 'join_request':
         this.handleJoinRequest(msg.payload.playerName, conn, msg.payload.resumeKey);
+        break;
+
+      case 'rename_self':
+        this.handleRenameSelf(conn, msg.payload.playerName);
         break;
 
       case 'join_accepted':
@@ -587,6 +595,30 @@ export class PeerManager {
       Object.assign(slot, updates);
       this.broadcastLobbyUpdate();
     }
+  }
+
+  /** Host or guest: change this player's lobby / table name. */
+  renameSelf(playerName: string) {
+    const name = playerName.trim() || 'Player';
+    if (this._isHost) {
+      if (this.lobby) this.lobby.hostName = name;
+      this.updateSlot(this._playerIndex, { playerName: name });
+      this.callbacks.onPlayerRenamed?.(this._playerIndex, name);
+      return;
+    }
+    if (this.hostConnection) {
+      this.send(this.hostConnection, { type: 'rename_self', payload: { playerName: name } });
+    }
+  }
+
+  private handleRenameSelf(conn: DataConnection, playerName: string) {
+    if (!this._isHost || !this.lobby) return;
+    const idx = this.seatIndexForPeer(conn.peer);
+    if (idx == null) return;
+    const name = playerName.trim();
+    if (!name) return;
+    this.updateSlot(idx, { playerName: name });
+    this.callbacks.onPlayerRenamed?.(idx, name);
   }
 
   /**

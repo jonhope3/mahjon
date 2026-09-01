@@ -118,8 +118,11 @@ export function HandRack({
   const handlePointerDown = useCallback(
     (index: number) => (e: React.PointerEvent<HTMLDivElement>) => {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
-      // Capture immediately so moves keep arriving after leaving this slot.
-      e.currentTarget.setPointerCapture?.(e.pointerId);
+      // Mouse: capture immediately. Touch: wait until we know this is a
+      // horizontal rearrange so the page can still scroll.
+      if (e.pointerType === 'mouse') {
+        e.currentTarget.setPointerCapture?.(e.pointerId);
+      }
       dragRef.current = {
         pointerId: e.pointerId,
         startX: e.clientX,
@@ -139,12 +142,23 @@ export function HandRack({
       if (!session || session.pointerId !== e.pointerId) return;
 
       if (!session.active) {
-        const travelled = Math.hypot(e.clientX - session.startX, e.clientY - session.startY);
+        const dx = e.clientX - session.startX;
+        const dy = e.clientY - session.startY;
+        const travelled = Math.hypot(dx, dy);
         if (travelled < DRAG_THRESHOLD_PX) return;
+        // Mostly vertical: let the browser scroll; drop this drag session.
+        if (Math.abs(dy) > Math.abs(dx) * 1.15) {
+          dragRef.current = null;
+          return;
+        }
         session.active = true;
+        e.currentTarget.setPointerCapture?.(e.pointerId);
+        e.preventDefault();
         setDragIndex(session.from);
         setOverIndex(session.from);
         haptic('select');
+      } else {
+        e.preventDefault();
       }
 
       const target = indexFromPoint(e.clientX, e.clientY);

@@ -147,6 +147,19 @@ export default function App() {
       onLobbyUpdate: () => {},
       onGameStart: (state, playerIndex) => enterPlaying(state, playerIndex),
       onGameStateSync: setGameState,
+      onPlayerRenamed: (playerIndex, playerName) => {
+        setGameState(current => {
+          if (!current) return current;
+          const next = {
+            ...current,
+            players: current.players.map((p, i) =>
+              i === playerIndex ? { ...p, name: playerName } : p,
+            ),
+          };
+          peerManagerRef.current?.syncGameState(next);
+          return next;
+        });
+      },
       onPlayerDisconnected: playerIndex => {
         clearDisconnectGrace(playerIndex);
         const timer = setTimeout(() => {
@@ -515,7 +528,17 @@ export default function App() {
       {screen === 'connecting' && (
         <div className="connecting-screen" role="status" aria-live="polite">
           <div className="connecting-card">
-            <h1>Mahjon</h1>
+            <button
+              type="button"
+              className="menu-logo-home"
+              onClick={() => {
+                clearMultiplayerLobbyIntent();
+                goScreen(setScreen, 'menu');
+              }}
+              aria-label="Back to home"
+            >
+              Mahjon
+            </button>
             <p className="connecting-title">
               Connecting
               <BusyDots />
@@ -535,6 +558,9 @@ export default function App() {
             peerManager.disconnect();
             setPeerManager(null);
             goScreen(setScreen, 'menu');
+          }}
+          onNamePersist={name => {
+            handlePrefsChange({ ...prefsRef.current, humanName: name });
           }}
         />
       )}
@@ -598,6 +624,13 @@ export default function App() {
           resumeKey={peerManager?.resumeKey || undefined}
           onApplyLiveNames={
             !peerManager || peerManager.isHost ? applyLiveNames : undefined
+          }
+          onRenameSelf={
+            peerManager
+              ? (name: string) => {
+                  peerManager.renameSelf(name);
+                }
+              : undefined
           }
           onNewGame={
             !peerManager || peerManager.isHost ? handleNewGameFromSettings : undefined

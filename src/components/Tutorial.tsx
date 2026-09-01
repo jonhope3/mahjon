@@ -152,13 +152,13 @@ export function Tutorial({ onBack, onStartPlaying }: TutorialProps) {
             </p>
             <ul>
               <li>
-                🪸 Red ↔ 🐚 Crak
+                🦪 Red ↔ 🐚 Crak
               </li>
               <li>
-                🌊 Green ↔ 🌿 Bam
+                🪸 Green ↔ 🌿 Bam
               </li>
               <li>
-                🦪 Soap (White) ↔ 🫧 Dot
+                🌊 Soap (White) ↔ 🫧 Dot
               </li>
             </ul>
             <div className="tutorial-tiles-demo">
@@ -173,7 +173,7 @@ export function Tutorial({ onBack, onStartPlaying }: TutorialProps) {
             <p>
               <strong>Flowers</strong> (🌺) appear in many patterns.{' '}
               <strong>Jokers</strong> (🪼) are wild in groups of 3+, but never in pairs or singles.
-              Do not confuse Flowers with the Red Dragon (🪸).
+              Do not confuse Flowers with the Red Dragon (🦪).
             </p>
             <div className="tutorial-tiles-demo">
               <TileComponent tile={SAMPLE_TILES.flower} size="mini" />
@@ -361,6 +361,14 @@ export function Tutorial({ onBack, onStartPlaying }: TutorialProps) {
     <div className="tutorial-screen">
       <div className="tutorial-shell">
         <header className="tutorial-header">
+          <button
+            type="button"
+            className="menu-logo-home tutorial-home"
+            onClick={onBack}
+            aria-label="Back to home"
+          >
+            Mahjon
+          </button>
           <div className="tutorial-progress" aria-hidden="true">
             {steps.map((_, i) => (
               <div
