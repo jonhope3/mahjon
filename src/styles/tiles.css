@@ -144,10 +144,10 @@
 .tile.mini .tile-pair-badge {
   top: 1px;
   right: 1px;
-  width: 12px;
-  height: 12px;
-  font-size: 8px;
-  border-radius: 3px;
+  width: 15px;
+  height: 15px;
+  font-size: 10px;
+  border-radius: 4px;
 }
 
 .tile.tiny .tile-pair-badge {
@@ -400,13 +400,15 @@
   gap: 6px;
   align-items: flex-end;
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
-  scroll-snap-type: x proximity;
   padding: 14px 4px 18px;
   scrollbar-width: thin;
+  touch-action: pan-x;
 }
 
 /* Desktop/table hands can lift selected tiles into open space */
@@ -445,7 +447,6 @@
   height: auto !important;
   aspect-ratio: 56 / 76;
   margin-right: 0 !important;
-  scroll-snap-align: center;
   border-radius: 8px;
   flex: 0 0 auto;
   max-width: var(--tile-hand-w);

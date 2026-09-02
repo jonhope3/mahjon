@@ -11,8 +11,9 @@
 */
 
 .hand-rack {
-  /* Allow vertical page scroll outside slots; slots own the drag gesture. */
-  touch-action: pan-y;
+  /* Let the overflow ancestor pan horizontally; rearrange uses capture later. */
+  touch-action: pan-x;
+  min-width: 0;
 }
 
 .hand-rack-slot {
@@ -22,8 +23,7 @@
   position: relative;
   border-radius: 10px;
   transition: transform 140ms ease, opacity 140ms ease;
-  /* Allow vertical page scroll until a rearrange actually starts. */
-  touch-action: pan-y;
+  touch-action: pan-x;
   -webkit-user-select: none;
   user-select: none;
 }

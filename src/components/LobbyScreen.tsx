@@ -2,7 +2,7 @@
 // LobbyScreen - family-friendly multiplayer lobby
 // ============================================================
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { PeerManager, ConnectionStatus } from '../network/peer-manager';
 import { LobbyState, LobbySlot } from '../network/protocol';
 import { GameConfig } from '../engine/game';
@@ -56,6 +56,8 @@ export function LobbyScreen({
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState<'room' | 'seat' | 'invite' | null>(null);
   const [lastTable] = useState<MpLastTable | null>(remembered);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const joinGeneration = useRef(0);
 
   useEffect(() => {
     if (!remembered?.playerName) setPlayerName(defaultName);
@@ -127,6 +129,7 @@ export function LobbyScreen({
     }
     setError(null);
     setBusy(true);
+    const gen = ++joinGeneration.current;
     try {
       const name = rememberName(playerName);
       setPlayerName(name);
@@ -135,12 +138,14 @@ export function LobbyScreen({
         name,
         resumeKey.trim() || undefined,
       );
+      if (gen !== joinGeneration.current) return;
       setMode('join');
     } catch (err) {
+      if (gen !== joinGeneration.current) return;
       setMode('choose');
       setError(err instanceof Error ? err.message : 'Could not join - check the code and try again.');
     } finally {
-      setBusy(false);
+      if (gen === joinGeneration.current) setBusy(false);
     }
   }, [peerManager, roomCode, playerName, resumeKey, rememberName]);
 
@@ -240,39 +245,22 @@ export function LobbyScreen({
     if (result === 'copied') flashCopied('invite');
   };
 
-  // Deep link / invite: auto-join once when we arrived with ?room=
+  // Invite link: prefill the code and let them set a name before joining.
   useEffect(() => {
     if (!deep.room) return;
-    let cancelled = false;
-    (async () => {
-      setError(null);
-      setBusy(true);
-      try {
-        await peerManager.joinRoom(
-          deep.room!,
-          playerName.trim() || 'Guest',
-          deep.seat || undefined,
-        );
-        if (!cancelled) setMode('join');
-      } catch (err) {
-        if (!cancelled) {
-          setMode('choose');
-          setError(
-            err instanceof Error
-              ? err.message
-              : 'Could not join from invite - check that the host still has the table open.',
-          );
-        }
-      } finally {
-        if (!cancelled) setBusy(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // Intentionally once on mount for this deep link
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    nameInputRef.current?.focus();
+    nameInputRef.current?.select();
+  }, [deep.room]);
+
+  // Keep the table name in sync while connected (iOS often skips blur).
+  useEffect(() => {
+    if (!lobby) return;
+    const handle = window.setTimeout(() => {
+      const name = rememberName(playerName);
+      peerManager.renameSelf(name);
+    }, 400);
+    return () => window.clearTimeout(handle);
+  }, [lobby, playerName, peerManager, rememberName]);
 
   return (
     <div className="main-menu">
@@ -289,7 +277,11 @@ export function LobbyScreen({
         <button
           type="button"
           className="menu-logo-home"
-          onClick={onBack}
+          onClick={() => {
+            joinGeneration.current += 1;
+            setBusy(false);
+            onBack();
+          }}
           aria-label="Back to home"
         >
           Mahjon
@@ -318,9 +310,17 @@ export function LobbyScreen({
               <li>Host taps <strong>Start game</strong> when you’re ready (min 2 people).</li>
             </ol>
 
+            {deep.room && (
+              <p className="mp-version-note">
+                You’re joining room <strong>{deep.room}</strong>. Check your name, then tap{' '}
+                <strong>Join</strong>.
+              </p>
+            )}
+
             <label className="lobby-field">
               <span>Your name</span>
               <input
+                ref={nameInputRef}
                 type="text"
                 value={playerName}
                 onChange={e => setPlayerName(e.target.value)}
@@ -332,6 +332,7 @@ export function LobbyScreen({
                 id="mp-player-name"
                 autoComplete="nickname"
                 maxLength={20}
+                autoFocus={!!deep.room}
               />
             </label>
 
@@ -425,7 +426,11 @@ export function LobbyScreen({
                 )}
               </div>
 
-              <button className="btn btn-secondary" onClick={onBack} id="mp-back-btn">
+              <button className="btn btn-secondary" onClick={() => {
+                joinGeneration.current += 1;
+                setBusy(false);
+                onBack();
+              }} id="mp-back-btn">
                 ← Back
               </button>
             </div>
@@ -499,6 +504,7 @@ export function LobbyScreen({
                 placeholder="e.g. Alex"
                 autoComplete="nickname"
                 maxLength={20}
+                enterKeyHint="done"
               />
             </label>
 

@@ -147,18 +147,18 @@ export function Tutorial({ onBack, onStartPlaying }: TutorialProps) {
               Red, Green, and Soap (White) dragons. Year hands (2026) use Soap as the &quot;0&quot;.
             </p>
             <p>
-              <strong>Like colors:</strong> each dragon matches one suit - look for the small
-              corner icon:
+              <strong>Like colors:</strong> each dragon is the honor tile for one suit. The small
+              corner icon is the match:
             </p>
             <ul>
               <li>
-                🦪 Red ↔ 🐚 Crak
+                Red Dragon (oyster 🦪) matches Crak (shell 🐚)
               </li>
               <li>
-                🪸 Green ↔ 🌿 Bam
+                Green Dragon (coral 🪸) matches Bam (kelp 🌿)
               </li>
               <li>
-                🌊 Soap (White) ↔ 🫧 Dot
+                Soap / White Dragon (wave 🌊) matches Dot (bubbles 🫧)
               </li>
             </ul>
             <div className="tutorial-tiles-demo">

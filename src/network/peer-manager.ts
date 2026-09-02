@@ -47,6 +47,7 @@ const HOST_ID_ATTEMPTS = 5;
 const JOIN_TIMEOUT_MS = 28000;
 const HOST_OPEN_TIMEOUT_MS = 20000;
 const KEEPALIVE_MS = 8000;
+const PEER_DESTROY_COOLDOWN_MS = 1200;
 
 export class PeerManager {
   private peer: Peer | null = null;
@@ -62,6 +63,8 @@ export class PeerManager {
   private lastGameState: GameState | null = null;
   private keepaliveTimer: ReturnType<typeof setInterval> | null = null;
   private generation = 0;
+  private resetChain: Promise<void> = Promise.resolve();
+  private pendingRename: string | null = null;
 
   constructor(callbacks: PeerManagerCallbacks) {
     this.callbacks = callbacks;
@@ -195,15 +198,17 @@ export class PeerManager {
     this.callbacks.onStatusChange('connecting');
 
     let lastErr: unknown;
+    let reusePeer = false;
     for (let attempt = 1; attempt <= JOIN_ATTEMPTS; attempt++) {
       try {
-        await this.joinOnce(this._roomCode, playerName, resumeKey);
+        await this.joinOnce(this._roomCode, playerName, resumeKey, reusePeer);
         this.startKeepalive();
+        this.flushPendingRename();
         return;
       } catch (err) {
         lastErr = err;
-        await this.destroyPeerOnly();
-        // PeerJS holds connection offers ~5s; wait past that pool before retry
+        reusePeer = this.closeHostConnectionOnly();
+        if (!reusePeer) await this.destroyPeerOnly();
         if (attempt < JOIN_ATTEMPTS) {
           await sleep(1600 * attempt);
         }
@@ -216,7 +221,7 @@ export class PeerManager {
         ? lastErr.message
         : peerErrorMessage(lastErr) || 'Could not join - check the code and try again.';
     this.callbacks.onError(
-      `${msg}. If you just left a table, wait a few seconds and try again.`,
+      `${msg}. If the table is on another network, wait a moment and try Join again — the relay can get busy after several attempts.`,
     );
     throw lastErr instanceof Error ? lastErr : new Error(msg);
   }
@@ -224,9 +229,10 @@ export class PeerManager {
   private joinOnce(
     roomCode: string,
     playerName: string,
-    resumeKey?: string,
+    resumeKey: string | undefined,
+    reusePeer: boolean,
   ): Promise<void> {
-    const gen = ++this.generation;
+    const gen = reusePeer ? this.generation : ++this.generation;
     const hostId = hostPeerId(roomCode);
 
     return new Promise((resolve, reject) => {
@@ -240,17 +246,16 @@ export class PeerManager {
 
       const timer = setTimeout(() => {
         settle(() =>
-          reject(new Error('Join timed out - check the room code and that the host is still online.')),
+          reject(
+            new Error(
+              'Join timed out - the connection relay may be busy. Check the room code and that the host is still online.',
+            ),
+          ),
         );
       }, JOIN_TIMEOUT_MS);
 
-      const peer = new Peer(buildPeerOptions());
-      this.peer = peer;
-
-      peer.on('open', () => {
+      const startConnect = (peer: Peer) => {
         if (gen !== this.generation) return;
-
-        // Never reuse a pooled DataConnection - always a fresh reliable channel
         const conn = peer.connect(hostId, {
           reliable: true,
           serialization: 'json',
@@ -263,12 +268,26 @@ export class PeerManager {
           }
           this.hostConnection = conn;
           this.connections.set(hostId, conn);
+          this.flushPendingRename();
           this.wireClientConnection(conn, settle, resolve, reject, playerName, resumeKey);
         });
 
         conn.on('error', err => {
           settle(() => reject(err instanceof Error ? err : new Error(peerErrorMessage(err))));
         });
+      };
+
+      const existing = this.peer;
+      if (reusePeer && existing && !existing.destroyed) {
+        startConnect(existing);
+        return;
+      }
+
+      const peer = new Peer(buildPeerOptions());
+      this.peer = peer;
+
+      peer.on('open', () => {
+        startConnect(peer);
       });
 
       peer.on('disconnected', () => {
@@ -286,6 +305,14 @@ export class PeerManager {
         if (type === 'peer-unavailable') {
           settle(() =>
             reject(new Error(`Room "${roomCode}" not found. Check the code and try again.`)),
+          );
+        } else if (type === 'network' || type === 'webrtc' || type === 'server-error') {
+          settle(() =>
+            reject(
+              new Error(
+                'Could not reach the table (network / relay). Wait a few seconds and tap Join again.',
+              ),
+            ),
           );
         } else if (!settled) {
           settle(() => reject(err instanceof Error ? err : new Error(peerErrorMessage(err))));
@@ -385,6 +412,7 @@ export class PeerManager {
         if (msg.payload.resumeKey) this._resumeKey = msg.payload.resumeKey;
         this.callbacks.onStatusChange('connected');
         this.callbacks.onLobbyUpdate(this.lobby);
+        this.flushPendingRename();
         break;
 
       case 'join_rejected':
@@ -600,14 +628,23 @@ export class PeerManager {
   /** Host or guest: change this player's lobby / table name. */
   renameSelf(playerName: string) {
     const name = playerName.trim() || 'Player';
+    this.pendingRename = name;
+    this.flushPendingRename();
+  }
+
+  private flushPendingRename() {
+    const name = this.pendingRename;
+    if (!name) return;
     if (this._isHost) {
       if (this.lobby) this.lobby.hostName = name;
       this.updateSlot(this._playerIndex, { playerName: name });
       this.callbacks.onPlayerRenamed?.(this._playerIndex, name);
+      this.pendingRename = null;
       return;
     }
     if (this.hostConnection) {
       this.send(this.hostConnection, { type: 'rename_self', payload: { playerName: name } });
+      this.pendingRename = null;
     }
   }
 
@@ -761,6 +798,21 @@ export class PeerManager {
     }
   }
 
+  /** Close guest→host data channel but keep the Peer for a retry. */
+  private closeHostConnectionOnly(): boolean {
+    this.stopKeepalive();
+    for (const conn of this.connections.values()) {
+      try {
+        conn.close();
+      } catch {
+        /* ignore */
+      }
+    }
+    this.connections.clear();
+    this.hostConnection = null;
+    return !!(this.peer && !this.peer.destroyed);
+  }
+
   private async destroyPeerOnly() {
     this.stopKeepalive();
     for (const conn of this.connections.values()) {
@@ -780,22 +832,26 @@ export class PeerManager {
       } catch {
         /* ignore */
       }
-      // Let PeerJS cloud release the id / offer slot
-      await sleep(350);
+      await sleep(PEER_DESTROY_COOLDOWN_MS);
     }
   }
 
   private async hardReset() {
-    this.generation += 1;
-    this.stopKeepalive();
-    await this.destroyPeerOnly();
-    this.lobby = null;
-    this._isHost = false;
-    this._roomCode = '';
-    this._resumeKey = '';
-    this._playerIndex = 0;
-    this.gameInProgress = false;
-    this.lastGameState = null;
+    const run = async () => {
+      this.generation += 1;
+      this.stopKeepalive();
+      this.pendingRename = null;
+      await this.destroyPeerOnly();
+      this.lobby = null;
+      this._isHost = false;
+      this._roomCode = '';
+      this._resumeKey = '';
+      this._playerIndex = 0;
+      this.gameInProgress = false;
+      this.lastGameState = null;
+    };
+    this.resetChain = this.resetChain.then(run, run);
+    await this.resetChain;
   }
 
   /** Disconnect and clean up */
@@ -803,7 +859,6 @@ export class PeerManager {
     void this.hardReset().then(() => {
       this.callbacks.onStatusChange('disconnected');
     });
-    this.callbacks.onStatusChange('disconnected');
   }
 
   getLobby(): LobbyState | null {

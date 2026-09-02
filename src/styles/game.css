@@ -49,7 +49,7 @@
     calc(var(--space-xl) + env(safe-area-inset-right, 0px))
     var(--space-md)
     calc(var(--space-xl) + env(safe-area-inset-left, 0px));
-  z-index: var(--z-tiles);
+  z-index: var(--z-overlay);
   position: relative;
 }
 
@@ -770,8 +770,9 @@
   flex-wrap: wrap;
   gap: 8px;
   padding: calc(10px + env(safe-area-inset-top, 0px)) 12px 8px;
-  z-index: 10;
+  z-index: var(--z-overlay);
   flex-shrink: 0;
+  position: relative;
 }
 
 .status-pill {
@@ -1289,7 +1290,12 @@
 }
 
 .mobile-player-exposed .tile .tile-pair-badge {
-  display: none !important;
+  top: 0;
+  right: 0;
+  width: 11px;
+  height: 11px;
+  font-size: 8px;
+  border-radius: 3px;
 }
 
 /*
@@ -1299,9 +1305,17 @@
 .mobile-hand-slot {
   flex: 0 0 auto;
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   min-height: 96px;
   max-height: 112px;
-  overflow: hidden;
+  /* This band is the scroller. overflow:hidden here used to clip a 14-tile
+     rack (min-width: auto) so Pixel-width phones could not pan the hand. */
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
   position: relative;
   z-index: 2;
   isolation: isolate;
@@ -1313,20 +1327,19 @@
   flex-wrap: nowrap;
   align-items: flex-end;
   gap: 6px;
-  width: 100%;
+  width: max-content;
+  min-width: 100%;
+  max-width: none;
   height: 100%;
   min-height: 84px;
   margin: 0;
   padding: 10px 2px 8px !important;
-  overflow-x: auto;
-  overflow-y: hidden !important;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-x: contain;
-  scroll-snap-type: x proximity;
+  overflow: visible;
   position: relative;
   z-index: 2;
   flex-shrink: 0;
   isolation: isolate;
+  touch-action: pan-x;
 }
 
 .mobile-bottom-bar .mobile-player-hand .tile.selected {

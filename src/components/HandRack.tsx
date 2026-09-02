@@ -4,13 +4,14 @@
 //
 // Mobile-first interaction model:
 //   • Tap                     → select / deselect a tile
-//   • Drag (past 8px)         → rearrange the rack
+//   • Hold (~200ms) then drag → rearrange the rack (a quick flick still scrolls)
+//   • Long-press              → tile name tip
 //   • Keyboard ← →            → move selection
 //   • Keyboard Shift+← →      → move the *tile* (iPad keyboard / laptop)
 //
 // Drag state lives in a ref so a quick mouse/touch drag still commits even
-// if React hasn't flushed setState yet. Pointer capture is taken on down so
-// the gesture survives leaving the original tile.
+// if React hasn't flushed setState yet. Pointer capture is taken once a
+// rearrange actually starts so the rack can still scroll.
 
 import {
   useCallback,
@@ -24,8 +25,10 @@ import type { Tile } from '../engine/types';
 import { TileComponent } from './TileComponent';
 import { haptic } from '../haptics';
 
-/** Pointer travel (px) before a press becomes a drag rather than a tap. */
+/** Pointer travel (px) before an armed press becomes a drag rather than a tap. */
 const DRAG_THRESHOLD_PX = 8;
+/** Hold before a horizontal move rearranges, so a flick can still scroll the rack. */
+const DRAG_ARM_MS = 280;
 
 interface HandRackProps {
   tiles: Tile[];
@@ -46,6 +49,9 @@ type DragSession = {
   from: number;
   over: number;
   active: boolean;
+  armed: boolean;
+  identityShown: boolean;
+  armTimer: ReturnType<typeof setTimeout> | null;
 };
 
 export function HandRack({
@@ -102,6 +108,7 @@ export function HandRack({
 
   const commitDrag = useCallback(() => {
     const session = dragRef.current;
+    if (session?.armTimer) clearTimeout(session.armTimer);
     dragRef.current = null;
     if (
       session?.active &&
@@ -118,26 +125,37 @@ export function HandRack({
   const handlePointerDown = useCallback(
     (index: number) => (e: React.PointerEvent<HTMLDivElement>) => {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
-      // Mouse: capture immediately. Touch: wait until we know this is a
-      // horizontal rearrange so the page can still scroll.
+      // Mouse: capture immediately. Touch: do not capture or listen for move on
+      // the tile — Chrome will not pan a clipped ancestor if we own the pointer.
       if (e.pointerType === 'mouse') {
         e.currentTarget.setPointerCapture?.(e.pointerId);
       }
-      dragRef.current = {
+      const session: DragSession = {
         pointerId: e.pointerId,
         startX: e.clientX,
         startY: e.clientY,
         from: index,
         over: index,
         active: false,
+        armed: e.pointerType === 'mouse',
+        identityShown: false,
+        armTimer: null,
       };
+      if (e.pointerType !== 'mouse') {
+        session.armTimer = setTimeout(() => {
+          if (dragRef.current === session) session.armed = true;
+        }, DRAG_ARM_MS);
+      }
+      dragRef.current = session;
       setFocusIndex(index);
     },
     [],
   );
 
-  const handlePointerMove = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
+  // Window-level move so the hand can native-scroll. Slot onPointerMove is
+  // non-passive in React and blocks pan on Android Chrome.
+  useEffect(() => {
+    const onMove = (e: PointerEvent) => {
       const session = dragRef.current;
       if (!session || session.pointerId !== e.pointerId) return;
 
@@ -146,19 +164,28 @@ export function HandRack({
         const dy = e.clientY - session.startY;
         const travelled = Math.hypot(dx, dy);
         if (travelled < DRAG_THRESHOLD_PX) return;
-        // Mostly vertical: let the browser scroll; drop this drag session.
+        if (!session.armed) {
+          if (session.armTimer) clearTimeout(session.armTimer);
+          dragRef.current = null;
+          return;
+        }
         if (Math.abs(dy) > Math.abs(dx) * 1.15) {
+          if (session.armTimer) clearTimeout(session.armTimer);
           dragRef.current = null;
           return;
         }
         session.active = true;
-        e.currentTarget.setPointerCapture?.(e.pointerId);
-        e.preventDefault();
+        if (session.armTimer) {
+          clearTimeout(session.armTimer);
+          session.armTimer = null;
+        }
+        const slot = rackRef.current?.querySelectorAll<HTMLElement>('[data-tile-slot]')?.[
+          session.from
+        ];
+        slot?.setPointerCapture?.(e.pointerId);
         setDragIndex(session.from);
         setOverIndex(session.from);
         haptic('select');
-      } else {
-        e.preventDefault();
       }
 
       const target = indexFromPoint(e.clientX, e.clientY);
@@ -166,9 +193,10 @@ export function HandRack({
         session.over = target;
         setOverIndex(target);
       }
-    },
-    [indexFromPoint],
-  );
+    };
+    window.addEventListener('pointermove', onMove, { passive: true });
+    return () => window.removeEventListener('pointermove', onMove);
+  }, [indexFromPoint]);
 
   const handlePointerUp = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
@@ -176,8 +204,9 @@ export function HandRack({
       if (!session || session.pointerId !== e.pointerId) return;
       const wasDrag = session.active;
       const from = session.from;
+      const skipClick = session.identityShown;
       commitDrag();
-      if (!wasDrag && clickable) {
+      if (!wasDrag && !skipClick && clickable) {
         const tile = tiles[from];
         if (tile) onTileClick(tile);
       }
@@ -189,6 +218,7 @@ export function HandRack({
     (e: React.PointerEvent<HTMLDivElement>) => {
       const session = dragRef.current;
       if (!session || session.pointerId !== e.pointerId) return;
+      if (session.armTimer) clearTimeout(session.armTimer);
       dragRef.current = null;
       clearDragVisual();
     },
@@ -248,7 +278,7 @@ export function HandRack({
       className={`hand-rack ${className} ${dragIndex !== null ? 'is-dragging' : ''}`}
       style={{ '--hand-size': tiles.length } as CSSProperties}
       role="group"
-      aria-label={`${label}. Drag tiles to rearrange. Arrow keys move between tiles; shift plus arrow keys rearrange.`}
+      aria-label={`${label}. Swipe to see every tile. Hold then drag to rearrange. Arrow keys move between tiles; shift plus arrow keys rearrange.`}
     >
       {tiles.map((tile, index) => {
         const isDragged = dragIndex === index;
@@ -265,7 +295,6 @@ export function HandRack({
               .filter(Boolean)
               .join(' ')}
             onPointerDown={handlePointerDown(index)}
-            onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
             onPointerCancel={handlePointerCancel}
             onKeyDown={handleKeyDown(index)}
@@ -279,6 +308,11 @@ export function HandRack({
               size={size}
               // Tips still work via hover / long-press; selection is owned by the slot.
               onClick={undefined}
+              onIdentityShown={() => {
+                if (dragRef.current?.from === index) {
+                  dragRef.current.identityShown = true;
+                }
+              }}
             />
           </div>
         );

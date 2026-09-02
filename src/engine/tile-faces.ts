@@ -8,10 +8,10 @@ import type { Dragon, Suit, Wind } from './types';
  * Suited tiles share one icon per suit; the rank digit is the identity.
  * Labels use NMJL card names (Crak / Bam / Dot); icons stay ocean-themed.
  */
-export const SUIT_FACES: Record<Suit, { icon: string; name: string; cls: string }> = {
-  crak: { icon: '🐚', name: 'Crak', cls: 'crak' },
-  bam: { icon: '🌿', name: 'Bam', cls: 'bam' },
-  dot: { icon: '🫧', name: 'Dot', cls: 'dot' },
+export const SUIT_FACES: Record<Suit, { icon: string; name: string; theme: string; cls: string }> = {
+  crak: { icon: '🐚', name: 'Crak', theme: 'shell', cls: 'crak' },
+  bam: { icon: '🌿', name: 'Bam', theme: 'kelp', cls: 'bam' },
+  dot: { icon: '🫧', name: 'Dot', theme: 'bubbles', cls: 'dot' },
 };
 
 /** Winds - four directions, four icons */
@@ -23,10 +23,10 @@ export const WIND_FACES: Record<Wind, { icon: string; label: string }> = {
 };
 
 /** Dragons - three kinds (icons ocean-themed; labels match the card) */
-export const DRAGON_FACES: Record<Dragon, { icon: string; label: string; cls: string }> = {
-  red: { icon: '🦪', label: 'Red', cls: 'dragon-red' },
-  green: { icon: '🪸', label: 'Green', cls: 'dragon-green' },
-  white: { icon: '🌊', label: 'Soap', cls: 'dragon-white' },
+export const DRAGON_FACES: Record<Dragon, { icon: string; label: string; theme: string; cls: string }> = {
+  red: { icon: '🦪', label: 'Red', theme: 'oyster', cls: 'dragon-red' },
+  green: { icon: '🪸', label: 'Green', theme: 'coral', cls: 'dragon-green' },
+  white: { icon: '🌊', label: 'Soap', theme: 'wave', cls: 'dragon-white' },
 };
 
 /**
@@ -63,7 +63,7 @@ export const FLOWER_FACE = { icon: '🌺', label: 'Flower' } as const;
 /** Joker - all eight copies look the same */
 export const JOKER_FACE = { icon: '🪼', label: 'Joker' } as const;
 
-export function suitFace(suit: Suit): { icon: string; name: string; cls: string } {
+export function suitFace(suit: Suit): { icon: string; name: string; theme: string; cls: string } {
   return SUIT_FACES[suit];
 }
 

@@ -627,7 +627,7 @@ export function GameBoard({
             <span className="hand-tools-hint">
               {inputProfile === 'desktop'
                 ? 'Drag tiles to group your hand'
-                : 'Slide a tile to rearrange'}
+                : 'Swipe to see all tiles · hold, then drag to rearrange'}
             </span>
             <button
               type="button"

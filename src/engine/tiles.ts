@@ -4,7 +4,7 @@
 // ============================================================
 
 import { Tile, TileKind, Suit, Wind, Dragon, Wall } from './types';
-import { DRAGON_MATCHING_SUIT, SUIT_FACES } from './tile-faces';
+import { DRAGON_FACES, DRAGON_MATCHING_SUIT, SUIT_FACES, SUIT_MATCHING_DRAGON } from './tile-faces';
 
 const SUITS: Suit[] = ['bam', 'crak', 'dot'];
 const WINDS: Wind[] = ['east', 'south', 'west', 'north'];
@@ -39,20 +39,21 @@ const SUIT_DRAGON_NAME = {
 export function tileTooltip(kind: TileKind): string {
   switch (kind.type) {
     case 'suited': {
-      const name = SUIT_FACES[kind.suit].name;
-      return `${kind.rank} ${name} · matches ${SUIT_DRAGON_NAME[kind.suit]}`;
+      const suit = SUIT_FACES[kind.suit];
+      const dragon = DRAGON_FACES[SUIT_MATCHING_DRAGON[kind.suit]];
+      return `${kind.rank} ${suit.name} (${suit.theme}) · matches ${SUIT_DRAGON_NAME[kind.suit]} (${dragon.theme})`;
     }
     case 'wind':
       return `${kind.wind.charAt(0).toUpperCase() + kind.wind.slice(1)} Wind`;
     case 'dragon': {
       const names = {
-        red: 'Red Dragon (D)',
-        green: 'Green Dragon (D)',
-        white: 'Soap / White Dragon (0 on year hands)',
+        red: 'Red Dragon (D, oyster)',
+        green: 'Green Dragon (D, coral)',
+        white: 'Soap / White Dragon (wave; 0 on year hands)',
       } as const;
       const suitKey = DRAGON_MATCHING_SUIT[kind.dragon];
       const suit = SUIT_FACES[suitKey];
-      return `${names[kind.dragon]} · matches ${suit.name}`;
+      return `${names[kind.dragon]} · matches ${suit.name} (${suit.theme})`;
     }
     case 'flower':
       return 'Flower (F on the card)';

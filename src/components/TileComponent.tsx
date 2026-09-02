@@ -32,10 +32,12 @@ interface TileComponentProps {
   onClick?: (tile: Tile) => void;
   className?: string;
   showIdentity?: boolean;
+  /** Touch long-press showed the name tip (parent can skip treating it as a tap). */
+  onIdentityShown?: () => void;
 }
 
 const LONG_PRESS_MS = 420;
-const LONG_PRESS_MOVE_PX = 8;
+const LONG_PRESS_MOVE_PX = 18;
 const TIP_MARGIN = 10;
 
 type TipPlacement = 'above' | 'below';
@@ -114,6 +116,7 @@ export function TileComponent({
   onClick,
   className = '',
   showIdentity = true,
+  onIdentityShown,
 }: TileComponentProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const tipRef = useRef<HTMLSpanElement>(null);
@@ -249,6 +252,7 @@ export function TileComponent({
       longPressFired.current = true;
       showTip();
       hideTipSoon();
+      onIdentityShown?.();
       if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
         try {
           navigator.vibrate(12);
